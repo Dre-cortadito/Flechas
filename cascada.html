@@ -91,12 +91,13 @@
   /* Size the board by the SMALLER of width and available height, so the full
      board + the UI below it always fit the screen (no bottom-row clipping). */
   .board-wrap { width:min(94vw, 400px, calc((100dvh - 300px) * 7 / 9)); margin:0 auto 0; }
-  /* Let the SVG drive the board's height intrinsically (like Borde) instead of aspect-ratio + height:100%,
-     which iOS Safari mis-resolves and clips the bottom row. */
-  .board { position:relative; width:100%; background:var(--board-bg); border-radius:18px; overflow:hidden; padding:14px; transition:background .15s linear; }
+  /* Board keeps its 7:9 shape (so the gate/empty state has height). The inner fills it via ABSOLUTE
+     inset (a definite box) rather than height:100% — that avoids the iOS Safari quirk where a
+     percentage-height child of an aspect-ratio box renders too tall and clips the bottom row. */
+  .board { position:relative; width:100%; aspect-ratio:7/9; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
   .timer { transition:color .15s linear; }
-  #board-inner { width:100%; position:relative; line-height:0; }
-  #bsvg { display:block; width:100%; height:auto; overflow:hidden; }   /* intrinsic height from the 1400×1800 viewBox; clips launches at the edge */
+  #board-inner { position:absolute; inset:14px; }
+  #bsvg { display:block; width:100%; height:100%; overflow:hidden; }   /* fills the definite inner box; clips launches at the edge */
   .lyr { will-change:transform; }
   .piece { cursor:pointer; }
   .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .18s; }
