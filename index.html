@@ -84,8 +84,9 @@
   .more-theme-name { color:var(--ink-soft); font-size:12px; font-weight:400; text-transform:capitalize; }
   @media (hover:hover){ .more-item:hover{ background:var(--accent-soft);} .header-home:hover{ border-color:var(--ink-soft);}
     .more:hover{ background:var(--paper);} .header-nav a:hover{ color:var(--accent);} }
-  @media (max-width:560px){ body.game-active .wordmark{ display:none; } .header-nav{ gap:16px; } }
-  @media (max-width:420px){ .header-nav{ gap:10px; } .header-nav a{ font-size:12px; } }
+  /* Hide the wordmark on phones (landing AND game) so the full nav fits without overlap — logo stays. */
+  @media (max-width:620px){ .wordmark{ display:none; } .header-nav{ gap:18px; } }
+  @media (max-width:400px){ .header-nav{ gap:13px; } .header-nav a{ font-size:13px; } }
 
   /* ===== MAIN / game layout ===== */
   main { padding-top:var(--rank-top); max-width:720px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; }
