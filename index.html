@@ -532,25 +532,45 @@
       <h3>Las flechas</h3>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><path d="M10 20 L95 20"/><path d="M80 8 L98 20 L80 32"/></svg></div>
-        <div class="txt">Una flecha lista — su carril está libre, <b>tócala para lanzarla</b>.</div>
+        <div class="txt">Una flecha <b>lista</b> — su carril a la orilla está libre. <b>Tócala para lanzarla.</b></div>
       </div>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><path d="M14 32 L14 14 L70 14"/><path d="M58 4 L78 14 L58 24"/></svg></div>
-        <div class="txt">Las flechas tienen <b>distintas formas</b> y salen por la dirección de su punta.</div>
+        <div class="txt">Tienen <b>distintas formas</b> (recta, en L, zigzag) y salen por su <b>punta</b>.</div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path style="stroke:#157145" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="txt">Al salir, la flecha <b style="color:#157145">destella en verde</b> y abandona el tablero.</div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="txt"><b>Choque:</b> si el carril está bloqueado, <b>rebota</b> y ambas <b style="color:#EA3546">parpadean en rojo</b> — cuesta <b>½ corazón</b>.</div>
       </div>
       <h3>Corazones = tus vidas</h3>
-      <p class="muted">Tienes <b>3 corazones</b> (a la izquierda del reloj). Tocar una flecha <b>bloqueada</b> (un <b>choque</b>) te cuesta <b>½ corazón</b> — y cuanto más rápido vas, más fácil es fallar. A <b>0 corazones se derrama la taza</b>: <b>se acaba la partida</b> (puedes volver a intentarlo). Los corazones <b>no son tu puntuación</b> — tu puntuación es el <b>tiempo</b>. Las <b>flechas que dan corazones</b> (amarillas) te mantienen vivo para terminar, así que <b>guárdalas para cuando estés herido</b>. No se acumulan más de 3. <b>Tu intento de hoy es uno solo</b> — ganes o te derrames, ese es tu resultado; después puedes <b>entrenar</b> el mismo tablero (no cuenta) para mejorar de cara a los próximos días.</p>
+      <p class="muted"><b>3 corazones</b> (a la izquierda del reloj). Cada <b>choque</b> cuesta <b>½</b>; a <b>0 se derrama la taza</b> y se acaba la partida. Los corazones <b>no son tu puntuación</b> (lo es el <b>tiempo</b>) — son tu vida, guárdalos. Tu <b>primer intento del día</b> es el que cuenta; luego puedes <b>entrenar</b> el mismo tablero sin que cuente.</p>
       <h3>Flechas especiales</h3>
-      <p class="muted">Cada tablero trae unas pocas flechas <b>especiales</b> — más o menos <b style="color:#C99700">2 amarillas</b>, <b style="color:#EA3546">4 rojas</b> y <b style="color:#4ECDC4">2 escudo</b> — <b>repartidas por todo el tablero</b> (nunca amontonadas). El tablero es generoso con el <b>peligro</b> y tacaño con los corazones, así que <b>perderlos cuesta de verdad</b>. Tú decides <b>cuándo</b> despejar cada una para sacarle partido.</p>
-      <h3>Cómo ganar y guardar corazones</h3>
-      <ul style="margin:8px 0 0; padding-left:20px; color:var(--ink-soft); font-size:14px; line-height:1.75;">
-        <li><b style="color:#C99700">Flecha amarilla (racha)</b> — al despejarla empieza una <b>racha</b> de <b>6 lanzamientos limpios</b> que te dan <b>½ corazón</b> (justo un choque recuperado). <b>Se apila:</b> 2 amarillas = <b>12 limpias → +1</b>, 3 = <b>18 → +1½</b>. Si chocas, rompes <b>toda</b> la racha y te cuesta <b>½ vida extra</b>: cuanto más larga, más arriesgada.</li>
-        <li><b style="color:#EA3546">Flecha roja (Peligro)</b> — al despejarla abre <b>6 s de peligro</b> (el <b>fondo del tablero se pone rojo</b>) en los que cada choque cuesta <b>el doble (1 corazón)</b>. Si <b>sobrevives sin chocar</b>, ganas <b>½ corazón</b>. <b>Se apila:</b> 2 rojas = <b>12 s → +1</b>, 3 = <b>18 s → +1½</b> — más recompensa, pero más tiempo expuesto. La cuenta atrás está abajo, en la caja de estado.</li>
-        <li><b style="color:#4ECDC4">Flecha escudo (cian)</b> — al despejarla abre <b>6 s de escudo</b> (el tablero se rodea de un <b>halo cian</b>) en los que <b>los choques no cuestan corazones</b>. Es permiso para <b>ir a tope</b>. <b>Se apila</b> (más segundos). Ojo: <b>protege tu vida, no tus bonos</b> (un choque sigue rompiendo la racha y pierde el premio de Peligro), y cuando <b>se acaba</b> sueles seguir embalado — ahí es donde se choca. Despeja un escudo sobre un Peligro para <b>cruzar la zona roja sin morir</b>.</li>
-        <li><b style="color:#0062E3">Carga (se llena sola)</b> — debajo del tablero el botón <b>❄ Congelar</b> se <b>carga con el tiempo</b> (~20 s). Cuando esté lista, <b>congela 5 s</b> (pausa el <b>reloj</b> y el <b>haz</b>) y vuelve a cargarse — una sola carga, como en Cascada.</li>
-      </ul>
+      <p class="muted">Cada tablero trae unas pocas, <b>repartidas por todo el tablero</b>. Tú decides <b>cuándo</b> despejarlas.</p>
+      <div class="legend-row">
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#F9C80E" d="M14 20 L92 20"/><path style="stroke:#F9C80E" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="txt"><b style="color:#C99700">Amarilla · Racha.</b> Empieza una racha de <b>6 lanzamientos limpios → +½ corazón</b>. Se apila. Un choque la rompe y cuesta <b>½ extra</b>.</div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="txt"><b style="color:#EA3546">Roja · Peligro.</b> Abre <b>6 s</b> en que cada choque cuesta el <b>doble (1 corazón)</b>; sobrevive limpio → <b>+½</b>. Se apila (más tiempo, más premio).</div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#4ECDC4" d="M14 20 L92 20"/><path style="stroke:#4ECDC4" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="txt"><b style="color:#3BB6AE">Cian · Escudo.</b> <b>6 s</b> en que los choques <b>no cuestan corazones</b> — ve a tope. Protege tu <b>vida, no tus bonos</b>, y al acabar sueles seguir embalado.</div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div>
+        <div class="txt"><b style="color:#0062E3">❄ Congelar.</b> El botón bajo el tablero se <b>llena solo</b> (~20 s); úsalo para <b>congelar 5 s</b> (pausa el reloj y el haz). Una carga.</div>
+      </div>
       <h3>El haz</h3>
-      <p class="muted">Una <b>barra morada</b> recorre el borde del tablero <b>como un tren</b>, saltando al siguiente lado cada <b>5 s</b> (se desliza por la esquina). Una flecha que saldría por <b>donde está la barra</b> no se lanza: <b>vuela hasta la barra, se pone <span style="color:#662E9B">morada</span> y rebota</b>, sin penalización (no rompe tu racha). <b>En cuanto la barra se desliza y deja libre ese tramo, ese punto queda abierto</b> — cronométralo, lanza por otro lado, o <b>congela</b> para cruzar. El recorrido es el mismo para todos cada día.</p>
+      <div class="legend-row">
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="98" y="4" width="11" height="32" rx="4" fill="#662E9B"/><path style="stroke:var(--arrow)" d="M14 20 L72 20"/><path style="stroke:var(--arrow)" d="M58 9 L78 20 L58 31"/></svg></div>
+        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre el borde y salta de lado cada <b>5 s</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera a que pase o <b>congela</b> para cruzar.</div>
+      </div>
       <h3>Rango y puntuación</h3>
       <p class="muted">Tu puntuación es <b>el tiempo total</b> de despejar los <b>5 tableros</b>, sin trucos: el <b>⏱ reloj</b> con el que terminas el quinto. <b>No hay puntos</b> — solo el reloj. Más <b>rápido</b> = mejor rango, y como un choque puede acabar la partida (a 0 corazones), hay que ir <b>rápido pero limpio</b>. Diez rangos, de <b>Debutante</b> (más de 15:00) a <b style="color:var(--accent)">Maestro/a</b> (por debajo de ~3:15). Hay un <b style="color:var(--accent)">Reto del día</b>: termina por debajo del tiempo objetivo y celebra con un <b style="color:var(--accent)">¡Buen sorbo!</b></p>
     </div>

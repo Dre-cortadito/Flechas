@@ -169,6 +169,11 @@
   .cdist-row.cur .cdn { color:var(--accent); font-weight:700; }
   .cdist-row .cdc { width:22px; text-align:right; color:var(--ink-soft); }
   .modal { position:relative; background:var(--paper); border:1.5px solid var(--ink-line); border-radius:16px; padding:26px 28px; max-width:380px; width:100%; max-height:85vh; overflow:auto; }
+  .legend-row { display:flex; align-items:center; gap:12px; margin:11px 0; }
+  .legend-cell { width:54px; height:40px; flex:none; border-radius:8px; background:var(--board-bg); display:flex; align-items:center; justify-content:center; }
+  .legend-cell svg { width:90%; height:90%; }
+  .legend-cell svg path { fill:none; stroke:var(--arrow); stroke-width:8.5; stroke-linecap:round; stroke-linejoin:round; }
+  .legend-row .txt { font-size:14px; line-height:1.45; color:var(--ink); }
   .modal h2 { font:800 24px var(--font-display); margin:0 0 12px; }
   .modal p { font-size:14px; line-height:1.6; color:var(--ink); margin:0 0 10px; }
   .modal .x { position:absolute; top:12px; right:12px; width:32px; height:32px; border:none; background:transparent; color:var(--ink-soft); font-size:20px; cursor:pointer; }
@@ -298,12 +303,15 @@
   <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
     <h2>Cascada</h2>
     <button class="tut-open-btn" onclick="openTutorial()">▶ Ver tutorial animado</button>
-    <p>El modo arcade. <b>Dos minutos</b> para sumar todos los puntos que puedas.</p>
-    <p>Toca una flecha para <b>lanzarla por su punta</b>: la punta sale primero y el cuerpo la sigue. Solo sale si <b>todo su carril hasta el borde está libre</b> — igual que en Borde.</p>
-    <p>Cada <b>30 s</b> cae un <b>tablero nuevo desde arriba</b> que empuja al anterior hacia abajo. Lo que no despejes, se va — <b>elige bien</b>: ¿las fáciles ya, o abres ese racimo?</p>
-    <p>Despejar rápido y seguido sube tu <b>combo</b> (×2, ×3…) y multiplica los puntos; el <b>borde se enciende</b> mientras va. Tocar una flecha <b>tapada</b> la hace chocar y <b>rebotar</b>, corta el combo y cuesta <b>½ corazón</b>; con <b>3 corazones</b>, a cero se acaba.</p>
-    <p>¿<b>Despejas un tablero entero</b> antes de que caiga el siguiente? <b>+25 puntos</b>, el borde <b>pulsa en rosa</b> y recuperas <b>½ corazón</b> — o, si ya estás a tope de corazones, <b>+5 segundos</b> de reloj. La caja lleva la cuenta en <b>Tableros</b>.</p>
-    <p>La <b>congelación</b> se carga sola: para el reloj <b>y</b> el cambio de tablero 5 s. Tu <b>rango</b> son los <b>puntos</b> que sumas en 2:00 — despejes × combo, más los bonos de tablero.</p>
+    <p>El modo arcade: <b>2 minutos</b> para sumar todos los puntos que puedas.</p>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path style="stroke:var(--arrow)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha para <b>lanzarla por su punta</b>. Solo sale si su <b>carril hasta el borde está libre</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path style="stroke:#157145" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al salir <b style="color:#157145">destella en verde</b> y suma puntos.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> una flecha <b>tapada</b> rebota, <b>corta el combo</b> y cuesta <b style="color:#EA3546">½ corazón</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#ff6b6b" stroke-width="5"/><text x="60" y="28" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="20" fill="#ff6b6b">&times;3</text></svg></div><div class="txt"><b style="color:#ff6b6b">Combo.</b> Despeja <b>rápido y seguido</b> (×2, ×3…) — más combo, más puntos. El borde se enciende.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="34" y="23" width="52" height="13" rx="3" fill="var(--ink-line)"/><rect x="34" y="5" width="52" height="13" rx="3" fill="var(--accent)"/></svg></div><div class="txt">Cada <b>30 s</b> cae un <b>tablero nuevo</b> que empuja al viejo. Lo que no despejes, <b>se va</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#ff6b6b" stroke-width="5"/><text x="60" y="27" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="17" fill="var(--accent)">+25</text></svg></div><div class="txt"><b>Tablero limpio:</b> despeja uno entero → <b style="color:var(--accent)">+25</b>, borde rosa y <b>+½ corazón</b> (o <b>+5 s</b> si vas lleno).</div></div>
+    <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#0062E3">❄ Congelar.</b> Se llena solo; <b>para el reloj y el cambio de tablero 5 s</b>.</div></div>
+    <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Tu <b>rango</b> son los <b>puntos</b> en 2:00 — despejes × combo, más los bonos de tablero.</p>
   </div></div>
 
   <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
