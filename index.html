@@ -44,12 +44,12 @@
     --board-bg:#211B0E; --arrow:#ECE7DC;
   }
   * { box-sizing:border-box; }
-  html { height:100%; overflow:hidden; overscroll-behavior:contain; background:var(--bg); }
+  html { height:100%; overscroll-behavior:none; background:var(--bg); }   /* scrollable, but no rubber-band bounce (feels locked) */
   body { margin:0; min-height:100%; background:var(--bg); color:var(--ink);
     font-family:var(--font-ui); -webkit-text-size-adjust:100%;
     opacity:0; transition:opacity .2s ease; }
   body.ready { opacity:1; }
-  body.game-active { height:100dvh; overflow:hidden; overscroll-behavior:contain; }
+  body.game-active { min-height:100dvh; overscroll-behavior:none; }   /* allow a small scroll so the freeze button clears the URL bar */
 
   /* ===== HEADER (standard: title-block left, home button FIRST in right nav) ===== */
   .page-header { position:fixed; top:0; left:0; right:0; z-index:40; height:var(--header-h);
@@ -89,7 +89,7 @@
   @media (max-width:400px){ .header-nav{ gap:13px; } .header-nav a{ font-size:13px; } }
 
   /* ===== MAIN / game layout ===== */
-  main { padding-top:var(--rank-top); max-width:720px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; }
+  main { padding-top:var(--rank-top); padding-bottom:max(16px, env(safe-area-inset-bottom)); max-width:720px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; box-sizing:border-box; }
   .rank-bar, .board-wrap, .status-line { flex:none; }
   .feedback-zone { position:relative; flex:0 0 auto; height:26px; display:flex; align-items:center; justify-content:center; padding:0 16px; }
   .lower-spacer { flex:1 1 0; min-height:0; display:flex; align-items:center; justify-content:center; }

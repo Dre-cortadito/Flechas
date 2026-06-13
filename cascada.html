@@ -31,7 +31,8 @@
     --accent:#4ECDC4; --accent-deep:#2fa294; --accent-soft:#10302c; --accent-2:#ff6b6b; --board-bg:#142220; --arrow:#ECE7DC; --freeze-bg:#1c4256; --freeze-fill:#2E7CB0;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
-  body { display:flex; flex-direction:column; align-items:center; }
+  html { overscroll-behavior:none; }   /* no rubber-band bounce — feels locked, still scrolls a little */
+  body { display:flex; flex-direction:column; align-items:center; overscroll-behavior:none; }
 
   .page-header { position:fixed; top:0; left:0; right:0; z-index:40; height:var(--header-h); display:flex; align-items:center; justify-content:space-between; gap:24px; padding:0 18px; background:var(--bg); border-bottom:1px solid var(--ink-line); }
   .title-block { display:flex; align-items:center; gap:11px; min-width:0; }
@@ -57,7 +58,7 @@
   @media (max-width:620px){ .wordmark{ display:none; } .header-nav{ gap:18px; } }
   @media (max-width:400px){ .header-nav{ gap:13px; } .header-nav a{ font-size:13px; } }
 
-  .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); }
+  .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
 
   /* ===== Rank bar (standard) — driven by points ===== */
   .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 14px; margin:0 auto 2px; cursor:pointer; user-select:none; }
