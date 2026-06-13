@@ -88,9 +88,7 @@
   .lives-row .heart .hoff { fill:var(--ink-line); }
   .lives-row.spill { animation:pshake .3s ease; }
 
-  /* Size the board by the SMALLER of width and available height, so the full
-     board + the UI below it always fit the screen (no bottom-row clipping). */
-  .board-wrap { width:min(94vw, 400px, calc((100dvh - 300px) * 7 / 9)); margin:0 auto 0; }
+  .board-wrap { width:min(94vw,400px); margin:0 auto 0; }   /* same width as the boxes below */
   /* Board keeps its 7:9 shape (so the gate/empty state has height). The inner fills it via ABSOLUTE
      inset (a definite box) rather than height:100% — that avoids the iOS Safari quirk where a
      percentage-height child of an aspect-ratio box renders too tall and clips the bottom row. */

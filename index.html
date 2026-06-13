@@ -130,8 +130,7 @@
 
   /* ===== ARROW BOARD (shaped pieces, line-art) ===== */
   .board-wrap { display:flex; justify-content:center; padding:0 14px; }
-  /* Size by the SMALLER of width and available height so the whole board + UI fits (no bottom clip). */
-  .board-panel { background:var(--board-bg); border-radius:18px; padding:14px; width:min(94vw, 400px, calc((100dvh - 312px) * 7 / 9)); overflow:hidden; transition:background .15s linear, box-shadow .18s ease, filter .25s ease; }
+  .board-panel { background:var(--board-bg); border-radius:18px; padding:14px; width:min(94vw,400px); overflow:hidden; transition:background .15s linear, box-shadow .18s ease, filter .25s ease; }
   #asvg { display:block; width:100%; height:auto; overflow:visible; }
   .piece { cursor:pointer; }
   .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .15s; pointer-events:none; }
