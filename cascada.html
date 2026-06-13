@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <!--
   Flechas · Cascada — a Cortadito News daily game (ARCADE mode).
-  A STILL, fully-readable board of connected line-art shapes (like Perímetro). You tap an
+  A STILL, fully-readable board of connected line-art shapes (like Borde). You tap an
   arrow to launch it: the HEAD leads and the body trains out behind it along its own path,
-  and it only launches if its whole LANE to the edge is clear (Perímetro's rule). Every ~15s
+  and it only launches if its whole LANE to the edge is clear (Borde's rule). Every ~15s
   the board REFRESHES with a CASCADE: a new board falls in from the top and shoves the old
   one down and off the bottom (un-cleared arrows are lost). 2-minute score attack. Tapping a
   blocked arrow costs ½ a heart (3 hearts → 0 = game over) and breaks your combo. Fast
@@ -86,7 +86,9 @@
   .lives-row .heart .hoff { fill:var(--ink-line); }
   .lives-row.spill { animation:pshake .3s ease; }
 
-  .board-wrap { width:min(94vw,400px); margin:0 auto 0; }
+  /* Size the board by the SMALLER of width and available height, so the full
+     board + the UI below it always fit the screen (no bottom-row clipping). */
+  .board-wrap { width:min(94vw, 400px, calc((100dvh - 300px) * 7 / 9)); margin:0 auto 0; }
   .board { position:relative; width:100%; aspect-ratio:7/9; background:var(--board-bg); border-radius:18px; overflow:hidden; padding:14px; transition:background .15s linear; }
   .timer { transition:color .15s linear; }
   #board-inner { width:100%; height:100%; position:relative; }
@@ -96,7 +98,7 @@
   .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .18s; }
   .piece .phit { fill:none; stroke:transparent; stroke-width:62; stroke-linecap:round; stroke-linejoin:round; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--accent-2); }
-  .piece.firing .pline, .piece.firing .phead { stroke:#157145; }   /* successful launch → green as it leaves (matches Perímetro) */
+  .piece.firing .pline, .piece.firing .phead { stroke:#157145; }   /* successful launch → green as it leaves (matches Borde) */
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
   /* combo live → a SOLID accent-2 ring around the board (no glow); fades in when the combo turns on. */
   .board::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; opacity:0; z-index:16;
@@ -118,7 +120,7 @@
   /* ===== Status box under the board (mirrors the meta row up top) ===== */
   .statusbox { width:min(94vw,400px); margin:8px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
   .stile { position:relative; padding:8px 6px 9px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
-  .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }   /* short divider, inset from the edges (Perímetro-style) */
+  .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }   /* short divider, inset from the edges (Borde-style) */
   .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
   .stile .slbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
   .stile.combo .sval { color:var(--ink); transition:color .15s, transform .12s; }
@@ -294,7 +296,7 @@
     <h2>Cascada</h2>
     <button class="tut-open-btn" onclick="openTutorial()">▶ Ver tutorial animado</button>
     <p>El modo arcade. <b>Dos minutos</b> para sumar todos los puntos que puedas.</p>
-    <p>Toca una flecha para <b>lanzarla por su punta</b>: la punta sale primero y el cuerpo la sigue. Solo sale si <b>todo su carril hasta el borde está libre</b> — igual que en Perímetro.</p>
+    <p>Toca una flecha para <b>lanzarla por su punta</b>: la punta sale primero y el cuerpo la sigue. Solo sale si <b>todo su carril hasta el borde está libre</b> — igual que en Borde.</p>
     <p>Cada <b>30 s</b> cae un <b>tablero nuevo desde arriba</b> que empuja al anterior hacia abajo. Lo que no despejes, se va — <b>elige bien</b>: ¿las fáciles ya, o abres ese racimo?</p>
     <p>Despejar rápido y seguido sube tu <b>combo</b> (×2, ×3…) y multiplica los puntos; el <b>borde se enciende</b> mientras va. Tocar una flecha <b>tapada</b> la hace chocar y <b>rebotar</b>, corta el combo y cuesta <b>½ corazón</b>; con <b>3 corazones</b>, a cero se acaba.</p>
     <p>¿<b>Despejas un tablero entero</b> antes de que caiga el siguiente? <b>+25 puntos</b>, el borde <b>pulsa en rosa</b> y recuperas <b>½ corazón</b> — o, si ya estás a tope de corazones, <b>+5 segundos</b> de reloj. La caja lleva la cuenta en <b>Tableros</b>.</p>
@@ -358,7 +360,7 @@
     const a=p.cells[p.cells.length-1],a2=p.cells[p.cells.length-2], b=p.cells[0],b2=p.cells[1];
     return [{head:{r:a.r,c:a.c},dir:segDir(a2,a)},{head:{r:b.r,c:b.c},dir:segDir(b2,b)}]; }
   const oppd=d=>d^2;   // up<->down, left<->right
-  // full LANE rule — every cell from the head to the edge must be clear of OTHER arrows (Perímetro's
+  // full LANE rule — every cell from the head to the edge must be clear of OTHER arrows (Borde's
   // train rule: an arrow never blocks itself, so its own body cells don't count).
   function laneClear(p){ let r=p.head.r+DYn[p.dir], c=p.head.c+DXn[p.dir]; while(r>=0&&r<ROWS&&c>=0&&c<COLS){ const o=ownerMap.get(key(r,c)); if(o!==undefined && o!==p.id) return false; r+=DYn[p.dir]; c+=DXn[p.dir]; } return true; }
   // the first piece a head's lane runs into (and the exact cell) — null if the lane is clear to the edge
@@ -445,7 +447,7 @@
       g.classList.add('blocked'); bounceBlocked(g,v,dist);
       const T=Math.max(130, Math.round(110+dist*0.2)); setTimeout(()=>{ try{g.classList.remove('blocked');}catch(e){} }, 2*T+120);
       combo=0; renderCombo(false); loseHeart(); } }
-  // Perímetro's exact bounce: head + body move at the SAME rate (linear), out then back, at Perímetro's
+  // Borde's exact bounce: head + body move at the SAME rate (linear), out then back, at Borde's
   // arrow speed (T = 110 + 0.2·distance). Body dash and head both travel `dist`, so they stay locked.
   function bounceBlocked(g,v,dist){ const line=g.querySelector('.pline'), hd=g.querySelector('.phead'); const T=Math.max(130, Math.round(110+dist*0.2));
     const off='translate('+(v[0]*dist)+'px,'+(v[1]*dist)+'px)';

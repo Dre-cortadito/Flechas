@@ -27,7 +27,7 @@
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --freeze-fill:#9CCCEC;
     --ink-line:#ece7df; --ink-line-strong:#c9c2b3;
     --success:#6b8e3d; --error:#EA3546;
-    /* Flechas / Perímetro brand: morado (#662E9B) + dorado (#F9C80E). Board = soft yellow. Page stays white per standard. */
+    /* Flechas / Borde brand: morado (#662E9B) + dorado (#F9C80E). Board = soft yellow. Page stays white per standard. */
     --accent:#662E9B; --accent-deep:#4E1660; --accent-soft:#ECD9F0;
     --accent-2:#F9C80E; --accent-2-deep:#C28F00; --accent-2-soft:#FCEFC2;
     /* board look: espresso line-art on a soft-rose panel (page stays white) */
@@ -129,7 +129,8 @@
 
   /* ===== ARROW BOARD (shaped pieces, line-art) ===== */
   .board-wrap { display:flex; justify-content:center; padding:0 14px; }
-  .board-panel { background:var(--board-bg); border-radius:18px; padding:14px; width:min(94vw,400px); overflow:hidden; transition:background .15s linear, box-shadow .18s ease, filter .25s ease; }
+  /* Size by the SMALLER of width and available height so the whole board + UI fits (no bottom clip). */
+  .board-panel { background:var(--board-bg); border-radius:18px; padding:14px; width:min(94vw, 400px, calc((100dvh - 312px) * 7 / 9)); overflow:hidden; transition:background .15s linear, box-shadow .18s ease, filter .25s ease; }
   #asvg { display:block; width:100%; height:auto; overflow:visible; }
   .piece { cursor:pointer; }
   .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .15s; pointer-events:none; }
@@ -525,7 +526,7 @@
       <button class="modal-close" data-close>✕</button>
       <h2>Cómo jugar</h2>
       <button class="tut-open-btn" onclick="openTutorial()">▶ Ver tutorial animado</button>
-      <p><b>Perímetro</b> es una <b>carrera diaria de 5 tableros</b>, igual para todo el mundo. Despeja un tablero y <b>cae el siguiente</b> — el <b>reloj, los corazones, el haz y el congelador no se reinician</b>: siguen de un tablero al otro. El contador a la derecha del reloj marca <b>Tablero N/5</b>.</p>
+      <p><b>Borde</b> es una <b>carrera diaria de 5 tableros</b>, igual para todo el mundo. Despeja un tablero y <b>cae el siguiente</b> — el <b>reloj, los corazones, el haz y el congelador no se reinician</b>: siguen de un tablero al otro. El contador a la derecha del reloj marca <b>Tablero N/5</b>.</p>
       <p>Cada <b>flecha</b> es una forma de varias casillas (recta, en L, en zigzag) que termina en una <b>punta</b>. Tócala para <b>lanzarla</b>: la forma entera sale volando hacia donde apunta la punta y desaparece. Despeja <b>todas</b> las flechas de cada tablero para avanzar.</p>
       <p class="muted">La flecha sale <b>como un tren</b>: la punta primero, y el cuerpo la sigue por su propio camino. Solo importa lo que esté <b>delante de la punta</b> — si otra flecha está en ese carril, <b>choca</b> y rebota, y la flecha que estorba <b>parpadea en rojo</b>. Despeja el tablero lanzándolas en el orden correcto.</p>
       <h3>Las flechas</h3>
@@ -624,15 +625,15 @@
     <button class="theme-toggle" id="land-theme" type="button" aria-label="Tema"></button>
     <div class="landing-inner">
       <div class="land-tabs" id="land-tabs" role="tablist">
-        <button class="land-tab active" data-mode="perimetro" type="button" role="tab">Perímetro</button>
-        <button class="land-tab" data-mode="cascada" type="button" role="tab">Cascada</button>
+        <button class="land-tab" data-mode="perimetro" type="button" role="tab">Borde</button>
+        <button class="land-tab active" data-mode="cascada" type="button" role="tab">Cascada</button>
         <button class="land-tab" data-mode="desvio" type="button" role="tab">Desvío</button>
       </div>
       <div class="land-head">
         <div class="land-logo" id="land-logo" aria-hidden="true"></div>
         <div class="name-block">
           <span class="land-eyebrow" id="land-eyebrow">Flechas</span>
-          <h1 id="land-name">Perímetro</h1>
+          <h1 id="land-name">Borde</h1>
         </div>
         <div class="tagline" id="land-tagline">—</div>
         <div class="date" id="land-date">—</div>
@@ -1294,7 +1295,7 @@ const _COVER=new Set(); SWEEP.forEach(s=>s.forEach(c=>{ if(!_OCC.has(c)) _COVER.
 // DISTRICTS: beans cluster into a few POCKETS (not an even scatter), so the board has
 // regions of different value and "which area do I work first?" becomes a real question.
 let BEAN_CENTERS=[];
-const BEAN_CELLS=[];   // beans removed — Perímetro streamlined (all bean fns below become no-ops)
+const BEAN_CELLS=[];   // beans removed — Borde streamlined (all bean fns below become no-ops)
 const _edist=bc=>{ const r=(bc/GRID_C)|0, c=bc%GRID_C; return Math.min(r,c,GRID_R-1-r,GRID_C-1-c); };
 // BIG beans = the deepest picked cells (slow, worth more, you must dig for them);
 // the rest are SMALL edge beans (fast, cheap, grabbed on your way out).
@@ -1395,7 +1396,7 @@ function renderLives(){ const el=document.getElementById('lives-row'); if(!el) r
     const svg = (i<full) ? heartSVG(true,true) : (i===full && half) ? heartSVG(true,false) : heartSVG(false,false);
     h+='<span class="heart">'+svg+'</span>'; }
   el.innerHTML=h; el.classList.toggle('spilled', lives<=0); }
-// No more +½ / −1 pops or text prompts on Perímetro — the HEARTS THEMSELVES react (Cascada-style):
+// No more +½ / −1 pops or text prompts on Borde — the HEARTS THEMSELVES react (Cascada-style):
 // they shake when you lose one and pop up when you earn one.
 function _fmtHalf(a){ const w=Math.floor(a), h=(a-w)>=0.5; return ((w?w:'')+(h?'½':''))||'0'; }
 function pulseShield(){ const bp=document.getElementById('board-panel'); if(!bp) return; bp.classList.remove('shield-hit'); void bp.offsetWidth; bp.classList.add('shield-hit'); clearTimeout(bp._sht); bp._sht=setTimeout(()=>{ try{bp.classList.remove('shield-hit');}catch(e){} },320); }
@@ -1908,7 +1909,7 @@ function maybeCelebrate(){
 }
 
 /* ============================ FEEDBACK / MODALS / THEME ============================ */
-function flash(text,kind){ /* text prompts removed on Perímetro — feedback is the hearts + the arrows-left counter */ }
+function flash(text,kind){ /* text prompts removed on Borde — feedback is the hearts + the arrows-left counter */ }
 function openModal(id){ const ov=document.getElementById(id); if(!ov)return; ov.classList.add('open'); ov.scrollTop=0; document.body.style.overflow='hidden'; }
 function closeModals(){ document.querySelectorAll('.modal-overlay.open').forEach(o=>o.classList.remove('open')); document.body.style.overflow=''; }
 function openGoal(id){ const p=document.getElementById(id); if(p)p.classList.add('open'); }
@@ -1922,17 +1923,17 @@ function applyTheme(t){ document.body.setAttribute('data-theme',t); { const _lt=
 function toggleTheme(){ applyTheme(document.body.getAttribute('data-theme')==='black'?'light':'black'); }
 
 /* ============================ LANDING — THREE MODES ============================ */
-// Each mode has its own two colours + a logo that reflects its skill. Perímetro is the live
+// Each mode has its own two colours + a logo that reflects its skill. Borde is the live
 // game; Cascada (arcade flow) and Desvío (sliding puzzle) are coming.
 const LAND_LOGO_PERIMETRO='<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="7" width="106" height="106" rx="26" fill="#F0E7CE" stroke="#E0D5B6" stroke-width="2"/><rect x="17" y="15" width="86" height="8" rx="4" fill="#662E9B"/><path d="M28 40 H54 Q61 40 61 47 V58 M53 50 L61 60 L69 50" fill="none" stroke="#141210" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 96 V56 M28 66 L36 56 L44 66" fill="none" stroke="#EA3546" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M52 96 V74 Q52 68 58 68 H74 M66 60 L75 68 L66 76" fill="none" stroke="#4ECDC4" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M88 36 V92 M80 82 L88 92 L96 82" fill="none" stroke="#F9C80E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const LAND_LOGO_CASCADA='<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M40 40 L60 56 L80 40" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/><path d="M40 58 L60 74 L80 58" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/><path d="M46 78 L60 92 L74 78" fill="none" stroke="var(--accent-2)" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const LAND_LOGO_DESVIO='<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M76 34 V64" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".45"/><path d="M69 42 L76 35 L83 42" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><path d="M34 50 H56" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".45"/><path d="M34 80 H84" fill="none" stroke="var(--accent-2)" stroke-width="8.5" stroke-linecap="round"/><path d="M76 71 L88 80 L76 89" fill="none" stroke="var(--accent-2)" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const LAND_MODES={
-  perimetro:{ title:'Perímetro', tag:'Rápido, limpio, rodea el borde.', a:'#662E9B', a2:'#F9C80E', logo:LAND_LOGO_PERIMETRO, ready:true },
-  cascada:{   title:'Cascada',   tag:'Despeja la lluvia de flechas.', a:'#4ECDC4', a2:'#ff6b6b', logo:LAND_LOGO_CASCADA, ready:true, href:'./cascada.html' },
+  perimetro:{ title:'Borde', tag:'Evita el borde, despeja el tablero.', a:'#662E9B', a2:'#F9C80E', logo:LAND_LOGO_PERIMETRO, ready:true },
+  cascada:{   title:'Cascada',   tag:'Despeja antes de que caiga.', a:'#4ECDC4', a2:'#ff6b6b', logo:LAND_LOGO_CASCADA, ready:true, href:'./cascada.html' },
   desvio:{    title:'Desvío',    tag:'Desatasca y libera la taza.', a:'#023047', a2:'#FFB703', logo:LAND_LOGO_DESVIO, ready:false },
 };
-let landMode='perimetro';
+let landMode='cascada';
 function setLandMode(m){ const d=LAND_MODES[m]; if(!d) return; landMode=m;
   const land=document.getElementById('landing');
   land.style.setProperty('--accent', d.a); land.style.setProperty('--accent-2', d.a2);
@@ -1967,7 +1968,7 @@ function boot(){
     document.getElementById('land-theme').innerHTML=(theme==='black')?ICON_SUN:ICON_MOON;
     document.getElementById('land-eyebrow').textContent=GAME_NAME;
     document.getElementById('land-date').textContent=longDate(ISO);
-    setLandMode('perimetro');
+    setLandMode('cascada');
     document.querySelectorAll('.land-tab').forEach(t=>t.addEventListener('click',()=>setLandMode(t.getAttribute('data-mode'))));
     { const _o=document.getElementById('flx-objetivo'); if(_o) _o.textContent='Objetivo de hoy · ≤ '+fmtTime(META); }
 
@@ -1976,10 +1977,11 @@ function boot(){
 
     // single daily — hide difficulty / experimental toggles
     ['diff-pills','land-mode','land-arch','m-arch'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
-    const rd=document.getElementById('rules-diff'); if(rd) rd.innerHTML='Perímetro es una carrera de <b>5 tableros</b> diarios, iguales para todo el mundo. Despeja un tablero y cae el siguiente — <b>los corazones, el reloj, el haz y el congelador siguen</b> de uno a otro. Lanza las flechas por su punta, <b>rápido y sin chocar</b>: tu rango es el <b>tiempo total</b> de los cinco, y si te quedas sin corazones se acaba la partida.';
+    const rd=document.getElementById('rules-diff'); if(rd) rd.innerHTML='Borde es una carrera de <b>5 tableros</b> diarios, iguales para todo el mundo. Despeja un tablero y cae el siguiente — <b>los corazones, el reloj, el haz y el congelador siguen</b> de uno a otro. Lanza las flechas por su punta, <b>rápido y sin chocar</b>: tu rango es el <b>tiempo total</b> de los cinco, y si te quedas sin corazones se acaba la partida.';
     document.getElementById('play-btn').addEventListener('click',()=>{ const d=LAND_MODES[landMode]; if(!d||!d.ready) return;
       if(d.href){ window.location.href=d.href; return; }
-      document.body.classList.add('game-active'); applyGateState(); });
+      document.body.classList.add('game-active'); applyGateState();
+      if(window.maybeOpenTutorial) setTimeout(window.maybeOpenTutorial,260); });   // first visit: tutorial opens inside the game, not on the landing
     document.getElementById('start-btn').addEventListener('click',beginPuzzle);
     document.getElementById('flx-freeze').addEventListener('click',useFreeze);
     document.getElementById('home-btn').addEventListener('click',()=>{ closeModals(); toggleMenu(false); document.body.classList.remove('game-active'); });
@@ -2065,7 +2067,8 @@ boot();
   function open(){ ov.classList.add('open'); cur=0; track.scrollLeft=0; upd(); }
   function close(){ ov.classList.remove('open'); try{ localStorage.setItem('flx-tut-v1','1'); }catch(e){} }
   window.openTutorial=open;
-  try{ if(!localStorage.getItem('flx-tut-v1')) setTimeout(open,800); }catch(e){}
+  // First-visit auto-open is triggered when the player ENTERS the game (not on the landing) — see play-btn.
+  window.maybeOpenTutorial=function(){ try{ if(!localStorage.getItem('flx-tut-v1')) open(); }catch(e){ open(); } };
 })();
 </script>
 </body>

@@ -9,7 +9,7 @@ Maestro/a). All stats are stored locally in the browser only.
 
 ---
 
-## PERÍMETRO — the daily run
+## BORDE — the daily run
 
 A daily **run of 5 boards** (14×18 grids of Cascada-sized arrows), the same for
 everyone. **Clear a board and the next one falls in** — the **timer, hearts, beam
@@ -67,7 +67,7 @@ Your score is your **finishing time**, plain — faster is better, and since a c
 
 ## CASCADA — the arcade mode
 
-**2 minutes to score as many points as you can.** Same launch rule as Perímetro.
+**2 minutes to score as many points as you can.** Same launch rule as Borde.
 
 ### Board & refresh
 - A 14×18 grid of arrow "snakes", always generated **fully solvable** with enough opening moves.
@@ -84,7 +84,7 @@ Your score is your **finishing time**, plain — faster is better, and since a c
 **3 hearts**, each bad bump costs **½**. At 0 the game ends. The row dips on a loss (Cascada's spill).
 
 ### Freeze
-Auto-charges (~20 s). When ready, the freeze button **stops the clock and the board refresh for 5 s**. Same freeze visual and button countdown as Perímetro.
+Auto-charges (~20 s). When ready, the freeze button **stops the clock and the board refresh for 5 s**. Same freeze visual and button countdown as Borde.
 
 ### Rank & end
 Rank is decided by **total points in 2:00** (clears × combo). Ends on **¡Sin corazones!** (0 hearts) or **¡Se acabó el tiempo!**, showing points, rank, arrows cleared, and today's record.
@@ -93,6 +93,6 @@ Rank is decided by **total points in 2:00** (clears × combo). Ends on **¡Sin c
 
 ## Shared conventions
 - One self-contained `index.html` per game (inline CSS+JS, no build step), deployed to Cloudflare.
-- Arrow colours: **black** by default, **green** on a successful launch, **yellow / red** for special roles, **purple** on a beam bounce (Perímetro).
+- Arrow colours: **black** by default, **green** on a successful launch, **yellow / red** for special roles, **purple** on a beam bounce (Borde).
 - 3 hearts; 10 ranks (Debutante → Maestro/a); freeze is 5 s with the dark↔light blue pulse.
 - All progress and stats live only in the player's browser — nothing is sent to a server.
