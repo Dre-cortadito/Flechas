@@ -75,7 +75,7 @@ Your score is your **finishing time**, plain — faster is better, and since a c
 - The board warns by **pulsing 3 times** (last ~2.4 s) before it falls.
 
 ### Scoring, combo & multiplier
-- Clearing quickly in succession builds a **combo** (×2, ×3…). Within a ~1.8 s window each clear bumps it; every 4 clears raises the **multiplier up to ×5**. Points per clear = current multiplier.
+- Clearing quickly in succession builds a **combo**. Within a ~1.8 s window each clear bumps it; every 4 clears raises the **multiplier up to ×3** (capped, so scoring stays predictable). Points per clear = current multiplier.
 - A blocked tap **charges up, bounces back, breaks the combo, and costs ½ heart**.
 - **Clear a whole board** before it refreshes → **+25 points**, the pink combo ring **pulses once**, and a fresh board cascades in. The reward is **+½ heart**, or — if you're already at full hearts — **+5 seconds** on the clock instead. The status box tracks how many boards you've cleaned (**Tableros**).
 - Successful launches flash **green**.

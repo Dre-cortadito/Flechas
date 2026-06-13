@@ -572,7 +572,7 @@
         <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> y salta de lado cada <b>5 s</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera a que pase o <b>congela</b> para cruzar.</div>
       </div>
       <h3>Rango y puntuación</h3>
-      <p class="muted">Tu puntuación es <b>el tiempo total</b> de despejar los <b>5 tableros</b>, sin trucos: el <b>⏱ reloj</b> con el que terminas el quinto. <b>No hay puntos</b> — solo el reloj. Más <b>rápido</b> = mejor rango, y como un choque puede acabar la partida (a 0 corazones), hay que ir <b>rápido pero limpio</b>. Diez rangos, de <b>Debutante</b> (más de 15:00) a <b style="color:var(--accent)">Maestro/a</b> (por debajo de ~3:15). Hay un <b style="color:var(--accent)">Reto del día</b>: termina por debajo del tiempo objetivo y celebra con un <b style="color:var(--accent)">¡Buen sorbo!</b></p>
+      <p class="muted">Tu puntuación es <b>el tiempo total</b> de despejar los <b>5 tableros</b>, sin trucos: el <b>⏱ reloj</b> con el que terminas el quinto. <b>No hay puntos</b> — solo el reloj. Más <b>rápido</b> = mejor rango, y como un choque puede acabar la partida (a 0 corazones), hay que ir <b>rápido pero limpio</b>. Diez rangos, de <b>Debutante</b> (más de 8:40) a <b style="color:var(--accent)">Maestro/a</b> (por debajo de ~1:52). Hay un <b style="color:var(--accent)">Reto del día</b>: termina por debajo del tiempo objetivo y celebra con un <b style="color:var(--accent)">¡Buen sorbo!</b></p>
     </div>
   </div>
 
@@ -693,14 +693,16 @@ const RETO_MIN=0, RETO_MAX=0;
 // for a full run (≈3× a single board). Tune after playtesting a real run.
 // Total time across the 5-board run. Tightened to realistic run lengths (a full run is
 // roughly 4–12 min); the bottom rank is now "slower than 13:00", not the old 20-min nonsense.
-const TIME_CUTOFFS=[{i:9,max:195},{i:8,max:255},{i:7,max:315},{i:6,max:390},{i:5,max:480},{i:4,max:570},{i:3,max:660},{i:2,max:780},{i:1,max:900},{i:0,max:Infinity}];
+// Total time across the 5-board run. Recalibrated: a ~2:00 casual run lands at Eminente,
+// Maestro now demands a near-optimal sub-1:52. (Tune with real run times.)
+const TIME_CUTOFFS=[{i:9,max:112},{i:8,max:130},{i:7,max:155},{i:6,max:185},{i:5,max:225},{i:4,max:275},{i:3,max:340},{i:2,max:420},{i:1,max:520},{i:0,max:Infinity}];
 function rankForTime(t){ for(const c of TIME_CUTOFFS) if(t<=c.max) return c.i; return 0; }
 function timeMaxFor(idx){ for(const c of TIME_CUTOFFS) if(c.i===idx) return c.max; return Infinity; }
 // "Flechas #N" — daily number from a fixed epoch
 const FLECHAS_EPOCH='2026-01-01';
 function dayNumber(iso){ const a=new Date(iso+'T00:00:00'), b=new Date(FLECHAS_EPOCH+'T00:00:00'); return Math.floor((a-b)/86400000)+1; }
 // Meta del día — a date-hashed target TIME; beating it earns ¡Buen sorbo! + a streak.
-const META_MIN=300, META_MAX=420;   // full 5-board run target: 5:00–7:00 window (30s steps) — adjustable
+const META_MIN=150, META_MAX=210;   // daily target for the full 5-board run: 2:30–3:30 window (30s steps) — a real goal, not trivial
 function metaForDate(iso){ let x=2166136261>>>0; for(let i=0;i<iso.length;i++){ x^=iso.charCodeAt(i); x=Math.imul(x,16777619)>>>0; } const b=(META_MAX-META_MIN)/30+1; return META_MIN+(x%b)*30; }
 const U=100;   // svg units per cell
 
@@ -1519,14 +1521,9 @@ function pulseLoop(){ try{ const bp=document.getElementById('board-panel'); cons
   const dt = lastPulseT ? Math.min(120, now-lastPulseT) : 16;
   // FREEZE: board + timer hold DARK blue, then pulse SMOOTHLY to LIGHT blue once per second the last 2s.
   const fzRem=freezeEnd-now; const bpEl=document.getElementById('board-panel'), tmEl=document.getElementById('flx-timer');
-  if(fzRem>0){ const cs=getComputedStyle(document.documentElement), ob=cs.getPropertyValue('--board-bg').trim()||'#FCF8E8', oi=cs.getPropertyValue('--ink').trim()||'#1a1614';
-    const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC';   // frozen board = EXACTLY the freeze button's fill blue (theme-aware via --freeze-fill)
-    const _fp=parseInt(DK.slice(1),16), _lite=c=>Math.round(c+(255-c)*0.28).toString(16).padStart(2,'0'); const LT='#'+_lite(_fp>>16)+_lite((_fp>>8)&255)+_lite(_fp&255);   // breathe peak = a touch lighter
-    if(fzRem>4750){ const tin=(5000-fzRem)/250; if(bpEl) bpEl.style.background=lerpHex(ob,DK,tin); if(tmEl) tmEl.style.color=lerpHex(oi,'#0062E3',tin); }   // pulse IN: original→dark (fast, 0.25s)
-    else if(fzRem>2000){ if(bpEl) bpEl.style.background=DK; if(tmEl) tmEl.style.color='#0062E3'; }   // STATIC dark
-    else if(fzRem>1000){ const osc=0.5-0.5*Math.cos(2*Math.PI*((2000-fzRem)/1000)); if(bpEl) bpEl.style.background=lerpHex(DK,LT,osc); if(tmEl) tmEl.style.color='#0062E3'; }   // pulse: dark→light→dark
-    else if(fzRem>450){ if(bpEl) bpEl.style.background=DK; if(tmEl) tmEl.style.color='#0062E3'; }   // brief dark hold before exit
-    else { const t=1-fzRem/450; if(bpEl) bpEl.style.background=lerpHex(DK,ob,t); if(tmEl) tmEl.style.color=lerpHex('#0062E3',oi,t); } }   // fade OUT: dark→original (fast, 0.45s)
+  if(fzRem>0){ const cs=getComputedStyle(document.documentElement); const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC';
+    if(bpEl) bpEl.style.background=DK;          // STATIC frozen colour the whole time — no pulse (the draining bar is the countdown)
+    if(tmEl) tmEl.style.color='#0062E3'; }
   else { if(bpEl) bpEl.style.background=''; if(tmEl) tmEl.style.color=''; }
   // Smooth auto-charge, per frame (like Cascada) — so the buttons fill continuously, not in 1s steps.
   if(started && !finished && !frozen && freezeCharges<FREEZE_MAX){ freezeFill=Math.min(1, freezeFill+(dt/1000)/FREEZE_FILL); if(freezeFill>=1){ freezeCharges++; freezeFill=0; } }
@@ -1580,7 +1577,7 @@ function renderFreeze(){ const fz=document.getElementById('flx-freeze');
   const playing=started && !finished, frozen=Date.now()<freezeEnd, has=freezeCharges>0 && playing && !frozen;
   if(fz){ fz.disabled=!playing; fz.classList.toggle('ready', has); fz.classList.toggle('frozen', frozen);
     const num=document.getElementById('flx-fz-num'); if(num && frozen) num.textContent=Math.ceil((freezeEnd-Date.now())/1000);
-    const fillTo=(freezeCharges>=FREEZE_MAX?1:freezeFill);   // full when the single charge is ready, else the loading fill
+    const fillTo = frozen ? Math.max(0,(freezeEnd-Date.now())/5000) : (freezeCharges>=FREEZE_MAX?1:freezeFill);   // frozen: the bar DRAINS over the 5 s; otherwise it's the charge fill
     const f=fz.querySelector('.act-fill'); if(f) f.style.transform='scaleX('+fillTo.toFixed(3)+')'; } }
 function useFreeze(){ if(freezeCharges<=0 || finished || !started) return;
   if(Date.now()<freezeEnd) return;                         // already frozen — don't waste a charge stacking

@@ -109,8 +109,8 @@
     box-shadow:inset 0 0 0 4px var(--accent-2); transition:opacity .3s ease; }
   .board.hot::after { opacity:1; }
   /* whole board cleared → the same pink (accent-2) ring PULSES once as a celebration */
-  .board.clearflash::after { animation:boardclear .9s ease; }
-  @keyframes boardclear { 0%{ opacity:0;} 15%{ opacity:1;} 45%{ opacity:.2;} 72%{ opacity:1;} 100%{ opacity:0;} }
+  .board.clearflash { animation:boardclear .9s ease; }
+  @keyframes boardclear { 0%{ background:var(--board-bg);} 18%{ background:#ffc9c9;} 45%{ background:var(--board-bg);} 70%{ background:#ffc9c9;} 100%{ background:var(--board-bg);} }   /* whole board pulses pink on a full clear */
   /* last seconds before a refresh: surviving arrows pulse to warn they're about to fall away */
   .board.expiring .piece { animation:expire .8s ease-in-out infinite; }
   @keyframes expire { 0%,100%{ opacity:.92;} 50%{ opacity:.34;} }
@@ -344,12 +344,12 @@
   const REFRESH_MS=30000, WARN_MS=2400, FALL_MS=480;   // 2400 = exactly 3 expire pulses (0.8s each) before the board falls
   const COVER=0.8, MIN_LAUNCH=7;
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
-  const COMBO_WINDOW=1800, COMBO_PER_TIER=4, MULT_MAX=5;
+  const COMBO_WINDOW=1800, COMBO_PER_TIER=4, MULT_MAX=3;   // capped at ×3 — keeps the combo rewarding but the score predictable enough to rank
   const FREEZE_FILL=20, FREEZE_DUR=5000;     // seconds to charge a freeze (faster = more freezes per run)
   const BOARD_BONUS=25;                       // points for clearing a whole board before it refreshes
   const BOARD_TIME_BONUS=5;                    // if you're already at full hearts, a clean board buys +5s instead
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
-  const RANK_CUT  =[0,         20,         45,         80,         130,        190,        260,        350,        460,       600];   // min POINTS — TUNABLE
+  const RANK_CUT  =[0,         40,         90,         160,        250,        360,        490,        630,        770,       900];   // min POINTS for the ×3 cap — rough; send me one strong full-run score and I'll set Maestro just above it
   const TOP=RANK_NAMES.length-1;
   const DXn=[0,1,0,-1], DYn=[-1,0,1,0];   // up,right,down,left
   const key=(r,c)=>r+','+c, center=(r,c)=>[(c+0.5)*U, (r+0.5)*U], occ=(r,c)=>ownerMap.has(key(r,c));
@@ -516,17 +516,12 @@
   function useFreeze(){ if(!freezeReady||!running||over) return; frozenUntil=Date.now()+FREEZE_DUR; freezeCharge=0; freezeReady=false; updateFreeze(); }
   function lerpHex(a,b,t){ a=a.trim();b=b.trim(); const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16); const r=Math.round((pa>>16)+(( pb>>16)-(pa>>16))*t),g=Math.round(((pa>>8)&255)+((( pb>>8)&255)-((pa>>8)&255))*t),bl=Math.round((pa&255)+((pb&255)-(pa&255))*t); return 'rgb('+r+','+g+','+bl+')'; }
   function updateFreeze(){ const btn=$('freeze-btn'), num=$('freeze-num'), fill=$('freeze-fill'), tm=$('timer'); const fz=Date.now()<frozenUntil;
-    if(fz){ const rem=frozenUntil-Date.now(); num.textContent=Math.ceil(rem/1000); fill.style.transform='scaleX(1)'; btn.classList.add('frozen'); btn.classList.remove('ready');
-      // While frozen the board BREATHES between the darker (#0062E3) and lighter (#aec9de) freeze blue;
-      // in the FINAL second it resolves from the darker blue back to the ORIGINAL colour — a smooth exit.
-      const cs=getComputedStyle(board), ob=cs.getPropertyValue('--board-bg').trim()||'#E9F6F3', oi=cs.getPropertyValue('--ink').trim()||'#1a1614';
-      const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC';   // frozen board = EXACTLY the freeze button's fill blue (theme-aware via --freeze-fill)
-      const _fp=parseInt(DK.slice(1),16), _lite=c=>Math.round(c+(255-c)*0.28).toString(16).padStart(2,'0'); const LT='#'+_lite(_fp>>16)+_lite((_fp>>8)&255)+_lite(_fp&255);   // breathe peak = a touch lighter
-      if(rem>FREEZE_DUR-250){ const tin=(FREEZE_DUR-rem)/250; board.style.background=lerpHex(ob,DK,tin); if(tm) tm.style.color=lerpHex(oi,'#0062E3',tin); }   // pulse IN: original→dark (fast, 0.25s)
-      else if(rem>2000){ board.style.background=DK; if(tm) tm.style.color='#0062E3'; }   // STATIC dark
-      else if(rem>1000){ const osc=0.5-0.5*Math.cos(2*Math.PI*((2000-rem)/1000)); board.style.background=lerpHex(DK,LT,osc); if(tm) tm.style.color='#0062E3'; }   // pulse: dark→light→dark
-      else if(rem>450){ board.style.background=DK; if(tm) tm.style.color='#0062E3'; }   // brief dark hold before exit
-      else { const t=1-rem/450; board.style.background=lerpHex(DK,ob,t); if(tm) tm.style.color=lerpHex('#0062E3',oi,t); } }   // fade OUT: dark→original (fast, 0.45s)
+    if(fz){ const rem=frozenUntil-Date.now(); num.textContent=Math.ceil(rem/1000);
+      fill.style.transform='scaleX('+Math.max(0,rem/FREEZE_DUR).toFixed(3)+')';   // the bar DRAINS over the 5 s — that's the countdown
+      btn.classList.add('frozen'); btn.classList.remove('ready');
+      const cs=getComputedStyle(board); const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC';
+      board.style.background=DK;            // STATIC frozen colour — no pulse
+      if(tm) tm.style.color='#0062E3'; }
     else { btn.classList.remove('frozen'); board.style.background=''; if(tm) tm.style.color='';
       if(freezeReady){ fill.style.transform='scaleX(1)'; btn.classList.add('ready'); }
       else { fill.style.transform='scaleX('+freezeCharge.toFixed(3)+')'; btn.classList.remove('ready'); } } }
