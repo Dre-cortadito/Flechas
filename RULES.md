@@ -37,7 +37,7 @@ fast and as clean as you can.** Your rank is the **total time** across the run, 
 - Your **first attempt is your official daily result** — whether you finish (a time + rank) or spill (a fail). It's recorded once and **locked**; you can't improve it by replaying.
 - After that first attempt concludes, the board drops into **Entrenamiento (training)**: replay the same puzzle freely to practice and get better for future days. Training runs **don't count** and don't change your recorded result. A gold "Entrenamiento" badge shows above the board.
 
-### The beam (haz)
+### El borde (the beam)
 - One edge is **always lit purple** and rotates edge to edge, **jumping to the next every 5 s**.
 - The lit edge holds and **breathes once** in its final stretch to warn it's about to jump (the glow is the countdown): fades in (1 s), holds, one dim-to-50%-and-back breath, then fades out (1 s) as the next edge takes over — no dark gap.
 - An arrow that would launch **through the lit edge doesn't launch**: it flies to the edge, turns **purple**, and bounces back — **no penalty, doesn't break your racha**. Wait for the beam to pass, launch another side, or freeze to cross it.

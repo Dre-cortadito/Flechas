@@ -290,7 +290,7 @@
   .modal { position:relative; width:100%; max-width:540px; max-height:85vh; overflow:auto; overscroll-behavior:contain;
     background:var(--paper); border:1.5px solid var(--ink-line); border-radius:16px; padding:28px 30px; box-shadow:0 16px 50px rgba(0,0,0,.18); }
   .modal h2 { font-family:var(--font-display); font-size:28px; margin:0 0 10px; }
-  .modal h3 { font-family:var(--font-ui); font-size:13px; text-transform:uppercase; letter-spacing:1.2px; color:var(--ink-soft); margin:22px 0 8px; }
+  .modal h3 { font-family:var(--font-ui); font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:1.2px; color:var(--ink); margin:22px 0 8px; }
   .modal p { color:var(--ink); line-height:1.55; font-size:15px; }
   .modal .muted { color:var(--ink-soft); font-size:14px; }
   .modal-close { position:absolute; top:12px; right:12px; width:34px; height:34px; border:none; background:transparent;
@@ -526,7 +526,7 @@
       <button class="modal-close" data-close>✕</button>
       <h2>Cómo jugar</h2>
       <button class="tut-open-btn" onclick="openTutorial()">▶ Ver tutorial animado</button>
-      <p><b>Borde</b> es una <b>carrera diaria de 5 tableros</b>, igual para todo el mundo. Despeja un tablero y <b>cae el siguiente</b> — el <b>reloj, los corazones, el haz y el congelador no se reinician</b>: siguen de un tablero al otro. El contador a la derecha del reloj marca <b>Tablero N/5</b>.</p>
+      <p><b>Borde</b> es una <b>carrera diaria de 5 tableros</b>, igual para todo el mundo. Despeja un tablero y <b>cae el siguiente</b> — el <b>reloj, los corazones, el borde y el congelador no se reinician</b>: siguen de un tablero al otro. El contador a la derecha del reloj marca <b>Tablero N/5</b>.</p>
       <p>Cada <b>flecha</b> es una forma de varias casillas (recta, en L, en zigzag) que termina en una <b>punta</b>. Tócala para <b>lanzarla</b>: la forma entera sale volando hacia donde apunta la punta y desaparece. Despeja <b>todas</b> las flechas de cada tablero para avanzar.</p>
       <p class="muted">La flecha sale <b>como un tren</b>: la punta primero, y el cuerpo la sigue por su propio camino. Solo importa lo que esté <b>delante de la punta</b> — si otra flecha está en ese carril, <b>choca</b> y rebota, y la flecha que estorba <b>parpadea en rojo</b>. Despeja el tablero lanzándolas en el orden correcto.</p>
       <h3>Las flechas</h3>
@@ -564,12 +564,12 @@
       </div>
       <div class="legend-row">
         <div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div>
-        <div class="txt"><b style="color:#0062E3">❄ Congelar.</b> El botón bajo el tablero se <b>llena solo</b> (~20 s); úsalo para <b>congelar 5 s</b> (pausa el reloj y el haz). Una carga.</div>
+        <div class="txt"><b style="color:#0062E3">❄ Congelar.</b> El botón bajo el tablero se <b>llena solo</b> (~20 s); úsalo para <b>congelar 5 s</b> (pausa el reloj y el borde). Una carga.</div>
       </div>
-      <h3>El haz</h3>
+      <h3>El borde</h3>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="98" y="4" width="11" height="32" rx="4" fill="#662E9B"/><path style="stroke:var(--arrow)" d="M14 20 L72 20"/><path style="stroke:var(--arrow)" d="M58 9 L78 20 L58 31"/></svg></div>
-        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre el borde y salta de lado cada <b>5 s</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera a que pase o <b>congela</b> para cruzar.</div>
+        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> y salta de lado cada <b>5 s</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera a que pase o <b>congela</b> para cruzar.</div>
       </div>
       <h3>Rango y puntuación</h3>
       <p class="muted">Tu puntuación es <b>el tiempo total</b> de despejar los <b>5 tableros</b>, sin trucos: el <b>⏱ reloj</b> con el que terminas el quinto. <b>No hay puntos</b> — solo el reloj. Más <b>rápido</b> = mejor rango, y como un choque puede acabar la partida (a 0 corazones), hay que ir <b>rápido pero limpio</b>. Diez rangos, de <b>Debutante</b> (más de 15:00) a <b style="color:var(--accent)">Maestro/a</b> (por debajo de ~3:15). Hay un <b style="color:var(--accent)">Reto del día</b>: termina por debajo del tiempo objetivo y celebra con un <b style="color:var(--accent)">¡Buen sorbo!</b></p>
@@ -1997,7 +1997,7 @@ function boot(){
 
     // single daily — hide difficulty / experimental toggles
     ['diff-pills','land-mode','land-arch','m-arch'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
-    const rd=document.getElementById('rules-diff'); if(rd) rd.innerHTML='Borde es una carrera de <b>5 tableros</b> diarios, iguales para todo el mundo. Despeja un tablero y cae el siguiente — <b>los corazones, el reloj, el haz y el congelador siguen</b> de uno a otro. Lanza las flechas por su punta, <b>rápido y sin chocar</b>: tu rango es el <b>tiempo total</b> de los cinco, y si te quedas sin corazones se acaba la partida.';
+    const rd=document.getElementById('rules-diff'); if(rd) rd.innerHTML='Borde es una carrera de <b>5 tableros</b> diarios, iguales para todo el mundo. Despeja un tablero y cae el siguiente — <b>los corazones, el reloj, el borde y el congelador siguen</b> de uno a otro. Lanza las flechas por su punta, <b>rápido y sin chocar</b>: tu rango es el <b>tiempo total</b> de los cinco, y si te quedas sin corazones se acaba la partida.';
     document.getElementById('play-btn').addEventListener('click',()=>{ const d=LAND_MODES[landMode]; if(!d||!d.ready) return;
       if(d.href){ window.location.href=d.href; return; }
       document.body.classList.add('game-active'); applyGateState();
@@ -2049,8 +2049,8 @@ boot();
       </section>
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect x="30" y="24" width="172" height="74" rx="7" fill="none" stroke="var(--ink-line)" stroke-width="3"/><rect class="tv-beam" x="30" y="18" width="60" height="8" rx="4" fill="#662E9B"/></svg></div>
-        <h3>El haz</h3>
-        <p>Una barra <b style="color:#662E9B">morada</b> recorre el borde como un tren. No puedes salir por donde est&aacute; — <b>espera o congela</b>.</p>
+        <h3>El borde</h3>
+        <p>Una barra <b style="color:#662E9B">morada</b> recorre la orilla como un tren. No puedes salir por donde est&aacute; — <b>espera o congela</b>.</p>
       </section>
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="26" x2="74" y2="26" stroke="#F9C80E" stroke-width="9"/><polyline points="64,16 84,26 64,36" stroke="#F9C80E" stroke-width="9"/></g><text x="98" y="31" font-size="15" font-weight="700" fill="#C99700">Racha &middot; +&frac12;&#10084;</text><g><line x1="20" y1="56" x2="74" y2="56" stroke="#EA3546" stroke-width="9"/><polyline points="64,46 84,56 64,66" stroke="#EA3546" stroke-width="9"/></g><text x="98" y="61" font-size="15" font-weight="700" fill="#EA3546">Peligro &middot; &times;2</text><g><line x1="20" y1="86" x2="74" y2="86" stroke="#4ECDC4" stroke-width="9"/><polyline points="64,76 84,86 64,96" stroke="#4ECDC4" stroke-width="9"/></g><text x="98" y="91" font-size="15" font-weight="700" fill="#3BB6AE">Escudo &middot; 0&#10084;</text></svg></div>
@@ -2060,7 +2060,7 @@ boot();
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-fz-board" x="46" y="10" width="140" height="56" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="80" width="140" height="22" rx="11" fill="none" stroke="#0062E3" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="82" width="136" height="18" rx="9" fill="#9CCCEC"/></svg></div>
         <h3>Congelar</h3>
-        <p>El bot&oacute;n <b style="color:#0062E3">&#10052; Congelar</b> se llena solo. &Uacute;salo para <b>pausar el reloj y el haz</b> durante 5 s.</p>
+        <p>El bot&oacute;n <b style="color:#0062E3">&#10052; Congelar</b> se llena solo. &Uacute;salo para <b>pausar el reloj y el borde</b> durante 5 s.</p>
       </section>
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv-run"><rect x="14" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:0s"/><rect x="54" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:.4s"/><rect x="94" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:.8s"/><rect x="134" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:1.2s"/><rect x="174" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:1.6s"/></svg></div>
