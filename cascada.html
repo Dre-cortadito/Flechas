@@ -93,7 +93,7 @@
   /* Board keeps its 7:9 shape (so the gate/empty state has height). The inner fills it via ABSOLUTE
      inset (a definite box) rather than height:100% — that avoids the iOS Safari quirk where a
      percentage-height child of an aspect-ratio box renders too tall and clips the bottom row. */
-  .board { position:relative; width:100%; aspect-ratio:7/9; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
+  .board { position:relative; width:100%; aspect-ratio:7/8; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
   .timer { transition:color .15s linear; }
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }   /* fills the definite inner box; clips launches at the edge */
@@ -340,7 +340,7 @@
   function lsSet(k,v){ try{ if(LS) LS.setItem(k,v); }catch(e){} }
   const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
 
-  const U=100, COLS=14, ROWS=18, GAME_SECS=120;
+  const U=100, COLS=14, ROWS=16, GAME_SECS=120;   /* 14×16 — shorter board so the stack fits the phone */
   const REFRESH_MS=30000, WARN_MS=2400, FALL_MS=480;   // 2400 = exactly 3 expire pulses (0.8s each) before the board falls
   const COVER=0.8, MIN_LAUNCH=7;
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
