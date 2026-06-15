@@ -110,7 +110,7 @@
   .board.hot::after { opacity:1; }
   /* whole board cleared → the same pink (accent-2) ring PULSES once as a celebration */
   .board.clearflash { animation:boardclear .9s ease; }
-  @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:#ffc9c9;} 100%{ background:var(--board-bg);} }   /* whole board pulses pink ONCE on a full clear */
+  @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:#ff6b6b;} 100%{ background:var(--board-bg);} }   /* whole board pulses the intense heart pink ONCE on a full clear */
   /* last seconds before a refresh: surviving arrows pulse to warn they're about to fall away */
   /* (arrows no longer blink before a refresh — the refresh bar + "Nuevo" countdown are the warning) */
 
@@ -126,8 +126,9 @@
   .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }   /* short divider, inset from the edges (Borde-style) */
   .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
   .stile .slbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
-  .stile.combo .sval { color:var(--ink); transition:color .15s, transform .12s; }
-  .stile.combo.on .sval { color:#C99700; }   /* combo active → readable gold (the Borde yellow family) */
+  .stile.combo .sval { color:#F9C80E; transition:color .15s, transform .12s; }   /* combo ×N → the same yellow as the board ring */
+  .stile.combo.on .sval { color:#F9C80E; }
+  #boards-done { color:#ff6b6b; }   /* Tableros count → pink */
   .stile.combo.pop .sval { animation:cpop .2s ease; }
   @keyframes cpop { 0%{ transform:scale(1);} 45%{ transform:scale(1.22);} 100%{ transform:scale(1);} }
   .stile .sbar { position:absolute; left:0; bottom:0; height:3px; width:100%; background:#F9C80E; transform-origin:left; transform:scaleX(0); }   /* combo timer bar → combo yellow */
