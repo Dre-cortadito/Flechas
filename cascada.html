@@ -112,8 +112,7 @@
   .board.clearflash { animation:boardclear .9s ease; }
   @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:#ffc9c9;} 100%{ background:var(--board-bg);} }   /* whole board pulses pink ONCE on a full clear */
   /* last seconds before a refresh: surviving arrows pulse to warn they're about to fall away */
-  .board.expiring .piece { animation:expire .8s ease-in-out infinite; }
-  @keyframes expire { 0%,100%{ opacity:.92;} 50%{ opacity:.34;} }
+  /* (arrows no longer blink before a refresh — the refresh bar + "Nuevo" countdown are the warning) */
 
   /* refresh countdown line lives BETWEEN the board and the status box (so the board glow never hides it) */
   .refresh-box { width:min(94vw,400px); margin:9px auto 0; padding:5px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; }
