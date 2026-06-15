@@ -85,7 +85,7 @@
   .lives-row { display:flex; align-items:center; gap:3px; }
   .lives-row .heart { width:24px; height:23px; display:inline-flex; }
   .lives-row .heart svg { width:100%; height:100%; }
-  .lives-row .heart .hon { fill:var(--accent-2); }
+  .lives-row .heart .hon { fill:#ff6b6b; }   /* default heart colour (shared with Borde) */
   .lives-row .heart .hoff { fill:var(--ink-line); }
   .lives-row.spill { animation:pshake .3s ease; }
 
@@ -104,13 +104,13 @@
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }   /* a mistake (bump) → the same red token as Borde */
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }   /* successful launch → green as it leaves (matches Borde) */
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
-  /* combo live → a SOLID accent-2 ring around the board (no glow); fades in when the combo turns on. */
+  /* combo live → a SOLID yellow ring around the board (the Borde yellow); fades in when the combo turns on. */
   .board::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; opacity:0; z-index:16;
-    box-shadow:inset 0 0 0 4px var(--accent-2); transition:opacity .3s ease; }
+    box-shadow:inset 0 0 0 4px #F9C80E; transition:opacity .3s ease; }
   .board.hot::after { opacity:1; }
   /* whole board cleared → the same pink (accent-2) ring PULSES once as a celebration */
   .board.clearflash { animation:boardclear .9s ease; }
-  @keyframes boardclear { 0%{ background:var(--board-bg);} 18%{ background:#ffc9c9;} 45%{ background:var(--board-bg);} 70%{ background:#ffc9c9;} 100%{ background:var(--board-bg);} }   /* whole board pulses pink on a full clear */
+  @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:#ffc9c9;} 100%{ background:var(--board-bg);} }   /* whole board pulses pink ONCE on a full clear */
   /* last seconds before a refresh: surviving arrows pulse to warn they're about to fall away */
   .board.expiring .piece { animation:expire .8s ease-in-out infinite; }
   @keyframes expire { 0%,100%{ opacity:.92;} 50%{ opacity:.34;} }
@@ -128,10 +128,10 @@
   .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
   .stile .slbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
   .stile.combo .sval { color:var(--ink); transition:color .15s, transform .12s; }
-  .stile.combo.on .sval { color:var(--accent-2); }
+  .stile.combo.on .sval { color:#C99700; }   /* combo active → readable gold (the Borde yellow family) */
   .stile.combo.pop .sval { animation:cpop .2s ease; }
   @keyframes cpop { 0%{ transform:scale(1);} 45%{ transform:scale(1.22);} 100%{ transform:scale(1);} }
-  .stile .sbar { position:absolute; left:0; bottom:0; height:3px; width:100%; background:var(--accent-2); transform-origin:left; transform:scaleX(0); }
+  .stile .sbar { position:absolute; left:0; bottom:0; height:3px; width:100%; background:#F9C80E; transform-origin:left; transform:scaleX(0); }   /* combo timer bar → combo yellow */
   .stile.next.warn .sval { color:var(--accent-2); }
 
   .freeze { width:min(94vw,400px); margin:10px auto 0; }
@@ -320,7 +320,7 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path style="stroke:var(--arrow)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha para <b>lanzarla por su punta</b>. Solo sale si su <b>carril hasta el borde está libre</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path style="stroke:#157145" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al salir <b style="color:#157145">destella en verde</b> y suma puntos.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> una flecha <b>tapada</b> rebota, <b>corta el combo</b> y cuesta <b style="color:#EA3546">½ corazón</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#ff6b6b" stroke-width="5"/><text x="60" y="28" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="20" fill="#ff6b6b">&times;3</text></svg></div><div class="txt"><b style="color:#ff6b6b">Combo.</b> Despeja <b>rápido y seguido</b> (×2, ×3…) — más combo, más puntos. El borde se enciende.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#F9C80E" stroke-width="5"/><text x="60" y="28" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="20" fill="#C99700">&times;3</text></svg></div><div class="txt"><b style="color:#C99700">Combo.</b> Despeja <b>rápido y seguido</b> (×2, ×3…) — más combo, más puntos. El borde se enciende en <b style="color:#C99700">amarillo</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="34" y="23" width="52" height="13" rx="3" fill="var(--ink-line)"/><rect x="34" y="5" width="52" height="13" rx="3" fill="var(--accent)"/></svg></div><div class="txt">Cada <b>30 s</b> cae un <b>tablero nuevo</b> que empuja al viejo. Lo que no despejes, <b>se va</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#ff6b6b" stroke-width="5"/><text x="60" y="27" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="17" fill="var(--accent)">+25</text></svg></div><div class="txt"><b>Tablero limpio:</b> despeja uno entero → <b style="color:var(--accent)">+25</b>, borde rosa y <b>+½ corazón</b> (o <b>+5 s</b> si vas lleno).</div></div>
     <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#0062E3">❄ Congelar.</b> Se llena solo; <b>para el reloj y el cambio de tablero 5 s</b>.</div></div>
@@ -658,7 +658,7 @@
         <p>Toca una flecha con el <b style="color:var(--accent)">carril libre</b> y sale por su punta — destella en <b style="color:#157145">verde</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-ring" x="44" y="12" width="144" height="84" rx="10" fill="none" stroke="#ff6b6b" stroke-width="4"/><text class="tv-combo" x="116" y="68" text-anchor="middle" font-family="var(--font-display)" font-weight="800" font-size="42" fill="#ff6b6b">&times;3</text></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-ring" x="44" y="12" width="144" height="84" rx="10" fill="none" stroke="#F9C80E" stroke-width="4"/><text class="tv-combo" x="116" y="68" text-anchor="middle" font-family="var(--font-display)" font-weight="800" font-size="42" fill="#C99700">&times;3</text></svg></div>
         <h3>Combo</h3>
         <p>Despeja <b>r&aacute;pido y seguido</b> para subir el combo (&times;2, &times;3&hellip;). M&aacute;s combo = <b style="color:var(--accent)">m&aacute;s puntos</b> por flecha.</p>
       </section>
