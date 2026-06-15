@@ -353,7 +353,7 @@
   const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
 
   const U=100, COLS=14, ROWS=16, GAME_SECS=120;   /* 14×16 — shorter board so the stack fits the phone */
-  const REFRESH_MS=30000, WARN_MS=2400, FALL_MS=480, SLIDE_MS=1800, CASCADE_MS=3000;   // CASCADE_MS = waterfall length + clock pause   // 2400 = exactly 3 expire pulses (0.8s each) before the board falls
+  const REFRESH_MS=30000, WARN_MS=2400, FALL_MS=480, SLIDE_MS=3000, CASCADE_MS=3000;   // board slides the full cascade, in sync with the waterfall (linear); CASCADE_MS = effect length + clock pause   // 2400 = exactly 3 expire pulses (0.8s each) before the board falls
   const COVER=0.8, MIN_LAUNCH=7;
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const COMBO_WINDOW=1800, COMBO_PER_TIER=4, MULT_MAX=3;   // capped at ×3 — keeps the combo rewarding but the score predictable enough to rank
@@ -520,8 +520,8 @@
     rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard();
     const nl=newLayer(); layer=nl; renderInto(nl);
     const H=ROWS*U; nl.style.transform='translateY('+(-H)+'px)';
-    try{ old.animate([{transform:'translateY(0)'},{transform:'translateY('+H+'px)'}],{duration:SLIDE_MS,easing:'cubic-bezier(.4,0,.5,1)',fill:'forwards'}); }catch(e){}
-    try{ nl.animate([{transform:'translateY('+(-H)+'px)'},{transform:'translateY(0px)'}],{duration:SLIDE_MS,easing:'cubic-bezier(.4,0,.5,1)',fill:'forwards'}); }catch(e){}
+    try{ old.animate([{transform:'translateY(0)'},{transform:'translateY('+H+'px)'}],{duration:SLIDE_MS,easing:'linear',fill:'forwards'}); }catch(e){}
+    try{ nl.animate([{transform:'translateY('+(-H)+'px)'},{transform:'translateY(0px)'}],{duration:SLIDE_MS,easing:'linear',fill:'forwards'}); }catch(e){}
     fallEnd=Date.now()+CASCADE_MS; renderCombo(false); }
   function finishFall(){ if(fallOld){ try{fallOld.remove();}catch(e){} fallOld=null; } if(layer) layer.style.transform=''; transitioning=false; refreshAt=Date.now()+REFRESH_MS; }
 
