@@ -106,7 +106,7 @@
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
   /* combo live → a SOLID yellow ring around the board (the Borde yellow); fades in when the combo turns on. */
   .board::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; opacity:0; z-index:16;
-    box-shadow:inset 0 0 0 4px #F9C80E; transition:opacity .3s ease; }
+    box-shadow:inset 0 0 0 11px #F9C80E; transition:opacity .3s ease; }   /* combo ring = same 11px thickness as Borde's purple wall */
   .board.hot::after { opacity:1; }
   /* whole board cleared → the same pink (accent-2) ring PULSES once as a celebration */
   .board.clearflash { animation:boardclear .9s ease; }
@@ -118,7 +118,7 @@
   .refresh-box { width:min(94vw,400px); margin:9px auto 0; padding:5px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; }
   .refresh-box .refresh-track { height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
   .refresh-box .refresh-bar { display:block; height:100%; width:100%; background:var(--accent); transform-origin:left; transform:scaleX(1); }
-  .refresh-box .refresh-bar.warn { background:var(--accent); }   /* nuevo-tablero countdown stays teal, never pink */
+  .refresh-box .refresh-bar.warn { background:#ff6b6b; }   /* board-change countdown: teal, then PINK in the last 5 s */
 
   /* ===== Status box under the board (mirrors the meta row up top) ===== */
   .statusbox { width:min(94vw,400px); margin:8px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
@@ -131,7 +131,8 @@
   .stile.combo.pop .sval { animation:cpop .2s ease; }
   @keyframes cpop { 0%{ transform:scale(1);} 45%{ transform:scale(1.22);} 100%{ transform:scale(1);} }
   .stile .sbar { position:absolute; left:0; bottom:0; height:3px; width:100%; background:#F9C80E; transform-origin:left; transform:scaleX(0); }   /* combo timer bar → combo yellow */
-  .stile.next.warn .sval { color:var(--accent); }   /* teal, not pink */
+  .stile.next .sval { color:var(--accent); }        /* "Nuevo" countdown is teal by default */
+  .stile.next.warn .sval { color:#ff6b6b; }         /* …and turns pink in the last 5 s */
 
   .freeze { width:min(94vw,400px); margin:10px auto 0; }
   .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#0062E3; background:rgba(0,98,227,.05); border:2px solid #0062E3; }   /* intense freeze blue — border always full; only the fill grows */
@@ -352,7 +353,7 @@
   const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
 
   const U=100, COLS=14, ROWS=16, GAME_SECS=120;   /* 14×16 — shorter board so the stack fits the phone */
-  const REFRESH_MS=30000, WARN_MS=2400, FALL_MS=480, SLIDE_MS=2000, CASCADE_MS=2000;   // board slides the full cascade, in sync with the waterfall (linear); CASCADE_MS = effect length + clock pause   // 2400 = exactly 3 expire pulses (0.8s each) before the board falls
+  const REFRESH_MS=30000, WARN_MS=5000, FALL_MS=480, SLIDE_MS=2000, CASCADE_MS=2000;   // WARN_MS=5000 → countdown turns pink for the last 5 s   // board slides the full cascade, in sync with the waterfall (linear); CASCADE_MS = effect length + clock pause   // 2400 = exactly 3 expire pulses (0.8s each) before the board falls
   const COVER=0.8, MIN_LAUNCH=7;
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const COMBO_WINDOW=1800, COMBO_PER_TIER=4, MULT_MAX=3;   // capped at ×3 — keeps the combo rewarding but the score predictable enough to rank

@@ -91,6 +91,38 @@ Rank is decided by **total points in 2:00** (clears × combo). Ends on **¡Sin c
 
 ---
 
+## DESVÍO — the rush-hour mode
+
+A still grid of sliding **arrows** (7×8 cells) — a Perímetro board frozen, where the arrows slide instead of launching. **A 5-board daily run scored by total TIME**,
+exactly like Borde — fewer seconds, higher rank. Same shell as Borde/Cascada: hearts,
+freeze, status box and bars all carry the same meaning.
+
+### Sliding
+- Every piece is a **Flechas arrow** (thin linework + chevron head, same look as Borde/Cascada). **Drag** an arrow along its own track (horizontal arrows slide left/right, vertical ones up/down). Arrows **never leave** the board — they only slide and block each other.
+- One **orange arrow**, slightly bolder, is the target. Free it out the **exit gap** (orange chevron) on the right edge of its row. When it reaches the exit it flashes **green** → board solved, next board.
+
+### The run
+- 5 boards of **rising difficulty**, picked daily (deterministic by date) from an embedded pool of **verified, guaranteed-solvable** puzzles, sorted easy→hard.
+- The clock counts **up** and never resets between boards; your finishing time on board 5 is your result. Board counter (right of the timer) shows **N/5**; progress dots sit under the board.
+
+### Par
+- Each board shows its **Par** — the exact optimal number of moves (computed by BFS when the pool was mined). It's a target to admire, **not** required; only **time** counts.
+
+### Hearts = your lives (shared meaning)
+- **3 hearts.** Yanking a bar that is **completely jammed** (can't slide either way) is a **bump**: it flashes the Borde **red** and costs **½ heart** — same gesture and feedback as a wall-bump in Borde/Cascada.
+- Productive slides are free. At **0 hearts** the run ends (**¡Sin corazones!**).
+
+### Freeze (identical to the siblings)
+- The freeze button charges on its own; tap it to **pause the clock 5 s** so you can study a jam without the timer running. Board + timer turn the shared freeze blue; the fill drains over the 5 s.
+
+### Daily & training
+- The **first attempt is the official daily**, recorded and locked. Afterwards, **Entrenar** replays fresh random boards (from the same pool) that don't change your recorded result.
+
+### Rank
+- **Total time** for the 5 boards → 10 ranks (Debutante → Maestro/a). Cutoffs are provisional — calibrate against a real full-run time.
+
+---
+
 ## Shared conventions
 - One self-contained `index.html` per game (inline CSS+JS, no build step), deployed to Cloudflare.
 - Arrow colours: **black** by default, **green** on a successful launch, **yellow / red** for special roles, **purple** on a beam bounce (Borde).
