@@ -101,7 +101,7 @@
   .piece { cursor:pointer; }
   .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .18s; }
   .piece .phit { fill:none; stroke:transparent; stroke-width:62; stroke-linecap:round; stroke-linejoin:round; }
-  .piece.blocked .pline, .piece.blocked .phead { stroke:var(--accent-2); }
+  .piece.blocked .pline, .piece.blocked .phead { stroke:#EA3546; }   /* a mistake (bump) → the same red as Borde */
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }   /* successful launch → green as it leaves (matches Borde) */
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
   /* combo live → a SOLID accent-2 ring around the board (no glow); fades in when the combo turns on. */
@@ -554,7 +554,8 @@
     if(combo>0 && now-lastClearAt>COMBO_WINDOW){ combo=0; renderCombo(false); }
     { const cb=$('combo-bar'); if(cb) cb.style.transform='scaleX('+(multNow()>1?Math.max(0,1-(now-lastClearAt)/COMBO_WINDOW):0).toFixed(3)+')'; }   // always drive it — reset to 0 when the combo ends so it can't freeze halfway
     if(!fz && !freezeReady){ freezeCharge=Math.min(1, freezeCharge+(dt/1000)/FREEZE_FILL); if(freezeCharge>=1) freezeReady=true; }
-    updateFreeze(); rafId=requestAnimationFrame(loop); }
+    updateFreeze(); if(transitioning && !fz){ $('timer').style.color='var(--accent)'; }   // clock paused for the cascade → timer goes teal
+    rafId=requestAnimationFrame(loop); }
 
   // ================= start / end =================
   function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(COLS*U)+' '+(ROWS*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg); }
