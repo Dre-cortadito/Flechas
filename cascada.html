@@ -118,7 +118,7 @@
   .refresh-box { width:min(94vw,400px); margin:9px auto 0; padding:5px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; }
   .refresh-box .refresh-track { height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
   .refresh-box .refresh-bar { display:block; height:100%; width:100%; background:var(--accent); transform-origin:left; transform:scaleX(1); }
-  .refresh-box .refresh-bar.warn { background:var(--accent-2); }
+  .refresh-box .refresh-bar.warn { background:var(--accent); }   /* nuevo-tablero countdown stays teal, never pink */
 
   /* ===== Status box under the board (mirrors the meta row up top) ===== */
   .statusbox { width:min(94vw,400px); margin:8px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
@@ -126,13 +126,12 @@
   .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }   /* short divider, inset from the edges (Borde-style) */
   .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
   .stile .slbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
-  .stile.combo .sval { color:#F9C80E; transition:color .15s, transform .12s; }   /* combo ×N → the same yellow as the board ring */
-  .stile.combo.on .sval { color:#F9C80E; }
-  #boards-done { color:#ff6b6b; }   /* Tableros count → pink */
+  .stile.combo .sval { color:var(--ink); transition:color .15s, transform .12s; }   /* ×1 is black; turns yellow only when the combo is live */
+  .stile.combo.on .sval { color:#F9C80E; }   /* ×2, ×3… → the board-ring yellow */
   .stile.combo.pop .sval { animation:cpop .2s ease; }
   @keyframes cpop { 0%{ transform:scale(1);} 45%{ transform:scale(1.22);} 100%{ transform:scale(1);} }
   .stile .sbar { position:absolute; left:0; bottom:0; height:3px; width:100%; background:#F9C80E; transform-origin:left; transform:scaleX(0); }   /* combo timer bar → combo yellow */
-  .stile.next.warn .sval { color:var(--accent-2); }
+  .stile.next.warn .sval { color:var(--accent); }   /* teal, not pink */
 
   .freeze { width:min(94vw,400px); margin:10px auto 0; }
   .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#0062E3; background:rgba(0,98,227,.05); border:2px solid #0062E3; }   /* intense freeze blue — border always full; only the fill grows */

@@ -234,7 +234,8 @@
   .s-peligro .flx-seg-fill { background:#EA3546; }
   .s-shield  .flx-seg-fill { background:#4ECDC4; }
   /* ===== Status box — Cascada-style: three number tiles (big value + uppercase label) ===== */
-  .flx-box { width:min(94vw,400px); margin:10px auto 0; display:grid; grid-template-columns:1fr 1fr 1fr; background:var(--paper); border:2px solid var(--ink-soft); border-radius:14px; overflow:hidden; }
+  .flx-box { width:min(94vw,400px); margin:10px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--ink-soft); border-radius:14px; overflow:hidden; }
+  .t-borde .fbox-val { color:#662E9B; }   /* beam countdown → beam purple */
   .fbox-tile { position:relative; padding:8px 6px 9px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
   .fbox-tile + .fbox-tile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--ink-soft); }
   .fbox-val { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
@@ -505,6 +506,7 @@
       <div class="fbox-tile t-racha" id="fb-racha"><div class="fbox-val">—</div><div class="fbox-lbl">Racha</div></div>
       <div class="fbox-tile t-peligro" id="fb-peligro"><div class="fbox-val">—</div><div class="fbox-lbl">Peligro</div></div>
       <div class="fbox-tile t-shield" id="fb-shield"><div class="fbox-val">—</div><div class="fbox-lbl">Escudo</div></div>
+      <div class="fbox-tile t-borde" id="fb-borde"><div class="fbox-val">—</div><div class="fbox-lbl">Borde</div></div>
     </div>
     <div class="flx-actions" id="flx-actions" aria-label="Cargas">
       <button class="act-btn fz" id="flx-freeze" type="button" aria-label="Congelar" disabled><span class="act-fill"></span><span class="act-num" id="flx-fz-num"></span><span class="act-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg></span></button>
@@ -1541,7 +1543,7 @@ function pulseLoop(){ try{ const bp=document.getElementById('board-panel'); cons
         const layA=(k%2===0)?w0:w1, layB=(k%2===0)?w1:w0;   // pin each dwell to a layer by parity
         layA.style.background=wallGrad(eK); layB.style.background=wallGrad(eN);
         const SD=0.9, t0=HOT_DWELL-SD;   // last 0.9s of each dwell = the slide
-        if(into<t0){ layA.style.transform=''; layA.style.opacity=(beamBreath(into)*intro).toFixed(3); layB.style.opacity='0'; layB.style.transform=''; }
+        if(into<t0){ layA.style.transform=''; layA.style.opacity=intro.toFixed(3); layB.style.opacity='0'; layB.style.transform=''; }   /* solid — no breathe/blink before it moves */
         else { const p=(into-t0)/SD, fK=beamFwd(eK), fN=beamFwd(eN);   // outgoing edge trains OFF in its forward direction; incoming edge trains IN around the corner
           layA.style.transform='translate('+(fK[0]*p*100).toFixed(2)+'%,'+(fK[1]*p*100).toFixed(2)+'%)'; layA.style.opacity=intro.toFixed(3);
           layB.style.transform='translate('+(-fN[0]*(1-p)*100).toFixed(2)+'%,'+(-fN[1]*(1-p)*100).toFixed(2)+'%)'; layB.style.opacity=intro.toFixed(3); } } } } }catch(e){}
@@ -1715,6 +1717,9 @@ function renderStatus(){
   setFx('fb-racha', rOn, rOn?((rachaTotal-rachaLeft)+'/'+rachaTotal):'—');
   const pOn=peligroOn(); setFx('fb-peligro', pOn, pOn?(Math.max(0,Math.ceil((peligroEnd-Date.now())/1000))+'s'):'—');
   const shOn=shieldOn(); setFx('fb-shield', shOn, shOn?(Math.max(0,Math.ceil((shieldEnd-Date.now())/1000))+'s'):'—');
+  // Borde (beam) countdown — seconds until it jumps to the next edge (like Cascada's "Nuevo")
+  if(started && !finished){ const into=(((elapsed-beamBaseTime-HOT_GRACE)%HOT_DWELL)+HOT_DWELL)%HOT_DWELL; setFx('fb-borde', true, (HOT_DWELL-into)+'s'); }
+  else setFx('fb-borde', false, '—');
   const lc=document.getElementById('flx-left'); if(lc) lc.textContent=boardNum+'/'+RUN_BOARDS;
 }
 
