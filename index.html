@@ -1464,7 +1464,8 @@ function rachaTick(){ if(rachaLeft<0) return; rachaLeft--;
 // the next edge every HOT_DWELL seconds (seeded start + direction per day, same for
 // everyone). After a short grace, something is always hot, so every tap means checking
 // the beam: fire the cool sides now, wait ~HOT_DWELL for it to pass, or rush it for ½. =====
-const HOT_DWELL=5, HOT_GRACE=0;   // beam is live from the start; each edge hot 5s → ~5 even pulses before it moves
+const HOT_DWELL=5, HOT_GRACE=0;   // each edge sits STATIC for 5s (the countdown)…
+const MOVE_DUR=0.8, PERIOD=HOT_DWELL+MOVE_DUR;   // …then a separate ~0.8s MOVE to the next edge. One full cycle = PERIOD.
 const WALL_UNITS=40;              // the 11px purple bar ≈ 0.4 cells; arrows bounce this far before the board edge (at the bar's face)
 const _hr=mulberry32(fnv('flx-walls-'+ISO));
 const HOT_START=(_hr()*4)|0, HOT_DIR=(_hr()<0.5?1:3);          // 1 = clockwise, 3 ≡ −1 (counter-clockwise)
@@ -1472,23 +1473,23 @@ const HOT_START=(_hr()*4)|0, HOT_DIR=(_hr()<0.5?1:3);          // 1 = clockwise,
 // (spend a charge) — beamBaseIndex/beamBaseTime let us jump a side AND restart that side's
 // dwell from "now", so an advanced edge still gets a clean ~5s before it moves on.
 let beamBaseIndex=0, beamBaseTime=0;
-function hotIndex(){ return beamBaseIndex + Math.floor((elapsed-beamBaseTime-HOT_GRACE)/HOT_DWELL); }
+function hotIndex(){ return beamBaseIndex + Math.floor((elapsed-beamBaseTime-HOT_GRACE)/PERIOD); }
 function hotSideNow(){ if(!started||finished||elapsed<HOT_GRACE) return -1; return (HOT_START + HOT_DIR*hotIndex())%4; }
 // An edge blocks if it's the lit one — OR, during the ~0.5s wall handoff, the incoming edge too (it's
 // already visibly rising, so an arrow can't slip through it).
 function beamBlocksDir(dir){ const s=hotSideNow(); if(s<0) return false; if(dir===s) return true;
   if(started && !finished){ const frac=Math.max(0,Math.min(0.999,(Date.now()-startedAt)/1000-elapsed));
-    const x=elapsed+frac-beamBaseTime-HOT_GRACE, into=x-Math.floor(x/HOT_DWELL)*HOT_DWELL;
-    if(into>=HOT_DWELL-0.5){ const k=beamBaseIndex+Math.floor(x/HOT_DWELL); if(dir===((HOT_START+HOT_DIR*(k+1))%4+4)%4) return true; } }
+    const x=elapsed+frac-beamBaseTime-HOT_GRACE, into=x-Math.floor(x/PERIOD)*PERIOD;
+    if(into>=HOT_DWELL){ const k=beamBaseIndex+Math.floor(x/PERIOD); if(dir===((HOT_START+HOT_DIR*(k+1))%4+4)%4) return true; } }   // while it MOVES, the incoming edge also blocks
   return false; }
 // POSITIONAL beam: the bar is a real object. While it sits, the whole edge blocks; as it SLIDES to the
 // next edge, only the cells still under the bar block — the freed area opens — and the incoming bar
 // blocks the cells it has covered so far. An arrow exiting a still-covered cell bounces at the bar's face.
 function beamState(){ if(!started||finished||elapsed<HOT_GRACE) return null;
   const frac=Math.max(0,Math.min(0.999,(Date.now()-startedAt)/1000-elapsed));
-  const bx=elapsed+frac-beamBaseTime-HOT_GRACE; const kf=Math.floor(bx/HOT_DWELL), into=bx-kf*HOT_DWELL; const k=beamBaseIndex+kf;
+  const bx=elapsed+frac-beamBaseTime-HOT_GRACE; const kf=Math.floor(bx/PERIOD), into=bx-kf*PERIOD; const k=beamBaseIndex+kf;
   const eK=((HOT_START+HOT_DIR*k)%4+4)%4, eN=((HOT_START+HOT_DIR*(k+1))%4+4)%4;
-  const SD=0.9, t0=HOT_DWELL-SD; const sliding=into>=t0; return { eK, eN, sliding, p: sliding?(into-t0)/SD:0 }; }
+  const sliding=into>=HOT_DWELL; return { eK, eN, sliding, p: sliding?(into-HOT_DWELL)/MOVE_DUR:0 }; }   // static for 5s, then slides over MOVE_DUR
 function beamExitFrac(e, headIdx){ const [r,c]=rc(headIdx);   // forward-normalised position of the exit along edge e (0..1)
   const horiz=(e===0||e===2); let frac = horiz ? (GRID_C>1?c/(GRID_C-1):0.5) : (GRID_R>1?r/(GRID_R-1):0.5);
   const f=beamFwd(e); const sgn = horiz ? f[0] : f[1]; if(sgn<0) frac=1-frac; return frac; }
@@ -1539,13 +1540,12 @@ function pulseLoop(){ try{ const bp=document.getElementById('board-panel'); cons
       if(s<0){ w0.style.opacity='0'; w1.style.opacity='0'; w0.style.transform=''; w1.style.transform=''; }
       else if(frozen){ w0.style.background=wallGrad(s); w0.style.opacity=intro.toFixed(3); w0.style.transform=''; w1.style.opacity='0'; w1.style.transform=''; }
       else { const frac=Math.max(0,Math.min(0.999,(now-startedAt)/1000-elapsed));
-        const bx=elapsed+frac-beamBaseTime-HOT_GRACE; const kf=Math.floor(bx/HOT_DWELL), into=bx-kf*HOT_DWELL; const k=beamBaseIndex+kf;
+        const bx=elapsed+frac-beamBaseTime-HOT_GRACE; const kf=Math.floor(bx/PERIOD), into=bx-kf*PERIOD; const k=beamBaseIndex+kf;
         const eK=((HOT_START+HOT_DIR*k)%4+4)%4, eN=((HOT_START+HOT_DIR*(k+1))%4+4)%4;
         const layA=(k%2===0)?w0:w1, layB=(k%2===0)?w1:w0;   // pin each dwell to a layer by parity
         layA.style.background=wallGrad(eK); layB.style.background=wallGrad(eN);
-        const SD=0.9, t0=HOT_DWELL-SD;   // last 0.9s of each dwell = the slide
-        if(into<t0){ layA.style.transform=''; layA.style.opacity=intro.toFixed(3); layB.style.opacity='0'; layB.style.transform=''; }   /* solid — no breathe/blink before it moves */
-        else { const p=(into-t0)/SD, fK=beamFwd(eK), fN=beamFwd(eN);   // outgoing edge trains OFF in its forward direction; incoming edge trains IN around the corner
+        if(into<HOT_DWELL){ layA.style.transform=''; layA.style.opacity=intro.toFixed(3); layB.style.opacity='0'; layB.style.transform=''; }   /* STATIC for the full 5s — solid, no slide */
+        else { const p=(into-HOT_DWELL)/MOVE_DUR, fK=beamFwd(eK), fN=beamFwd(eN);   // then it MOVES: outgoing edge trains OFF; incoming edge trains IN around the corner
           layA.style.transform='translate('+(fK[0]*p*100).toFixed(2)+'%,'+(fK[1]*p*100).toFixed(2)+'%)'; layA.style.opacity=intro.toFixed(3);
           layB.style.transform='translate('+(-fN[0]*(1-p)*100).toFixed(2)+'%,'+(-fN[1]*(1-p)*100).toFixed(2)+'%)'; layB.style.opacity=intro.toFixed(3); } } } } }catch(e){}
   // three-segment effect bar: each fills its colour on activation and drains as its timer/streak runs down
@@ -1553,7 +1553,7 @@ function pulseLoop(){ try{ const bp=document.getElementById('board-panel'); cons
     if(sr) sr.style.transform='scaleX('+(rachaLeft>0?Math.max(0,Math.min(1,rachaLeft/rachaTotal)):0).toFixed(3)+')';
     if(sp) sp.style.transform='scaleX('+(tn<peligroEnd?Math.max(0,Math.min(1,(peligroEnd-tn)/(PEL_WINDOW*Math.max(1,peligroCount)))):0).toFixed(3)+')';      // divide by the TOTAL stacked window so it drains the whole time (slower per extra red), not just the last 6s
     if(sh) sh.style.transform='scaleX('+(tn<shieldEnd?Math.max(0,Math.min(1,(shieldEnd-tn)/(SHIELD_WINDOW*Math.max(1,shieldCount)))):0).toFixed(3)+')';
-    if(sgB){ if(started && !finished){ const base=frozen?elapsed:(Date.now()-startedAt)/1000; const into=(((base-beamBaseTime-HOT_GRACE)%HOT_DWELL)+HOT_DWELL)%HOT_DWELL; sgB.style.transform='scaleX('+Math.max(0,Math.min(1,(HOT_DWELL-into)/HOT_DWELL)).toFixed(3)+')'; } else sgB.style.transform='scaleX(0)'; } }catch(e){}   // borde bar drains 1→0 as the beam nears its jump (holds while frozen)
+    if(sgB){ if(started && !finished){ const base=(Date.now()<freezeEnd)?elapsed:(Date.now()-startedAt)/1000; const into=(((base-beamBaseTime-HOT_GRACE)%PERIOD)+PERIOD)%PERIOD; const v=into<HOT_DWELL?(HOT_DWELL-into)/HOT_DWELL:(into-HOT_DWELL)/MOVE_DUR; sgB.style.transform='scaleX('+Math.max(0,Math.min(1,v)).toFixed(3)+')'; } else sgB.style.transform='scaleX(0)'; } }catch(e){}   // empties over the 5s sit, fills as it moves, holds while frozen
   pulseRAF = finished ? null : requestAnimationFrame(pulseLoop); }
 // Hearts ARE your score: each one you finish with shaves time off (see effTime).
 function rankNow(){ return rankForTime(effTime()); }
@@ -1720,7 +1720,7 @@ function renderStatus(){
   const pOn=peligroOn(); setFx('fb-peligro', pOn, pOn?(Math.max(0,Math.ceil((peligroEnd-Date.now())/1000))+'s'):'—');
   const shOn=shieldOn(); setFx('fb-shield', shOn, shOn?(Math.max(0,Math.ceil((shieldEnd-Date.now())/1000))+'s'):'—');
   // Borde (beam) countdown — seconds until it jumps to the next edge (like Cascada's "Nuevo")
-  if(started && !finished){ const into=(((elapsed-beamBaseTime-HOT_GRACE)%HOT_DWELL)+HOT_DWELL)%HOT_DWELL; setFx('fb-borde', true, (HOT_DWELL-into)+'s'); }
+  if(started && !finished){ const into=(((elapsed-beamBaseTime-HOT_GRACE)%PERIOD)+PERIOD)%PERIOD; setFx('fb-borde', true, into<HOT_DWELL?(Math.max(1,Math.ceil(HOT_DWELL-into))+'s'):'→'); }
   else setFx('fb-borde', false, '—');
   const lc=document.getElementById('flx-left'); if(lc) lc.textContent=boardNum+'/'+RUN_BOARDS;
 }
