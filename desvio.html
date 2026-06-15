@@ -418,10 +418,13 @@
     const wall=cre('path'); wall.setAttribute('class','board-wall'); wall.setAttribute('d',d); exitG.appendChild(wall); }   // single gap at the exit row = the exit; no marker
   function ends(i){ const m=meta[i],p=pos[i]; if(m.orient==='h'){ const y=(m.line+0.5)*U; return [[(p+0.5)*U,y],[(p+m.len-1+0.5)*U,y]]; } const x=(m.line+0.5)*U; return [[x,(p+0.5)*U],[x,(p+m.len-1+0.5)*U]]; }
   function barD(i){ const e=ends(i); return 'M '+e[0][0]+' '+e[0][1]+' L '+e[1][0]+' '+e[1][1]; }
-  function headD(i){ const e=ends(i); const m=meta[i]; const hi=!!m._hi; const he=hi?e[1]:e[0]; const x=he[0],y=he[1]; const s=hi?1:-1;   // open chevron at the head end, pointing outward along the arrow's axis
-    const W=20, BK=28, TIP=22;   // deeper, more confident chevron — reads as a real Flechas arrow (Style B), not an emoji glyph
-    if(m.orient==='h') return 'M '+(x-s*BK)+' '+(y-W)+' L '+(x+s*TIP)+' '+y+' L '+(x-s*BK)+' '+(y+W);
-    return 'M '+(x-W)+' '+(y-s*BK)+' L '+x+' '+(y+s*TIP)+' L '+(x+W)+' '+(y-s*BK); }
+  function headD(i){ const e=ends(i); const m=meta[i]; const a=e[0], b=e[1];
+    const W=20, BK=28, TIP=22;   // deeper Style-B chevrons, drawn on BOTH ends — a piece slides either way, so it reads as a double-headed Flechas arrow
+    if(m.orient==='h')
+      return 'M '+(a[0]+BK)+' '+(a[1]-W)+' L '+(a[0]-TIP)+' '+a[1]+' L '+(a[0]+BK)+' '+(a[1]+W)
+        +' M '+(b[0]-BK)+' '+(b[1]-W)+' L '+(b[0]+TIP)+' '+b[1]+' L '+(b[0]-BK)+' '+(b[1]+W);
+    return 'M '+(a[0]-W)+' '+(a[1]+BK)+' L '+a[0]+' '+(a[1]-TIP)+' L '+(a[0]+W)+' '+(a[1]+BK)
+      +' M '+(b[0]-W)+' '+(b[1]-BK)+' L '+b[0]+' '+(b[1]+TIP)+' L '+(b[0]+W)+' '+(b[1]-BK); }
   function drawPiece(i){ const g=els[i]; g.querySelector('.phit').setAttribute('d',barD(i)); g.querySelector('.pbar').setAttribute('d',barD(i)); const hd=g.querySelector('.phead'); if(hd) hd.setAttribute('d',headD(i)); g.removeAttribute('transform'); }
   function renderBoard(){ layer.innerHTML=''; els.length=0;
     for(let i=0;i<meta.length;i++){ const g=cre('g'); g.setAttribute('class','piece'+(meta[i].t?' target':'')); g.id='pc-'+i;
