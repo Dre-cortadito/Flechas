@@ -22,7 +22,7 @@
   * { touch-action:manipulation; box-sizing:border-box; }
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
-    --accent:#4ECDC4; --accent-deep:#1f7d72; --accent-soft:#dcefe9; --accent-2:#ff6b6b;
+    --accent:#4ECDC4; --accent-deep:#1f7d72; --accent-soft:#dcefe9; --accent-2:#ff6b6b; --error:#EA3546;
     --board-bg:#E9F6F3; --arrow:#141210; --freeze-bg:#aec9de; --freeze-fill:#9CCCEC;
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
@@ -101,7 +101,7 @@
   .piece { cursor:pointer; }
   .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .18s; }
   .piece .phit { fill:none; stroke:transparent; stroke-width:62; stroke-linecap:round; stroke-linejoin:round; }
-  .piece.blocked .pline, .piece.blocked .phead { stroke:#EA3546; }   /* a mistake (bump) → the same red as Borde */
+  .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }   /* a mistake (bump) → the same red token as Borde */
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }   /* successful launch → green as it leaves (matches Borde) */
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
   /* combo live → a SOLID accent-2 ring around the board (no glow); fades in when the combo turns on. */
@@ -239,9 +239,9 @@
   .casc-wf { position:absolute; inset:0; z-index:18; pointer-events:none; opacity:0; overflow:hidden; border-radius:18px; }
   .casc-wf svg { position:absolute; inset:0; width:100%; height:100%; display:block; }
   .casc-wf .cwf-bars { will-change:transform; }
-  .board.cascading .casc-wf { animation:cwfFade 3s ease forwards; }
-  .board.cascading .casc-wf .cwf-bars { animation:cwfStream 3s linear forwards; }
-  .board.cascading .casc-wf .cwf-bars.b2 { animation:cwfStream2 3s linear forwards; }
+  .board.cascading .casc-wf { animation:cwfFade 2s ease forwards; }
+  .board.cascading .casc-wf .cwf-bars { animation:cwfStream 2s linear forwards; }
+  .board.cascading .casc-wf .cwf-bars.b2 { animation:cwfStream2 2s linear forwards; }
   @keyframes cwfFade { 0%{opacity:0} 10%{opacity:.96} 84%{opacity:.9} 100%{opacity:0} }
   @keyframes cwfStream  { from{transform:translateY(-210px)} to{transform:translateY(210px)} }
   @keyframes cwfStream2 { from{transform:translateY(-250px)} to{transform:translateY(185px)} }
@@ -353,7 +353,7 @@
   const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
 
   const U=100, COLS=14, ROWS=16, GAME_SECS=120;   /* 14×16 — shorter board so the stack fits the phone */
-  const REFRESH_MS=30000, WARN_MS=2400, FALL_MS=480, SLIDE_MS=3000, CASCADE_MS=3000;   // board slides the full cascade, in sync with the waterfall (linear); CASCADE_MS = effect length + clock pause   // 2400 = exactly 3 expire pulses (0.8s each) before the board falls
+  const REFRESH_MS=30000, WARN_MS=2400, FALL_MS=480, SLIDE_MS=2000, CASCADE_MS=2000;   // board slides the full cascade, in sync with the waterfall (linear); CASCADE_MS = effect length + clock pause   // 2400 = exactly 3 expire pulses (0.8s each) before the board falls
   const COVER=0.8, MIN_LAUNCH=7;
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const COMBO_WINDOW=1800, COMBO_PER_TIER=4, MULT_MAX=3;   // capped at ×3 — keeps the combo rewarding but the score predictable enough to rank
