@@ -234,6 +234,16 @@
   .tv-fz-fill{ transform-origin:left; animation:tvFill 3s ease-in-out infinite; }
   @keyframes tvBoardFreeze{ 0%,52%{fill:var(--board-bg)} 68%,88%{fill:#9CCCEC} 100%{fill:var(--board-bg)} }
   .tv-fz-board{ animation:tvBoardFreeze 3s ease-in-out infinite; }
+
+  /* ===== Cascade "waterfall" wash — only during a board refresh ===== */
+  .casc-wf { position:absolute; inset:0; z-index:18; pointer-events:none; opacity:0; overflow:hidden; border-radius:18px; }
+  .casc-wf svg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .casc-wf .cwf-bars { will-change:transform; }
+  .board.cascading .casc-wf { animation:cwfFade .72s ease forwards; }
+  .board.cascading .casc-wf .cwf-bars { animation:cwfFall .72s cubic-bezier(.35,0,.45,1) forwards; }
+  .board.cascading .casc-wf .cwf-bars.b2 { animation-duration:.86s; }
+  @keyframes cwfFade { 0%{opacity:0} 22%{opacity:.95} 62%{opacity:.85} 100%{opacity:0} }
+  @keyframes cwfFall { 0%{transform:translateY(-62%)} 100%{transform:translateY(64%)} }
 </style>
 </head>
 <body data-theme="light">
@@ -274,6 +284,7 @@
     <div class="board-wrap">
       <div class="board" id="board">
         <div id="board-inner"></div>
+        <div class="casc-wf" id="casc-wf" aria-hidden="true"><svg viewBox="0 0 140 200" preserveAspectRatio="none"><g class="cwf-bars"><rect x="4" y="-25" width="7" height="95" rx="3.5" fill="rgba(78,205,196,0.32)"/><rect x="13" y="-40" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="22" y="15" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="31" y="15" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="40" y="-25" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="49" y="0" width="7" height="60" rx="3.5" fill="rgba(78,205,196,0.32)"/><rect x="58" y="-25" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="67" y="0" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="76" y="15" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="85" y="30" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="94" y="15" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="103" y="-40" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="112" y="15" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="121" y="0" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="130" y="-40" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="139" y="15" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.40)"/></g><g class="cwf-bars b2" transform="translate(4.5 0)" opacity=".7"><rect x="4" y="-25" width="7" height="95" rx="3.5" fill="rgba(78,205,196,0.32)"/><rect x="13" y="-40" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="22" y="15" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="31" y="15" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="40" y="-25" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="49" y="0" width="7" height="60" rx="3.5" fill="rgba(78,205,196,0.32)"/><rect x="58" y="-25" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="67" y="0" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="76" y="15" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="85" y="30" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="94" y="15" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="103" y="-40" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="112" y="15" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="121" y="0" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="130" y="-40" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="139" y="15" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.40)"/></g></svg></div>
         <div class="toast" id="toast"></div>
         <div class="gate" id="gate">
           <h2>Cascada</h2>
@@ -503,6 +514,7 @@
   // ================= refresh (a new board falls from the top and pushes the old one out) =================
   function newLayer(){ const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','lyr'); svg.appendChild(g); return g; }
   function fallRefresh(){ if(transitioning) return; transitioning=true; board.classList.remove('expiring');
+    board.classList.remove('cascading'); void board.offsetWidth; board.classList.add('cascading'); setTimeout(function(){ try{ board.classList.remove('cascading'); }catch(e){} }, 900);
     const old=layer; fallOld=old;
     rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard();
     const nl=newLayer(); layer=nl; renderInto(nl);
