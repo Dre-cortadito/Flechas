@@ -1468,7 +1468,7 @@ const HOT_DWELL=5, HOT_GRACE=0;   // each edge sits STATIC for 5s (the countdown
 const MOVE_DUR=0.8, PERIOD=HOT_DWELL+MOVE_DUR;   // …then a separate ~0.8s MOVE to the next edge. One full cycle = PERIOD.
 const WALL_UNITS=40;              // the 11px purple bar ≈ 0.4 cells; arrows bounce this far before the board edge (at the bar's face)
 const _hr=mulberry32(fnv('flx-walls-'+ISO));
-const HOT_START=(_hr()*4)|0, HOT_DIR=(_hr()<0.5?1:3);          // 1 = clockwise, 3 ≡ −1 (counter-clockwise)
+const HOT_START=(_hr()*4)|0, HOT_DIR=(_hr(),1);          // always 1 = clockwise (still consume the rng draw so the daily board sequence is unchanged)
 // The beam index normally just ticks up with the clock, but a player can SHOVE it forward
 // (spend a charge) — beamBaseIndex/beamBaseTime let us jump a side AND restart that side's
 // dwell from "now", so an advanced edge still gets a clean ~5s before it moves on.
@@ -1846,15 +1846,23 @@ function useHint(){
 function renderHints(){ const btn=document.getElementById('hint-btn'); if(btn) btn.style.display='none'; }
 
 /* ============================ RANK BAR ============================ */
+let _rankBuilt=false;
+function buildRankTrack(track){                              // build the static structure ONCE — no per-second DOM churn (was causing GC-stutter)
+  const slots=TOP;
+  track.innerHTML='<div class="rank-track-line"></div><div class="rank-track-fill"></div>';
+  for(let i=0;i<=TOP;i++){ const dot=document.createElement('div'); dot.className='rank-dot'; dot.dataset.i=i; dot.style.left='clamp(3px, '+((i/slots)*100)+'%, calc(100% - 3px))'; track.appendChild(dot); }
+  const bubble=document.createElement('div'); bubble.className='rank-dot current'; bubble.id='rank-bubble'; bubble.style.zIndex='5'; track.appendChild(bubble);
+  const mk=document.createElement('div'); mk.className='rank-marker'; mk.id='rank-marker'; mk.style.left='clamp(2px, '+((rankForTime(META)/slots)*100)+'%, calc(100% - 2px))'; track.appendChild(mk);
+  _rankBuilt=true;
+}
 function renderRank(){
   const track=document.getElementById('rank-track'); if(!track) return;
-  const slots=TOP, idx=(!started&&!finished)?0:rankNow();   // before the first launch the whole bar sits at Debutante
-  track.innerHTML='<div class="rank-track-line"></div><div class="rank-track-fill"></div>';
-  const pct=(idx/slots)*100;
-  track.querySelector('.rank-track-fill').style.width=pct+'%';
-  for(let i=0;i<=TOP;i++){ const dot=document.createElement('div'); dot.className='rank-dot'+(i<=idx?' passed':''); dot.style.left='clamp(3px, '+((i/slots)*100)+'%, calc(100% - 3px))'; track.appendChild(dot); }
-  const bubble=document.createElement('div'); bubble.className='rank-dot current'+(idx===TOP?' at-maestro':''); bubble.style.left='clamp(8px, '+pct+'%, calc(100% - 8px))'; bubble.style.zIndex='5'; track.appendChild(bubble);
-  const mk=document.createElement('div'); mk.className='rank-marker'+((finished&&effTime()<=META)?' done':''); const mpct=(rankForTime(META)/slots)*100; mk.style.left='clamp(2px, '+mpct+'%, calc(100% - 2px))'; track.appendChild(mk);
+  if(!_rankBuilt || !track.querySelector('.rank-track-fill')) buildRankTrack(track);   // (re)build only if missing
+  const slots=TOP, idx=(!started&&!finished)?0:rankNow(), pct=(idx/slots)*100;
+  const fill=track.querySelector('.rank-track-fill'); if(fill) fill.style.width=pct+'%';
+  track.querySelectorAll('.rank-dot:not(.current)').forEach(d=>d.classList.toggle('passed', (+d.dataset.i)<=idx));
+  const bubble=document.getElementById('rank-bubble'); if(bubble){ bubble.style.left='clamp(8px, '+pct+'%, calc(100% - 8px))'; bubble.classList.toggle('at-maestro',idx===TOP); }
+  const mk=document.getElementById('rank-marker'); if(mk) mk.classList.toggle('done', finished&&effTime()<=META);
   const lbl=document.getElementById('rank-label'); if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); }
   const st=document.getElementById('stat-today'); if(st) st.textContent=(started||finished)?(fmtTime(elapsed)+' · '+RANK_NAMES[idx]):'Sin empezar';
 }

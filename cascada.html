@@ -103,6 +103,7 @@
   .piece .phit { fill:none; stroke:transparent; stroke-width:62; stroke-linecap:round; stroke-linejoin:round; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }   /* a mistake (bump) → the same red token as Borde */
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }   /* successful launch → green as it leaves (matches Borde) */
+  .board.hot .piece:not(.firing):not(.blocked) .pline, .board.hot .piece:not(.firing):not(.blocked) .phead { stroke:#F9C80E; }   /* racha live → arrows glow the combo yellow (launch green / bump red still win) */
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
   /* combo live → a SOLID yellow ring around the board (the Borde yellow); fades in when the combo turns on. */
   .board::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; opacity:0; z-index:16;

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<!-- Flechas · Oleada — REAL-TIME PROTOTYPE v3 (enemy-driven).
+     Player verbs: tap a lane (magazine of shots, auto-reload when empty) + the universal Freeze.
+     Enemies (shape + color): Normal ink · Armored slate (2 hits, boxed) · Breacher red (−2 hearts if it
+     crosses, heavy head) · Splitter purple (forks into two when killed) · Sweep green (kills the lowest
+     in adjacent lanes when destroyed) · Deflector teal (shoves nearby arrows sideways when destroyed).
+     Colour = class, shape = mechanic, red glow = urgency. Blue/❄ = freeze, red ♥ = hearts (universal). -->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Oleada · prototipo v3 · Flechas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  :root{--bg:#fff;--paper:#fbfaf6;--ink:#1a1614;--ink-soft:#8a847f;--line:#ece7df;--box-edge:#cfc7b8;
+        --board:#FBEEE6;--fire:#F86624;--danger:#EA3546;--blue:#0062E3;--freeze-fill:#9CCCEC;--heart:#ff6b6b;
+        --slate:#5b6770;--purple:#662E9B;--green:#2f9e54;--teal:#1E8E82;
+        --fd:'Newsreader',Georgia,serif;--fu:'Helvetica Neue',Helvetica,Arial,sans-serif;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--fu);-webkit-font-smoothing:antialiased;}
+  body{display:flex;flex-direction:column;align-items:center;padding:12px 12px 22px;}
+  .head{display:flex;flex-direction:column;align-items:center;margin-bottom:5px;}
+  .eb{font:700 9px var(--fu);letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);}
+  h1{font-family:var(--fd);font-weight:800;font-size:36px;letter-spacing:-1px;margin:0;line-height:.95;} h1 .dot{color:var(--fire);}
+  .hud{width:min(94vw,402px);display:flex;align-items:center;justify-content:space-between;margin:2px auto 6px;gap:8px;}
+  .hud .b{display:flex;flex-direction:column;align-items:center;flex:1;}
+  .hud .v{font:800 20px var(--fd);font-variant-numeric:tabular-nums;line-height:1;} .hud .l{font:700 8px var(--fu);letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);}
+  .hearts{display:flex;gap:3px;} .hearts svg{width:20px;height:19px;} .hon{fill:var(--heart);} .hoff{fill:var(--line);}
+  .score .v{color:var(--fire);}
+  .timerrow{width:min(94vw,402px);display:flex;flex-direction:column;align-items:center;margin:1px auto 4px;}
+  .timer{font:800 italic clamp(30px,8.5vw,40px) var(--fd);font-variant-numeric:tabular-nums;line-height:1;}
+  .timer.low{color:var(--danger);}
+  .wave{font:700 9px var(--fu);letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);margin-top:2px;}
+  .boardwrap{width:min(94vw,402px);}
+  .board{position:relative;width:100%;background:var(--board);border-radius:16px;overflow:hidden;touch-action:manipulation;cursor:crosshair;}
+  .lanes{position:absolute;inset:0;display:flex;pointer-events:none;} .lanes i{flex:1;border-right:1px solid rgba(26,22,20,.05);} .lanes i:last-child{border-right:none;}
+  .baseline{position:absolute;left:0;right:0;bottom:0;height:7px;background:var(--ink);} .baseline.hit{background:var(--danger);}
+  .arr{position:absolute;display:flex;align-items:center;justify-content:center;transition:top var(--beat,1s) linear,left .18s ease;will-change:top,left;}
+  .arr svg{width:76%;height:76%;overflow:visible;}
+  .arr .p{fill:none;stroke:var(--ink);stroke-width:9;stroke-linecap:round;stroke-linejoin:round;}
+  .arr.t-armor .p{stroke:var(--slate);} .arr.t-breach .p{stroke:var(--danger);stroke-width:12;} .arr.t-split .p{stroke:var(--purple);}
+  .arr.t-sweep .p{stroke:var(--green);} .arr.t-defl .p{stroke:var(--teal);}
+  .arr.near{filter:drop-shadow(0 0 5px var(--danger));animation:urg .7s ease-in-out infinite;}
+  @keyframes urg{0%,100%{opacity:1}50%{opacity:.6}}
+  .arr.pop{animation:pop .22s ease forwards;} @keyframes pop{0%{transform:scale(1);opacity:1}50%{transform:scale(1.4)}100%{transform:scale(.2);opacity:0}}
+  .arr.crack{animation:cr .18s ease;} @keyframes cr{0%{transform:scale(1)}50%{transform:scale(.82)}100%{transform:scale(1)}}
+  .shot{position:absolute;display:flex;align-items:center;justify-content:center;pointer-events:none;} .shot svg{width:56%;height:84%;} .shot .p{fill:none;stroke:var(--fire);stroke-width:11;stroke-linecap:round;stroke-linejoin:round;}
+  .board.shake{animation:shake .26s ease;} @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .combo{position:absolute;top:7px;left:50%;transform:translateX(-50%);font:800 15px var(--fd);color:var(--fire);opacity:0;pointer-events:none;} .combo.show{animation:cf .6s ease;}
+  @keyframes cf{0%{opacity:0;transform:translate(-50%,4px)}30%{opacity:1}100%{opacity:0;transform:translate(-50%,-8px)}}
+  .arr.pu{filter:drop-shadow(0 1px 3px rgba(242,183,5,.55));} .arr.pu svg{width:82%;height:82%;}
+  .buffbar{position:absolute;top:6px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:4;pointer-events:none;}
+  .buffchip{font:800 10px var(--fu);letter-spacing:.5px;text-transform:uppercase;color:#fff;padding:4px 9px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.2);}
+  .buffchip.over{background:var(--fire);} .buffchip.prec{background:var(--green);}
+  .buffflash{position:absolute;top:34px;left:50%;transform:translateX(-50%);font:800 17px var(--fd);color:#C98A00;opacity:0;z-index:4;pointer-events:none;white-space:nowrap;}
+  .buffflash.show{animation:cf .9s ease;}
+  /* magazine box with its own reload (charge) bar on top */
+  .mag{position:relative;width:min(94vw,402px);margin:9px auto 0;display:flex;align-items:center;justify-content:center;gap:7px;
+       background:var(--paper);border:2px solid var(--box-edge);border-radius:12px;padding:13px 10px 11px;overflow:hidden;}
+  .mag .rbar{position:absolute;top:0;left:0;height:5px;width:100%;background:var(--fire);transform-origin:left;transform:scaleX(0);z-index:1;}
+  .mag.reloading .rbar{transform:scaleX(1);}
+  .mag .pip{width:18px;height:7px;border-radius:4px;background:var(--fire);transition:background .1s;} .mag .pip.spent{background:var(--line);}
+  .mag .lbl{position:absolute;right:12px;font:700 9px var(--fu);letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);}
+  /* universal freeze button (same as Borde/Cascada/Desvío) */
+  .freeze{width:min(94vw,402px);margin:9px auto 0;}
+  .fbtn{width:100%;position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;height:54px;border-radius:14px;
+        cursor:pointer;color:var(--blue);background:rgba(0,98,227,.05);border:2px solid var(--blue);}
+  .fbtn .fill{position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--freeze-fill);transform-origin:left;transform:scaleX(0);transition:transform .2s linear;z-index:0;}
+  .fbtn .ic{position:relative;z-index:1;font-size:26px;line-height:1;} .fbtn .num{position:relative;z-index:1;display:none;font:800 28px var(--fd);}
+  .fbtn.frozen .ic{display:none;} .fbtn.frozen .num{display:inline-flex;} .fbtn.frozen{background:rgba(0,98,227,.3);color:#0049B0;}
+  .fbtn:not(.ready):not(.frozen){cursor:default;}
+  .gate{position:absolute;inset:0;background:rgba(251,238,230,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;text-align:center;padding:16px;border-radius:16px;z-index:5;}
+  .gate.hide{display:none;} .gate h2{font:800 24px var(--fd);margin:0;} .gate p{margin:0;color:var(--ink-soft);font-size:12.5px;max-width:255px;line-height:1.5;}
+  .gate .play{border:none;background:var(--fire);color:#fff;padding:12px 36px;border-radius:999px;font:800 15px var(--fu);cursor:pointer;}
+  .legend{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 6px;margin:2px 0;}
+  .legend div{display:flex;flex-direction:column;align-items:center;gap:2px;font:700 7.5px var(--fu);text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);}
+  .legend svg{width:24px;height:24px;overflow:visible;} .legend .p{fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;}
+  .hint{width:min(94vw,402px);text-align:center;font:500 11px var(--fu);color:var(--ink-soft);margin-top:8px;line-height:1.5;}
+</style>
+</head>
+<body>
+  <div class="head"><div class="eb">Flechas · prototipo</div><h1>Oleada<span class="dot">.</span></h1></div>
+  <div class="hud">
+    <div class="b score"><div class="v" id="score">0</div><div class="l">Puntos</div></div>
+    <div class="hearts" id="hearts"></div>
+    <div class="b"><div class="v" id="best">0</div><div class="l">Mejor</div></div>
+  </div>
+  <div class="timerrow"><div class="timer" id="timer">1:40</div><div class="wave" id="wave">Oleada 1/5</div></div>
+  <div class="boardwrap"><div class="board" id="board">
+    <div class="lanes" id="lanes"></div><div class="baseline" id="baseline"></div><div class="combo" id="combo"></div>
+    <div class="buffbar" id="buffbar"></div><div class="buffflash" id="buffflash"></div>
+    <div class="gate" id="gate"></div>
+  </div></div>
+  <div class="mag" id="mag"><span class="rbar" id="rbar"></span><span class="lbl">Carga</span></div>
+  <div class="freeze"><div class="fbtn" id="freeze"><span class="fill" id="fzfill"></span><span class="ic">❄</span><span class="num" id="fznum">5</span></div></div>
+  <div class="hint">Toca el <b>carril</b> para disparar (tienes cargador: cada tiro cuenta). <b>❄</b> congela 5 s cuando se llena.</div>
+
+<script>
+(function(){
+  const COLS=6, ROWS=9, HEARTS=3, MAG=6, RELOAD=1100, BEAT0=1050, BEATMIN=540, FZ_TICKS=16, FZ_DUR=5000;
+  const RUN_TIME=100000, WAVES=5, waveLen=RUN_TIME/WAVES;   // fixed timed run: 1:40 over 5 waves
+  // ---- deterministic daily seed (same waves for everyone, from the date) ----
+  function fnv(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+  const ISO=new Date().toISOString().slice(0,10); let rng=mulberry32(fnv('oleada-'+ISO));
+  const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
+  const RANK_MIN=[0,15,35,60,95,140,200,280,380,520];   // score thresholds — rough, calibrate after playtest
+  function rankFor(sc){let r=0;for(let i=0;i<RANK_MIN.length;i++)if(sc>=RANK_MIN[i])r=i;return r;}
+  const $=id=>document.getElementById(id);
+  const board=$('board'); let cw=0,ch=0;
+  let lh=''; for(let i=0;i<COLS;i++) lh+='<i></i>'; $('lanes').innerHTML=lh;
+  // magazine pips
+  let mh=''; for(let i=0;i<MAG;i++) mh+='<span class="pip" id="pip'+i+'"></span>'; $('mag').insertAdjacentHTML('afterbegin',mh);
+  function sizeBoard(){ const bw=board.clientWidth||360; cw=bw/COLS; ch=cw; board.style.height=(ch*ROWS)+'px'; arrows.forEach(place); }
+  window.addEventListener('resize',sizeBoard);
+  // ---- art ----
+  const VEC={D:[0,1],DL:[-1,1],DR:[1,1]};
+  function uv(d){const v=VEC[d],n=Math.hypot(v[0],v[1]);return[v[0]/n,v[1]/n];}
+  function chev(ux,uy,cx,cy,H,BK,W){const px=-uy,py=ux;const tx=cx+ux*H,ty=cy+uy*H,tlx=cx-ux*H,tly=cy-uy*H,bx=tx-ux*BK,by=ty-uy*BK;
+    return `<path class="p" d="M ${tlx} ${tly} L ${tx-ux*4} ${ty-uy*4}"/><path class="p" d="M ${bx+px*W} ${by+py*W} L ${tx} ${ty} L ${bx-px*W} ${by-py*W}"/>`;}
+  function art(type,dir){const [ux,uy]=uv(dir);let inner;
+    if(type==='split') inner=`<path class="p" d="M 20 5 L 20 19"/><path class="p" d="M 8 21 L 13 34 L 20 23"/><path class="p" d="M 32 21 L 27 34 L 20 23"/>`;
+    else if(type==='defl') inner=chev(ux,uy,20,21,12,10,9)+`<path class="p" d="M 6 20 L 12 20 M 34 20 L 28 20"/>`;
+    else if(type==='armor') inner=`<rect class="p" x="5" y="5" width="30" height="30" rx="8" fill="none"/>`+chev(ux,uy,20,20,10,9,8);
+    else if(type==='breach') inner=chev(ux,uy,20,19,15,13,12);
+    else inner=chev(ux,uy,20,20,14,11,10);
+    return `<svg viewBox="0 0 40 40">${inner}</svg>`;}
+  const upSVG=`<svg viewBox="0 0 40 40"><path class="p" d="M 20 33 L 20 9"/><path class="p" d="M 11 18 L 20 7 L 29 18"/></svg>`;
+  // ---- state ----
+  let arrows=[], score=0, best=0, hearts=HEARTS, beat=BEAT0, running=false, frozen=false;
+  let combo=0, comboT=0, cancels=0, timer=null, lastFire=0;
+  let timeLeft=RUN_TIME, clock=null, lastWave=1;
+  let ammo=MAG, reloading=false, fzCharge=0, fzReady=false;
+  let buffs={over:0,prec:0}, lastPU=0;
+  const SCORE={norm:1,armor:3,breach:2,split:2,sweep:2,defl:2};
+  function place(d){const a=d.el;a.style.width=cw+'px';a.style.height=ch+'px';a.style.left=(d.col*cw)+'px';a.style.top=(d.row*ch)+'px';}
+  function waveNow(){ return Math.min(WAVES, Math.floor((RUN_TIME-timeLeft)/waveLen)+1); }
+  function pickType(){const lv=waveNow();const w=[['norm',7]];
+    if(lv>=2){w.push(['armor',2]);w.push(['breach',1.4]);} if(lv>=3){w.push(['split',1.8]);w.push(['defl',1.4]);}
+    let t=0;w.forEach(x=>t+=x[1]);let r=rng()*t;for(const[k,v]of w){if((r-=v)<0)return k;}return 'norm';}
+  function mkArrow(type,dir,row,col){const el=document.createElement('div');el.className='arr'+(type!=='norm'?' t-'+type:'');el.dataset.t=type;el.dataset.d=dir;el.innerHTML=art(type,dir);
+    const d={el,col,row,dir,type,hp:type==='armor'?2:1};el._d=d;el.style.setProperty('--beat',(beat/1000)+'s');board.appendChild(el);arrows.push(d);place(d);return d;}
+  function spawn(forceType,forceCol){const type=forceType||pickType();let dir='D';
+    if(type==='norm'){const r=rng();dir=r<0.62?'D':(r<0.81?'DL':'DR');}
+    let col=forceCol!=null?forceCol:(rng()*COLS)|0; if(dir==='DL'&&col===0)col=1; if(dir==='DR'&&col===COLS-1)col=COLS-2;
+    return mkArrow(type,dir,0,col);}
+  function setBeat(ms){beat=ms;arrows.forEach(d=>d.el.style.setProperty('--beat',(beat/1000)+'s'));if(running&&!frozen){clearInterval(timer);timer=setInterval(tick,beat);}}
+  function tick(){ if(!running||frozen) return;
+    for(const d of arrows){ d.row+=(d.type==='fast'?2:1); const dx=VEC[d.dir][0]; d.col+=dx;
+      if(d.col<0){d.col=0;d.dir='DR';} if(d.col>COLS-1){d.col=COLS-1;d.dir='DL';} }
+    for(const d of arrows){ if(d.type!=='pu'&&d.el.dataset.d!==d.dir){d.el.innerHTML=art(d.type,d.dir);d.el.dataset.d=d.dir;} d.el.classList.toggle('near',d.type!=='pu'&&d.row>=ROWS-2); place(d); }
+    let keep=[]; for(const d of arrows){ if(d.row>=ROWS){ if(d.type==='pu'){d.el.remove();} else {loseHeart(d.type==='breach'?2:1);d.el.remove();} } else keep.push(d);} arrows=keep;
+    const lv=waveNow(),p=Math.min(0.85,0.38+lv*0.05); if(rng()<p) spawn(); if(lv>=4&&rng()<0.22) spawn();
+    if(!hasPU()&&cancels>3&&Date.now()-lastPU>9000&&rng()<0.05) spawnPU();
+    if(combo>0&&Date.now()-comboT>2600) combo=0;
+    if(!fzReady&&!frozen){ fzCharge=Math.min(1,fzCharge+1/FZ_TICKS); $('fzfill').style.transform='scaleX('+fzCharge+')'; if(fzCharge>=1){fzReady=true;$('freeze').classList.add('ready');} }
+    const bb=$('buffbar'); if(bb){ let h=''; if(buffActive('over'))h+='<span class="buffchip over">⚡ '+Math.ceil((buffs.over-Date.now())/1000)+'</span>'; if(buffActive('prec'))h+='<span class="buffchip prec">🎯 '+Math.ceil((buffs.prec-Date.now())/1000)+'</span>'; bb.innerHTML=h; }
+  }
+  function renderAmmo(){ for(let i=0;i<MAG;i++) $('pip'+i).classList.toggle('spent', i>=ammo); }
+  function reload(){ reloading=true; $('mag').classList.add('reloading'); $('rbar').style.transition='transform '+(RELOAD/1000)+'s linear';
+    requestAnimationFrame(()=>{ $('rbar').style.transform='scaleX(1)'; });
+    setTimeout(()=>{ ammo=MAG; reloading=false; $('mag').classList.remove('reloading'); $('rbar').style.transition='none'; $('rbar').style.transform='scaleX(0)'; renderAmmo(); },RELOAD); }
+  function killArrow(d,opts){ opts=opts||{}; d.el.classList.add('pop'); const dd=d; arrows=arrows.filter(a=>a!==dd); setTimeout(()=>dd.el.remove(),210);
+    combo=Math.min(9,combo+1); comboT=Date.now(); const mult=Math.max(1,combo); score+=(SCORE[d.type]||1)*mult; $('score').textContent=score;
+    if(combo>=2){const c=$('combo');c.textContent='×'+mult;c.classList.remove('show');void c.offsetWidth;c.classList.add('show');}
+    cancels++;
+    if(opts.secondary) return;
+    const cl=x=>Math.max(0,Math.min(COLS-1,x));
+    if(d.type==='split'){ mkArrow('norm','DL',d.row,cl(d.col-1)); mkArrow('norm','DR',d.row,cl(d.col+1)); }
+    else if(d.type==='defl'){ for(const a of arrows){ if(a.row>=d.row-2&&a.row<=d.row+2){ if(a.col===d.col-1){a.col=cl(d.col-2);place(a);} else if(a.col===d.col+1){a.col=cl(d.col+2);place(a);} } } }
+  }
+  function killLowest(col){ if(col<0||col>=COLS) return; let t=null; for(const a of arrows){ if(a.col===col&&a.type!=='pu'&&(!t||a.row>t.row)) t=a; } if(t) killArrow(t,{secondary:true}); }
+  function buffActive(k){ return Date.now()<buffs[k]; }
+  function puArt(sub){ const ic = sub==='barrido' ? '<path d="M9 13 H31 M9 20 H31 M9 27 H31" stroke="#fff" stroke-width="3.4" stroke-linecap="round" fill="none"/>'
+      : sub==='over' ? '<path d="M23 7 L12 23 H20 L17 33 L28 16 H20 Z" fill="#fff"/>'
+      : '<circle cx="20" cy="20" r="9" fill="none" stroke="#fff" stroke-width="3.2"/><circle cx="20" cy="20" r="2.4" fill="#fff"/>';
+    return `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#F2B705"/>${ic}</svg>`; }
+  function mkPickup(sub,col){ const el=document.createElement('div'); el.className='arr pu'; el.dataset.t='pu'; el.dataset.d='D'; el.innerHTML=puArt(sub);
+    const d={el,col,row:0,dir:'D',type:'pu',sub}; el._d=d; el.style.setProperty('--beat',(beat/1000)+'s'); board.appendChild(el); arrows.push(d); place(d); return d; }
+  function spawnPU(sub,col){ sub=sub||['barrido','over','prec'][(rng()*3)|0]; if(col==null)col=(rng()*COLS)|0; lastPU=Date.now(); return mkPickup(sub,col); }
+  function hasPU(){ return arrows.some(a=>a.type==='pu'); }
+  function flashBuff(t){ const f=$('buffflash'); if(!f)return; f.textContent=t; f.classList.remove('show'); void f.offsetWidth; f.classList.add('show'); }
+  function grab(sub){ if(sub==='barrido'){ for(let c=0;c<COLS;c++) killLowest(c); flashBuff('🌊 ¡Barrido!'); }
+    else if(sub==='over'){ buffs.over=Date.now()+5000; flashBuff('⚡ ¡Sobrecarga!'); }
+    else if(sub==='prec'){ buffs.prec=Date.now()+5000; flashBuff('🎯 ¡Precisión!'); }
+    else if(sub==='recarga'){ ammo=MAG; reloading=false; $('mag').classList.remove('reloading'); $('rbar').style.transition='none'; $('rbar').style.transform='scaleX(0)'; renderAmmo(); flashBuff('🔁 ¡Recarga!'); } }
+  function shotVisual(col,toRow){const s=document.createElement('div');s.className='shot';s.innerHTML=upSVG;s.style.width=cw+'px';s.style.height=ch+'px';s.style.left=(col*cw)+'px';s.style.top=((ROWS-1)*ch)+'px';board.appendChild(s);
+    requestAnimationFrame(()=>{s.style.transition='top .12s linear';s.style.top=(toRow*ch)+'px';});setTimeout(()=>s.remove(),170);}
+  function fireCol(col){ if(!running||frozen||reloading||ammo<=0) return; ammo--; renderAmmo();
+    const lane=arrows.filter(a=>a.col===col).sort((a,b)=>b.row-a.row); const t=lane[0]; shotVisual(col,t?t.row:0);
+    if(t){
+      if(t.type==='pu'){ grab(t.sub); arrows=arrows.filter(a=>a!==t); t.el.remove(); }
+      else if(t.type==='armor'&&t.hp>1){ t.hp--; t.type='norm'; t.el.className='arr'; t.el.dataset.t='norm'; t.el.innerHTML=art('norm',t.dir); t.el.classList.add('crack'); setTimeout(()=>t.el.classList.remove('crack'),180); }
+      else { killArrow(t,{}); if(buffActive('over')){ const t2=arrows.filter(a=>a.col===col&&a.type!=='pu').sort((a,b)=>b.row-a.row)[0]; if(t2){ if(t2.type==='armor'&&t2.hp>1){t2.hp--;t2.type='norm';t2.el.className='arr';t2.el.dataset.t='norm';t2.el.innerHTML=art('norm',t2.dir);} else killArrow(t2,{}); } } }
+    }
+    if(ammo<=0) reload();
+  }
+  function loseHeart(n){ combo=0;   // a breach ALWAYS breaks the combo — even under Precisión, so there's still a reason to defend
+    if(buffActive('prec')){ const bl=$('baseline'); bl.classList.add('hit'); setTimeout(()=>bl.classList.remove('hit'),200); return; }   // shielded: no heart loss, but the combo is gone
+    hearts-=n; if(hearts<0)hearts=0; renderHearts(); const bl=$('baseline'); bl.classList.add('hit'); board.classList.add('shake');
+    setTimeout(()=>{bl.classList.remove('hit');board.classList.remove('shake');},260); if(hearts<=0) gameOver(); }
+  function renderHearts(){let h='';for(let i=0;i<HEARTS;i++)h+=`<svg viewBox="0 0 24 23"><path class="${i<hearts?'hon':'hoff'}" d="M12 21C5 16 2 12 2 8a5 5 0 0 1 10-1 5 5 0 0 1 10 1c0 4-3 8-10 13Z"/></svg>`;$('hearts').innerHTML=h;}
+  function doFreeze(){ if(!fzReady||!running||frozen) return; frozen=true; fzReady=false; fzCharge=0; const b=$('freeze'); b.classList.remove('ready'); b.classList.add('frozen'); $('fzfill').style.transform='scaleX(0)';
+    clearInterval(timer); let n=5; $('fznum').textContent=n; const ci=setInterval(()=>{n--;$('fznum').textContent=n;if(n<=0)clearInterval(ci);},1000);
+    setTimeout(()=>{ frozen=false; b.classList.remove('frozen'); if(running) timer=setInterval(tick,beat); },FZ_DUR); }
+  // input
+  board.addEventListener('pointerdown',e=>{ if(!running||frozen) return; const now=Date.now(); if(now-lastFire<80) return; lastFire=now;
+    const r=board.getBoundingClientRect(); const col=Math.max(0,Math.min(COLS-1,Math.floor((e.clientX-r.left)/r.width*COLS))); fireCol(col); });
+  window.addEventListener('keydown',e=>{const n=parseInt(e.key,10);if(n>=1&&n<=COLS)fireCol(n-1);});
+  $('freeze').addEventListener('click',doFreeze);
+  function lg(t,d,c){return `<svg viewBox="0 0 40 40" style="color:${c}">${art(t,d).replace(/<svg[^>]*>|<\/svg>/g,'').replace(/class="p"/g,'class="p" stroke="'+c+'"')}</svg>`;}
+  function showGate(html){const g=$('gate');g.classList.remove('hide');g.innerHTML=html;const pb=g.querySelector('.play');if(pb)pb.addEventListener('click',start);}
+  function start(){ arrows.forEach(d=>d.el.remove()); arrows=[]; score=0; hearts=HEARTS; beat=BEAT0; combo=0; cancels=0; ammo=MAG; reloading=false;
+    timeLeft=RUN_TIME; lastWave=1; buffs={over:0,prec:0}; rng=mulberry32(fnv('oleada-'+ISO));
+    fzCharge=0; fzReady=false; $('freeze').classList.remove('ready','frozen'); $('fzfill').style.transform='scaleX(0)'; $('mag').classList.remove('reloading'); $('rbar').style.transition='none'; $('rbar').style.transform='scaleX(0)';
+    $('score').textContent=0; $('timer').textContent=fmt(RUN_TIME); $('timer').classList.remove('low'); $('wave').textContent='Oleada 1/'+WAVES; $('buffbar').innerHTML='';
+    renderHearts(); renderAmmo(); running=true; frozen=false; $('gate').classList.add('hide'); sizeBoard();
+    for(let i=0;i<2;i++) spawn(); clearInterval(timer); timer=setInterval(tick,beat); clearInterval(clock); clock=setInterval(clockTick,100); }
+  function fmt(ms){ const s=Math.max(0,Math.ceil(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+  function clockTick(){ if(!running||frozen) return; timeLeft-=100; if(timeLeft<0)timeLeft=0;
+    $('timer').textContent=fmt(timeLeft); $('timer').classList.toggle('low',timeLeft<=10000);
+    const w=waveNow(); if(w!==lastWave){ lastWave=w; setBeat(Math.max(BEATMIN,BEAT0-(w-1)*120)); $('wave').textContent='Oleada '+w+'/'+WAVES; }
+    if(timeLeft<=0) finishRun(); }
+  function gameOver(){ running=false; clearInterval(timer); clearInterval(clock); best=Math.max(best,score); $('best').textContent=best;
+    showGate(`<h2>Te superaron</h2><p><b style="color:var(--danger);font-size:20px">${score} puntos</b><br>Rango: <b style="color:var(--fire)">${RANK_NAMES[rankFor(score)]}</b> · Mejor: ${best}</p><button class="play">Jugar de nuevo</button>`); }
+  function finishRun(){ running=false; clearInterval(timer); clearInterval(clock); best=Math.max(best,score); $('best').textContent=best;
+    showGate(`<h2>¡Sobreviviste!</h2><p><b style="color:var(--fire);font-size:20px">${score} puntos</b> · ${hearts} ♥<br>Rango: <b style="color:var(--fire)">${RANK_NAMES[rankFor(score)]}</b> · Mejor: ${best}</p><button class="play">Jugar de nuevo</button>`); }
+  sizeBoard(); renderHearts(); renderAmmo();
+  showGate(`<h2>Oleada</h2><p>Cancela las flechas antes de que crucen tu línea. Cada tiro cuenta — recargas al vaciar el cargador. Los <b style="color:#C98A00">tokens dorados</b> son mejoras: dispárales para recogerlas.</p>
+    <div class="legend">
+      <div>${lg('armor','D','#5b6770')}<span>Blindada ×2</span></div>
+      <div>${lg('breach','D','#EA3546')}<span>Brecha −2</span></div>
+      <div>${lg('split','D','#662E9B')}<span>Divide</span></div>
+      <div>${lg('defl','D','#1E8E82')}<span>Desvía</span></div>
+      <div><svg viewBox="0 0 40 40">${puArt('over').replace(/<svg[^>]*>|<\/svg>/g,'')}</svg><span>Mejora</span></div>
+    </div>
+    <button class="play">Empezar</button>`);
+  window.__ol={ start, tick, clockTick, setTime:(ms)=>{timeLeft=ms;}, fire:fireCol, spawn, spawnPU, grab, freeze:doFreeze, forceReady:()=>{fzCharge=1;fzReady=true;$('freeze').classList.add('ready');},
+    clear:()=>{arrows.forEach(d=>d.el.remove());arrows=[];}, refill:()=>{ammo=MAG;reloading=false;renderAmmo();},
+    state:()=>({arrows:arrows.length,types:arrows.reduce((m,a)=>((m[a.type]=(m[a.type]||0)+1),m),{}),cols:arrows.map(a=>({t:a.type,c:a.col,r:a.row})),score,hearts,beat,running,frozen,ammo,reloading,fzReady,cancels,combo,timeLeft,wave:lastWave,
+      buffOver:Date.now()<buffs.over,buffPrec:Date.now()<buffs.prec}) };
+})();
+</script>
+</body>
+</html>
