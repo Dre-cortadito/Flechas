@@ -37,9 +37,9 @@
   .lanes{position:absolute;inset:0;display:flex;pointer-events:none;} .lanes i{flex:1;border-right:1px solid rgba(26,22,20,.05);} .lanes i:last-child{border-right:none;}
   .baseline{position:absolute;left:0;right:0;bottom:0;height:7px;background:var(--ink);} .baseline.hit{background:var(--danger);}
   .arr{position:absolute;display:flex;align-items:center;justify-content:center;transition:top var(--beat,1s) linear,left .18s ease;will-change:top,left;}
-  .arr svg{width:76%;height:76%;overflow:visible;}
-  .arr .p{fill:none;stroke:var(--ink);stroke-width:9;stroke-linecap:round;stroke-linejoin:round;}
-  .arr.t-armor .p{stroke:var(--slate);} .arr.t-breach .p{stroke:var(--danger);stroke-width:12;} .arr.t-split .p{stroke:var(--purple);}
+  .arr svg{width:92%;height:92%;overflow:visible;}
+  .arr .p{fill:none;stroke:var(--ink);stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round;}
+  .arr.t-armor .p{stroke:var(--slate);} .arr.t-breach .p{stroke:var(--danger);stroke-width:9;} .arr.t-split .p{stroke:var(--purple);}
   .arr.t-sweep .p{stroke:var(--green);} .arr.t-defl .p{stroke:var(--teal);}
   .arr.near{filter:drop-shadow(0 0 5px var(--danger));animation:urg .7s ease-in-out infinite;}
   @keyframes urg{0%,100%{opacity:1}50%{opacity:.6}}
@@ -119,12 +119,12 @@
   function uv(d){const v=VEC[d],n=Math.hypot(v[0],v[1]);return[v[0]/n,v[1]/n];}
   function chev(ux,uy,cx,cy,H,BK,W){const px=-uy,py=ux;const tx=cx+ux*H,ty=cy+uy*H,tlx=cx-ux*H,tly=cy-uy*H,bx=tx-ux*BK,by=ty-uy*BK;
     return `<path class="p" d="M ${tlx} ${tly} L ${tx-ux*4} ${ty-uy*4}"/><path class="p" d="M ${bx+px*W} ${by+py*W} L ${tx} ${ty} L ${bx-px*W} ${by-py*W}"/>`;}
-  function art(type,dir){const [ux,uy]=uv(dir);let inner;
-    if(type==='split') inner=`<path class="p" d="M 20 5 L 20 19"/><path class="p" d="M 8 21 L 13 34 L 20 23"/><path class="p" d="M 32 21 L 27 34 L 20 23"/>`;
-    else if(type==='defl') inner=chev(ux,uy,20,21,12,10,9)+`<path class="p" d="M 6 20 L 12 20 M 34 20 L 28 20"/>`;
-    else if(type==='armor') inner=`<rect class="p" x="5" y="5" width="30" height="30" rx="8" fill="none"/>`+chev(ux,uy,20,20,10,9,8);
-    else if(type==='breach') inner=chev(ux,uy,20,19,15,13,12);
-    else inner=chev(ux,uy,20,20,14,11,10);
+  function art(type,dir){const [ux,uy]=uv(dir);let inner;   // thinner + longer arrows, closer to the other Flechas games
+    if(type==='split') inner=`<path class="p" d="M 20 3 L 20 21"/><path class="p" d="M 8 23 L 13 36 L 20 25"/><path class="p" d="M 32 23 L 27 36 L 20 25"/>`;
+    else if(type==='defl') inner=chev(ux,uy,20,20,17,12,7)+`<path class="p" d="M 5 20 L 12 20 M 35 20 L 28 20"/>`;
+    else if(type==='armor') inner=`<rect class="p" x="5" y="5" width="30" height="30" rx="8" fill="none"/>`+chev(ux,uy,20,20,13,10,7);
+    else if(type==='breach') inner=chev(ux,uy,20,20,18,13,11);
+    else inner=chev(ux,uy,20,20,18,12,8);
     return `<svg viewBox="0 0 40 40">${inner}</svg>`;}
   const upSVG=`<svg viewBox="0 0 40 40"><path class="p" d="M 20 33 L 20 9"/><path class="p" d="M 11 18 L 20 7 L 29 18"/></svg>`;
   // ---- state ----
