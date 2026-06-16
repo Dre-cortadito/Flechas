@@ -1974,7 +1974,8 @@ function setLandMode(m){ const d=LAND_MODES[m]; if(!d) return; landMode=m;
   document.querySelectorAll('.land-tab').forEach(t=>t.classList.toggle('active', t.getAttribute('data-mode')===m));
   const lbl=document.querySelector('#land-reto-row .lbl'), val=document.getElementById('land-reto'), play=document.getElementById('play-btn');
   if(d.ready){ play.textContent='Jugar'; play.classList.remove('is-soon'); play.disabled=false;
-    if(m==='cascada'){ lbl.textContent='Arcade'; val.textContent='2:00'; }
+    if(m==='cascada'){ lbl.textContent='Reto del día'; val.textContent='2:00'; }
+    else if(m==='desvio'){ lbl.textContent='Reto del día'; const _dg=ISO.replace(/-/g,''); let _h=2166136261; for(let _i=0;_i<_dg.length;_i++){_h^=_dg.charCodeAt(_i);_h=(_h*16777619)>>>0;} val.textContent=(50+(_h%11)*5)+' pts'; }
     else { lbl.textContent='Reto del día'; val.textContent='≤ '+fmtTime(META); } }
   else { lbl.textContent='Estado'; val.textContent='Próximamente'; play.textContent='Próximamente'; play.classList.add('is-soon'); play.disabled=true; }
 }
@@ -2036,7 +2037,8 @@ function boot(){
     document.getElementById('maestro-share').addEventListener('click',doShare);
     document.getElementById('over-retry').addEventListener('click',()=>{ closeGoal('over-panel'); resetToday(); });
 
-    if(firedCells()>0 || finished) document.body.classList.add('game-active');
+    if((firedCells()>0 || finished) && location.hash!=='#landing') document.body.classList.add('game-active');
+    if(location.hash==='#landing'){ try{ history.replaceState(null,'',location.pathname); }catch(e){} }
     applyGateState();
   } finally { document.body.classList.add('ready'); }
 }

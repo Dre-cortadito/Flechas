@@ -155,7 +155,7 @@
   .freeze { width:min(94vw,402px); margin:9px auto 0; }
   .fbtn { width:100%; position:relative; overflow:hidden; display:inline-flex; align-items:center; justify-content:center; height:52px; border-radius:14px; cursor:pointer; color:var(--blue); background:rgba(0,98,227,.05); border:2px solid var(--blue); }
   .fbtn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); transition:transform .2s linear; z-index:0; }
-  .fbtn .ic { position:relative; z-index:1; font-size:26px; line-height:1; } .fbtn .num { position:relative; z-index:1; display:none; font:800 28px var(--font-display); }
+  .fbtn .ic { position:relative; z-index:1; line-height:1; } .fbtn .ic svg { width:30px; height:30px; display:block; } .fbtn .num { position:relative; z-index:1; display:none; font:800 28px var(--font-display); }
   .fbtn.frozen .ic{ display:none; } .fbtn.frozen .num{ display:inline-flex; } .fbtn.frozen{ background:rgba(0,98,227,.3); color:#0049B0; }
   .fbtn:not(.ready):not(.frozen){ cursor:default; }
   .ol-hint { width:min(94vw,402px); text-align:center; font:500 11.5px var(--font-ui); color:var(--ink-soft); margin:8px auto 0; line-height:1.5; }
@@ -200,8 +200,7 @@
         <div class="ol-gate" id="ol-gate"></div>
       </div></div>
       <div class="mag" id="ol-mag"><span class="rbar" id="ol-rbar"></span><span class="lbl">Carga</span></div>
-      <div class="freeze"><div class="fbtn" id="ol-freeze"><span class="fill" id="ol-fzfill"></span><span class="ic">❄</span><span class="num" id="ol-fznum">5</span></div></div>
-      <p class="ol-hint">Toca el <b>carril</b> para disparar — cada tiro cuenta. <b>❄</b> congela 5 s.</p>
+      <div class="freeze"><div class="fbtn" id="ol-freeze"><span class="fill" id="ol-fzfill"></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg></span><span class="num" id="ol-fznum">5</span></div></div>
     </section>
   </main>
 
@@ -307,7 +306,7 @@ function applyTheme(t){ document.body.setAttribute('data-theme',t); document.get
 function toggleTheme(){ applyTheme(document.body.getAttribute('data-theme')==='black'?'light':'black'); }
 
 /* ===== Oleada engine ===== */
-const COLS=6, ROWS=9, HEARTS=3, MAG=6, RELOAD=1100, BEAT0=1050, BEATMIN=540, FZ_TICKS=16, FZ_DUR=5000;
+const COLS=6, ROWS=7, HEARTS=3, MAG=6, RELOAD=1100, BEAT0=1050, BEATMIN=540, FZ_TICKS=16, FZ_DUR=5000;
 const RUN_TIME=100000, WAVES=5, waveLen=RUN_TIME/WAVES;
 function fnv(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -318,7 +317,7 @@ let lh=''; for(let i=0;i<COLS;i++) lh+='<i></i>'; $('ol-lanes').innerHTML=lh;
 let mh=''; for(let i=0;i<MAG;i++) mh+='<span class="pip" id="ol-pip'+i+'"></span>'; $('ol-mag').insertAdjacentHTML('afterbegin',mh);
 function sizeBoard(){                                   // fit BOTH width and remaining viewport height so mag + freeze stay on screen
   const wLimit=Math.min((window.innerWidth||360)*0.94,402);
-  const hLimit=Math.max(220,(window.innerHeight||700)-360);   // reserve for header+rank+timer+hearts+mag+freeze+hint
+  const hLimit=Math.max(220,(window.innerHeight||700)-300);   // reserve for header+rank+timer+hearts+mag+freeze
   const cell=Math.max(30,Math.min(wLimit/COLS, hLimit/ROWS));
   cw=ch=cell; const px=(cell*COLS)+'px';
   const wrap=document.querySelector('.boardwrap'); if(wrap) wrap.style.width=px;
@@ -389,7 +388,7 @@ function grab(sub){ if(sub==='barrido'){ for(let c=0;c<COLS;c++) killLowest(c); 
   else if(sub==='prec'){ buffs.prec=Date.now()+5000; olFlash('🎯 ¡Precisión!'); } }
 function shotVisual(col,toRow){const s=document.createElement('div');s.className='shot';s.innerHTML=upSVG;s.style.width=cw+'px';s.style.height=ch+'px';s.style.left=(col*cw)+'px';s.style.top=((ROWS-1)*ch)+'px';board.appendChild(s);
   requestAnimationFrame(()=>{s.style.transition='top .12s linear';s.style.top=(toRow*ch)+'px';});setTimeout(()=>s.remove(),170);}
-function fireCol(col){ if(!running||frozen||reloading||ammo<=0) return; ammo--; renderAmmo();
+function fireCol(col){ if(!running||reloading||ammo<=0) return; ammo--; renderAmmo();   // firing is allowed WHILE frozen — that's the point: pause the wave, mop up the board
   const lane=arrows.filter(a=>a.col===col).sort((a,b)=>b.row-a.row); const t=lane[0]; shotVisual(col,t?t.row:0);
   if(t){ if(t.type==='pu'){ grab(t.sub); arrows=arrows.filter(a=>a!==t); t.el.remove(); }
     else if(t.type==='armor'&&t.hp>1){ t.hp--; t.type='norm'; t.el.className='arr'; t.el.dataset.t='norm'; t.el.innerHTML=art('norm',t.dir); t.el.classList.add('crack'); setTimeout(()=>t.el.classList.remove('crack'),180); }
@@ -415,6 +414,9 @@ function endRun(survived){ running=false; clearInterval(timer); clearInterval(cl
   g.classList.add('show'); $('ol-again').addEventListener('click',start); $('ol-share2').addEventListener('click',doShare); }
 function gameOver(){ endRun(false); }
 function finishRun(){ endRun(true); }
+function showStartGate(){ const g=$('ol-gate'); g.classList.add('show');
+  g.innerHTML='<h2>Oleada</h2><p>Detén las flechas antes de que crucen tu línea. Toca un <b>carril</b> para disparar — cada tiro cuenta. Sobrevive <b>1:40</b>.</p><button class="btn primary" id="ol-start" style="margin-top:4px">Empezar</button>';
+  const b=$('ol-start'); if(b) b.addEventListener('click',start); }
 function start(){ arrows.forEach(d=>d.el.remove()); arrows=[]; runScore=0; hearts=HEARTS; beat=BEAT0; combo=0; cancels=0; ammo=MAG; reloading=false;
   timeLeft=RUN_TIME; lastWave=1; buffs={over:0,prec:0}; rng=mulberry32(fnv('oleada-'+ISO)); olWavesSurvived=0;
   fzCharge=0; fzReady=false; $('ol-freeze').classList.remove('ready','frozen'); $('ol-fzfill').style.transform='scaleX(0)'; $('ol-mag').classList.remove('reloading'); $('ol-rbar').style.transition='none'; $('ol-rbar').style.transform='scaleX(0)';
@@ -424,7 +426,7 @@ function start(){ arrows.forEach(d=>d.el.remove()); arrows=[]; runScore=0; heart
 function stopRun(){ running=false; clearInterval(timer); clearInterval(clock); }
 
 /* board input */
-board.addEventListener('pointerdown',e=>{ if(!running||frozen) return; const now=Date.now(); if(now-lastFire<80) return; lastFire=now;
+board.addEventListener('pointerdown',e=>{ if(!running) return; const now=Date.now(); if(now-lastFire<80) return; lastFire=now;
   const r=board.getBoundingClientRect(); const col=Math.max(0,Math.min(COLS-1,Math.floor((e.clientX-r.left)/r.width*COLS))); fireCol(col); });
 window.addEventListener('keydown',e=>{ const n=parseInt(e.key,10); if(n>=1&&n<=COLS&&running) fireCol(n-1); });
 $('ol-freeze').addEventListener('click',doFreeze);
@@ -441,7 +443,7 @@ function boot(){ try{
   document.getElementById('land-date').textContent=longDate(ISO); document.getElementById('land-reto').textContent=RETO+' pts'; document.getElementById('wordmark-name').textContent=GAME_NAME;
   renderRank(); renderRangos(); fillLegend(); sizeBoard();
   $('play-btn').addEventListener('click',()=>{ document.body.classList.add('game-active'); start(); });
-  $('home-btn').addEventListener('click',()=>{ closeModals(); stopRun(); document.body.classList.remove('game-active'); });
+  $('home-btn').addEventListener('click',()=>{ window.location.href='./index.html#landing'; });   // back to the main Flechas landing
   $('rank-bar').addEventListener('click',()=>{ renderRangos(); openModal('rangos-modal'); });
   document.querySelectorAll('[data-modal]').forEach(a=>a.addEventListener('click',()=>{ renderRangos(); openModal(a.getAttribute('data-modal')); }));
   document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeModals));
@@ -456,6 +458,7 @@ function boot(){ try{
   $('m-sub').addEventListener('click',()=>{ document.getElementById('menu-pop').classList.remove('open'); window.open('https://cortadito.news','_blank'); });
   $('goal-share').addEventListener('click',doShare); $('maestro-share').addEventListener('click',doShare);
   window.__ol={ start, tick, clockTick, fire:fireCol, state:()=>({arrows:arrows.length,runScore,score,hearts,timeLeft,wave:lastWave,running}) };
+  document.body.classList.add('game-active'); showStartGate();   // open straight into the game with a start gate (like Cascada) — the main landing is index.html
 } finally { document.body.classList.add('ready'); } }
 boot();
 </script>
