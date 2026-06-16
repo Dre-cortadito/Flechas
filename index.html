@@ -161,7 +161,7 @@
   /* Board-state tints live in the BACKGROUND so they never collide with the purple beam on the edges.
      One shows at a time, by priority (source order = later wins): racha < danger < shield. Freeze (set
      inline by JS) sits on top of all of them. */
-  body.racha-on .board-panel { background:#FBE79E; }   /* clearly-visible yellow — streak (the ambient state) */
+  body.racha-on .board-panel { background:#FBF1C9; }   /* soft yellow — streak (the ambient state) */
   body.danger   .board-panel { background:#F9D4D5; }   /* soft red — Peligro */
   body.shielded .board-panel { background:#D4F2EC; }   /* soft cyan — Escudo (overrides danger: you're safe) */
   .board-panel.shield-hit { animation:shieldhit .3s ease; }
@@ -241,7 +241,7 @@
   .fbox-tile + .fbox-tile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--ink-soft); }
   .fbox-val { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
   .fbox-lbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
-  .t-racha   .fbox-val { color:#C99700; }
+  .t-racha   .fbox-val { color:#F9C80E; }
   .t-peligro .fbox-val { color:#EA3546; }
   .t-shield  .fbox-val { color:#4ECDC4; }
   /* beans tile goes urgent (red, pulsing) when the soonest bean is about to vanish */
@@ -1720,7 +1720,7 @@ function renderStatus(){
   const pOn=peligroOn(); setFx('fb-peligro', pOn, pOn?(Math.max(0,Math.ceil((peligroEnd-Date.now())/1000))+'s'):'—');
   const shOn=shieldOn(); setFx('fb-shield', shOn, shOn?(Math.max(0,Math.ceil((shieldEnd-Date.now())/1000))+'s'):'—');
   // Borde (beam) countdown — seconds until it jumps to the next edge (like Cascada's "Nuevo")
-  if(started && !finished){ const into=(((elapsed-beamBaseTime-HOT_GRACE)%PERIOD)+PERIOD)%PERIOD; setFx('fb-borde', true, into<HOT_DWELL?(Math.max(1,Math.ceil(HOT_DWELL-into))+'s'):'→'); }
+  if(started && !finished){ const into=(((elapsed-beamBaseTime-HOT_GRACE)%PERIOD)+PERIOD)%PERIOD; setFx('fb-borde', true, into<HOT_DWELL?(Math.max(1,Math.ceil(HOT_DWELL-into))+'s'):'—'); }
   else setFx('fb-borde', false, '—');
   const lc=document.getElementById('flx-left'); if(lc) lc.textContent=boardNum+'/'+RUN_BOARDS;
 }

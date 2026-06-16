@@ -316,7 +316,17 @@ const $=id=>document.getElementById(id);
 const board=$('ol-board'); let cw=0,ch=0;
 let lh=''; for(let i=0;i<COLS;i++) lh+='<i></i>'; $('ol-lanes').innerHTML=lh;
 let mh=''; for(let i=0;i<MAG;i++) mh+='<span class="pip" id="ol-pip'+i+'"></span>'; $('ol-mag').insertAdjacentHTML('afterbegin',mh);
-function sizeBoard(){ const bw=board.clientWidth||360; cw=bw/COLS; ch=cw; board.style.height=(ch*ROWS)+'px'; arrows.forEach(place); }
+function sizeBoard(){                                   // fit BOTH width and remaining viewport height so mag + freeze stay on screen
+  const wLimit=Math.min((window.innerWidth||360)*0.94,402);
+  const hLimit=Math.max(220,(window.innerHeight||700)-360);   // reserve for header+rank+timer+hearts+mag+freeze+hint
+  const cell=Math.max(30,Math.min(wLimit/COLS, hLimit/ROWS));
+  cw=ch=cell; const px=(cell*COLS)+'px';
+  const wrap=document.querySelector('.boardwrap'); if(wrap) wrap.style.width=px;
+  board.style.height=(cell*ROWS)+'px';
+  const mag=$('ol-mag'); if(mag) mag.style.width=px;
+  const fz=document.querySelector('.freeze'); if(fz) fz.style.width=px;
+  const hint=document.querySelector('.ol-hint'); if(hint) hint.style.width=px;
+  arrows.forEach(place); }
 window.addEventListener('resize',sizeBoard);
 const VEC={D:[0,1],DL:[-1,1],DR:[1,1]};
 function uv(d){const v=VEC[d],n=Math.hypot(v[0],v[1]);return[v[0]/n,v[1]/n];}
