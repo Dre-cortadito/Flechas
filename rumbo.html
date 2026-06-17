@@ -81,8 +81,9 @@
   .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--accent-2); transition:color .15s linear; }
   .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
   @keyframes cpulse { 50%{ opacity:.45; } }
-  .gauge { width:var(--gw); height:9px; border-radius:5px; background:var(--ink-line); overflow:hidden; margin:7px auto; }
-  .gauge .gfill { height:100%; width:0%; background:var(--accent-2); transition:width .09s linear; }
+  .gauge { width:var(--gw); margin:7px auto; padding:5px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; }   /* encased, like Cascada's bar */
+  .gauge .gtrack { height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
+  .gauge .gfill { display:block; height:100%; width:0%; background:var(--accent-2); transition:width .09s linear; }
 
   /* ===== Maze ===== */
   .maze-wrap { width:100%; display:flex; justify-content:center; }
@@ -220,7 +221,7 @@
       </div>
     </div>
 
-    <div class="gauge"><div class="gfill" id="gfill"></div></div>
+    <div class="gauge"><div class="gtrack"><div class="gfill" id="gfill"></div></div></div>
 
     <div class="play-wrap">
       <div class="play" id="play">
@@ -285,7 +286,7 @@
 
   const DIR={U:[-1,0],D:[1,0],L:[0,-1],R:[0,1]}, KEYS=['U','D','L','R'];
   const MOVE_WINDOW=5000, BLANK_MS=1000, STEP_MS=185;   // move window per solved board, blank buffer, drive speed (tuning knobs)
-  const BU=100, BCOLS=10, BROWS=9, BCOVER=0.64, BMIN=2;   // small Cascada — denser grid so cells/arrows match Cascada's scale
+  const BU=100, BCOLS=10, BROWS=9, BCOVER=0.45, BMIN=2;   // small Cascada — fine cells (Cascada arrow scale), lighter piece count
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // time (seconds) edges; CUT[k] ascending. k=0 -> Maestro(rank 9, t=0), k=9 -> Debutante(rank 0). rank = 9 - band.
   const CUT=[0,30,42,56,72,90,110,134,162,195];
@@ -307,7 +308,7 @@
     return '<svg viewBox="0 0 40 40"><path class="p" d="M '+tlx+' '+tly+' L '+(tx-dx*4)+' '+(ty-dy*4)+'"/><path class="p" d="M '+(bx+px*W)+' '+(by+py*W)+' L '+tx+' '+ty+' L '+(bx-px*W)+' '+(by-py*W)+'"/></svg>'; }
 
   // ===== maze generation (deterministic recursive backtracker, thin walls) =====
-  const LW=10, LH=7;   // logical cols/rows — fine, wide-short grid → reads like a real maze, fills width, stays short
+  const LW=13, LH=9;   // logical cols/rows — denser, more complex maze (more junctions + dead ends)
   function genMaze(){ const rnd=mulberry32(fnv('rumbo-maze-'+ISO)); const Vh=2*LH+1, Vw=2*LW+1;
     const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
     const inM=Array.from({length:LH},()=>Array(LW).fill(false));
@@ -405,8 +406,9 @@
     const mazeH=mc*MR;
     board.style.width=(mc*MC)+'px'; board.style.height=mazeH+'px';
     // play area (holds either the arrow board or the big d-pad): full width, square-ish, capped to the room left under the maze
-    const playH=Math.max(150, Math.min(gw, vh - 250 - mazeH));
-    const play=$('play'); if(play) play.style.height=playH+'px';
+    const availH=Math.max(120, vh - 262 - mazeH);
+    const cell=Math.min(gw/BCOLS, availH/BROWS);     // SQUARE cells → arrows match Cascada exactly (no stretch)
+    const play=$('play'); if(play){ play.style.width=(cell*BCOLS)+'px'; play.style.height=(cell*BROWS)+'px'; }
     layoutMaze(); }   // the piece board is an SVG that scales to the panel; no per-resize relayout needed
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit').forEach(n=>n.remove());
