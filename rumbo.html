@@ -112,10 +112,12 @@
   .play.blank .panel, .play.blank .dpad { opacity:.18; pointer-events:none; }
   .panel { position:absolute; inset:0; }
   .panel.hidden, .dpad.hidden { display:none; }
-  .ar { position:absolute; display:flex; align-items:center; justify-content:center; transition:transform .24s ease, opacity .24s ease; }
-  .ar svg { width:78%; height:78%; overflow:visible; }
-  .ar .p { fill:none; stroke:var(--ink-soft); stroke-width:5.6; stroke-linecap:round; stroke-linejoin:round; }   /* refined line+chevron like Cascada */
-  .ar.live .p { stroke:var(--arrow); } .ar.live { cursor:pointer; } .ar.fly { opacity:0; }
+  #panel svg { display:block; width:100%; height:100%; }
+  .piece { cursor:pointer; }
+  .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:13; stroke-linecap:round; stroke-linejoin:round; transition:stroke .15s; }
+  .piece .phit { fill:none; stroke:transparent; stroke-width:60; stroke-linecap:round; stroke-linejoin:round; }
+  .piece.firing .pline, .piece.firing .phead { stroke:#157145; }
+  .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
   /* big d-pad with the move-timer in the centre */
   .dpad { position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:6px; padding:6px; }
   .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:12px; background:var(--accent-soft); }
@@ -221,7 +223,7 @@
     <div class="play-wrap">
       <div class="play" id="play">
         <div class="panel" id="panel"></div>
-        <div class="dpad-big hidden" id="dpad">
+        <div class="dpad hidden" id="dpad">
           <div class="dbtn db-up" data-d="U"></div>
           <div class="dbtn db-left" data-d="L"></div>
           <div class="mv-timer" id="mvtimer">0.0</div>
@@ -273,6 +275,7 @@
   function lsGet(k){ try{ return LS&&LS.getItem(k); }catch(e){ return null; } }
   function lsSet(k,v){ try{ if(LS) LS.setItem(k,v); }catch(e){} }
   const $=id=>document.getElementById(id);
+  const SVGNS='http://www.w3.org/2000/svg';
 
   // archive: date can come from #YYYY-MM-DD
   function isoFromHash(){ const h=(location.hash||'').replace('#',''); return /^\d{4}-\d{2}-\d{2}$/.test(h)?h:null; }
@@ -280,7 +283,7 @@
 
   const DIR={U:[-1,0],D:[1,0],L:[0,-1],R:[0,1]}, KEYS=['U','D','L','R'];
   const MOVE_WINDOW=5000, BLANK_MS=1000, STEP_MS=185;   // move window per solved board, blank buffer, drive speed (tuning knobs)
-  const bR=4, bC=4, DENS=0.62;   // fuller board = an actual quick Cascada-style puzzle to clear
+  const BU=100, BCOLS=5, BROWS=5, BCOVER=0.7, BMIN=2;   // the bottom board is a small Cascada (connected arrow trains)
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // time (seconds) edges; CUT[k] ascending. k=0 -> Maestro(rank 9, t=0), k=9 -> Debutante(rank 0). rank = 9 - band.
   const CUT=[0,30,42,56,72,90,110,134,162,195];
@@ -324,12 +327,73 @@
       for(const k of KEYS){ const [dr,dc]=DIR[k]; if(canMove(r,c,dr,dc)){ const key2=(r+dr)+','+(c+dc); if(!seen.has(key2)){ seen.add(key2); q.push([r+dr,c+dc,pa.concat(k)]); } } } } return null; }
 
   // ===== mini board (deterministic clearable stream) =====
-  function laneClear(g,r,c){ const [dr,dc]=DIR[g[r][c]]; let nr=r+dr,nc=c+dc; while(nr>=0&&nr<bR&&nc>=0&&nc<bC){ if(g[nr][nc]) return false; nr+=dr; nc+=dc; } return true; }
-  function clearable(g){ const gg=g.map(r=>r.slice()); let rem=gg.flat().filter(Boolean).length; if(!rem) return false;
-    let ch=true; while(ch){ ch=false; for(let r=0;r<bR;r++)for(let c=0;c<bC;c++){ if(gg[r][c]&&laneClear(gg,r,c)){ gg[r][c]=null; rem--; ch=true; } } } return rem===0; }
-  function genMini(){ for(let t=0;t<260;t++){ const g=[]; for(let r=0;r<bR;r++){ g[r]=[]; for(let c=0;c<bC;c++) g[r][c]=boardRng()<DENS?KEYS[(boardRng()*4)|0]:null; } if(clearable(g)) return g; }
-    const g=[]; for(let r=0;r<bR;r++){ g[r]=[]; for(let c=0;c<bC;c++) g[r][c]= r===0?'U':null; } return g; }   // clearable fallback
-  function launchable(r,c){ return grid[r][c] && laneClear(grid,r,c); }
+  const Dx=[0,1,0,-1], Dy=[-1,0,1,0];   // up,right,down,left (engine dirs)
+  let pcs={}, owner=new Map(), ppid=0, psvg=null;
+  const bkey=(r,c)=>r+','+c, bocc=(r,c)=>owner.has(bkey(r,c)), bcenter=(r,c)=>[(c+0.5)*BU,(r+0.5)*BU];
+  function growSnake(sr,sc){ const cells=[{r:sr,c:sc}]; owner.set(bkey(sr,sc),ppid); let cr=sr,cc=sc,last=-1; const len=3+(boardRng()*4|0);
+    for(let k=1;k<len;k++){ const opt=[]; for(let d=0;d<4;d++){ const nr=cr+Dy[d],nc=cc+Dx[d]; if(nr>=0&&nr<BROWS&&nc>=0&&nc<BCOLS&&!bocc(nr,nc)){ opt.push(d); if(d===last) opt.push(d,d); } }
+      if(!opt.length) break; const d=opt[(boardRng()*opt.length)|0]; cr+=Dy[d]; cc+=Dx[d]; owner.set(bkey(cr,cc),ppid); cells.push({r:cr,c:cc}); last=d; }
+    const p={id:ppid, cells, head:{r:cells[cells.length-1].r,c:cells[cells.length-1].c}, dir:2}; pcs[ppid]=p; ppid++; return p; }
+  function bsegDir(a,b){ if(b.r<a.r) return 0; if(b.c>a.c) return 1; if(b.r>a.r) return 2; return 3; }
+  function bcandList(p){ if(p.cells.length===1){ const h=p.cells[0]; return [0,1,2,3].map(d=>({head:{r:h.r,c:h.c},dir:d})); }
+    const a=p.cells[p.cells.length-1],a2=p.cells[p.cells.length-2], b=p.cells[0],b2=p.cells[1];
+    return [{head:{r:a.r,c:a.c},dir:bsegDir(a2,a)},{head:{r:b.r,c:b.c},dir:bsegDir(b2,b)}]; }
+  function bLaneClear(p){ let r=p.head.r+Dy[p.dir], c=p.head.c+Dx[p.dir]; while(r>=0&&r<BROWS&&c>=0&&c<BCOLS){ const o=owner.get(bkey(r,c)); if(o!==undefined&&o!==p.id) return false; r+=Dy[p.dir]; c+=Dx[p.dir]; } return true; }
+  function bLaneClearOcc(p,o,occR){ let r=o.head.r+Dy[o.dir], c=o.head.c+Dx[o.dir]; while(r>=0&&r<BROWS&&c>=0&&c<BCOLS){ const id=occR.get(bkey(r,c)); if(id!==undefined&&id!==p.id) return false; r+=Dy[o.dir]; c+=Dx[o.dir]; } return true; }
+  function bGrowAll(){ ppid=0; pcs={}; owner=new Map(); const seeds=[]; for(let r=0;r<BROWS;r++)for(let c=0;c<BCOLS;c++) seeds.push([r,c]);
+    for(let i=seeds.length-1;i>0;i--){ const j=(boardRng()*(i+1))|0; const t=seeds[i]; seeds[i]=seeds[j]; seeds[j]=t; }
+    for(const s of seeds){ if(!bocc(s[0],s[1]) && boardRng()<BCOVER) growSnake(s[0],s[1]); } }
+  function bOrientSolvable(){ const made=Object.values(pcs);
+    for(const p of made){ const o=bcandList(p)[0]; p.head=o.head; p.dir=o.dir; }
+    const occR=new Map(); for(const p of made) for(const cl of p.cells) occR.set(bkey(cl.r,cl.c),p.id);
+    const remaining=new Set(made.map(p=>p.id)); let solved=0; const dirUsed=[0,0,0,0];
+    while(remaining.size){ const ids=[...remaining];
+      for(let i=ids.length-1;i>0;i--){ const j=(boardRng()*(i+1))|0; const t=ids[i]; ids[i]=ids[j]; ids[j]=t; }
+      let picked=null,pickO=null;
+      for(const id of ids){ const p=pcs[id]; const valid=bcandList(p).filter(o=>bLaneClearOcc(p,o,occR)); if(!valid.length) continue; valid.sort((a,b)=>dirUsed[a.dir]-dirUsed[b.dir]); picked=p; pickO=valid[0]; break; }
+      if(!picked) break; picked.head=pickO.head; picked.dir=pickO.dir; dirUsed[pickO.dir]++; for(const cl of picked.cells) occR.delete(bkey(cl.r,cl.c)); remaining.delete(picked.id); solved++; }
+    return solved===made.length; }
+  function bSnap(){ return Object.values(pcs).map(p=>({cells:p.cells.map(c=>({r:c.r,c:c.c})),head:{r:p.head.r,c:p.head.c},dir:p.dir})); }
+  function bRestore(s){ ppid=0; pcs={}; owner=new Map(); for(const o of s){ const p={id:ppid,cells:o.cells,head:o.head,dir:o.dir}; pcs[ppid]=p; o.cells.forEach(cl=>owner.set(bkey(cl.r,cl.c),ppid)); ppid++; } }
+  function genBoard(){ let bestSnap=null,bestScore=-1e9;
+    for(let attempt=0;attempt<200;attempt++){ bGrowAll(); const full=bOrientSolvable(); const lc=Object.values(pcs).filter(p=>bLaneClear(p)).length;
+      if(full&&lc>=BMIN) return; const score=(full?1000:0)+lc; if(score>bestScore){ bestScore=score; bestSnap=bSnap(); } }
+    if(bestSnap) bRestore(bestSnap); }
+  function boardEmpty(){ return Object.keys(pcs).length===0; }
+  // ---- piece geometry + rendering (head leads, body trains) ----
+  function bPolyLen(pts){ let s=0; for(let i=1;i<pts.length;i++) s+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return s; }
+  function bPolyD(pts){ return pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' '); }
+  function bDistBorder(tip,v){ if(v[1]>0) return BROWS*BU-tip[1]; if(v[1]<0) return tip[1]; if(v[0]>0) return BCOLS*BU-tip[0]; return tip[0]; }
+  function bHeadChev(tip,v){ const px=-v[1],py=v[0], w=21,bk=23; const tx=tip[0]+v[0]*20,ty=tip[1]+v[1]*20;
+    return 'M '+(tx-v[0]*bk+px*w).toFixed(1)+' '+(ty-v[1]*bk+py*w).toFixed(1)+' L '+tx.toFixed(1)+' '+ty.toFixed(1)+' L '+(tx-v[0]*bk-px*w).toFixed(1)+' '+(ty-v[1]*bk-py*w).toFixed(1); }
+  function bTrack(p){ const v=[Dx[p.dir],Dy[p.dir]]; let pts;
+    if(p.cells.length===1){ const [x,y]=bcenter(p.head.r,p.head.c); pts=[[x-v[0]*32,y-v[1]*32],[x,y]]; }
+    else { const isHead0=(p.head.r===p.cells[0].r&&p.head.c===p.cells[0].c); const order=isHead0?p.cells.slice().reverse():p.cells; pts=order.map(cl=>bcenter(cl.r,cl.c)); }
+    const head=pts[pts.length-1]; pts=pts.concat([[head[0]+v[0]*12,head[1]+v[1]*12]]); const tip=head; const ext=bDistBorder(head,v)+46; const L=bPolyLen(pts); return {pts,tip,v,L,F:L+ext,move:ext}; }
+  function buildPanelSVG(){ const pn=$('panel'); pn.innerHTML=''; psvg=document.createElementNS(SVGNS,'svg'); psvg.setAttribute('viewBox','0 0 '+(BCOLS*BU)+' '+(BROWS*BU)); psvg.setAttribute('preserveAspectRatio','none'); psvg.style.cssText='display:block;width:100%;height:100%;'; pn.appendChild(psvg); }
+  function makePiece(p){ const t=bTrack(p); p._F=t.F; p._move=t.move; p._v=t.v;
+    const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','piece');
+    const fullD=bPolyD(t.pts.concat([[t.tip[0]+t.v[0]*t.move,t.tip[1]+t.v[1]*t.move]]));
+    const hit=document.createElementNS(SVGNS,'path'); hit.setAttribute('class','phit'); hit.setAttribute('d',bPolyD(t.pts)); g.appendChild(hit);
+    const ln=document.createElementNS(SVGNS,'path'); ln.setAttribute('class','pline'); ln.setAttribute('d',fullD); ln.setAttribute('stroke-dasharray',t.L.toFixed(1)+' '+(t.F+12).toFixed(1)); ln.setAttribute('stroke-dashoffset','0'); g.appendChild(ln);
+    const hd=document.createElementNS(SVGNS,'path'); hd.setAttribute('class','phead'); hd.setAttribute('d',bHeadChev(t.tip,t.v)); g.appendChild(hd);
+    g.addEventListener('click',()=>tapPiece(p.id)); psvg.appendChild(g); p.el=g; }
+  function renderPieces(){ buildPanelSVG(); for(const k in pcs) makePiece(pcs[k]); }
+  function tapPiece(id){ if(won||!running||phase!=='solve') return; const p=pcs[id]; if(!p||!p.el) return;
+    if(bLaneClear(p)){ p.cells.forEach(cl=>owner.delete(bkey(cl.r,cl.c))); const g=p.el,F=p._F,mv=p._move,v=p._v; delete pcs[id];
+      const ln=g.querySelector('.pline'), hd=g.querySelector('.phead'); const T=Math.max(180,Math.round(110+F*0.2)); g.classList.add('firing');
+      try{ ln.animate([{strokeDashoffset:'0'},{strokeDashoffset:(-F)+'px'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){}
+      try{ const Th=Math.max(1,Math.round(T*mv/F)); hd.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(mv*v[0])+'px,'+(mv*v[1])+'px)'}],{duration:Th,easing:'linear',fill:'forwards'}); }catch(e){}
+      setTimeout(()=>{ try{g.remove();}catch(e){} },T);
+      if(boardEmpty()) enterMove();
+    } else { const g=p.el,v=p._v; let steps=0,r=p.head.r+Dy[p.dir],c=p.head.c+Dx[p.dir];
+      while(r>=0&&r<BROWS&&c>=0&&c<BCOLS){ const o=owner.get(bkey(r,c)); if(o!==undefined&&o!==p.id) break; steps++; r+=Dy[p.dir]; c+=Dx[p.dir]; }
+      const dist=Math.max(38,(steps+1)*BU-46); g.classList.add('blocked'); bounceBlocked(g,v,dist);
+      const T=Math.max(130,Math.round(110+dist*0.2)); setTimeout(()=>{ try{g.classList.remove('blocked');}catch(e){} },2*T+120); } }
+  function bounceBlocked(g,v,dist){ const ln=g.querySelector('.pline'), hd=g.querySelector('.phead'); const T=Math.max(130,Math.round(110+dist*0.2)); const off='translate('+(v[0]*dist)+'px,'+(v[1]*dist)+'px)';
+    try{ ln.animate([{strokeDashoffset:'0'},{strokeDashoffset:(-dist)+'px'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){}
+    try{ hd.animate([{transform:'translate(0px,0px)'},{transform:off}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){}
+    setTimeout(()=>{ try{ ln.animate([{strokeDashoffset:(-dist)+'px'},{strokeDashoffset:'0'}],{duration:T,easing:'linear',fill:'forwards'}); hd.animate([{transform:off},{transform:'translate(0px,0px)'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){} },T+50); }
 
   // ===== sizing & layout =====
   function sizeAll(){ const vw=window.innerWidth||390, vh=window.innerHeight||780;
@@ -341,8 +405,7 @@
     // play area (holds either the arrow board or the big d-pad): full width, square-ish, capped to the room left under the maze
     const playH=Math.max(150, Math.min(gw, vh - 250 - mazeH));
     const play=$('play'); if(play) play.style.height=playH+'px';
-    cw=(gw-4)/bC; ch=(playH-4)/bR;                    // arrow cells fill the play box (inside its 2px border)
-    layoutMaze(); layoutPanel(); }
+    layoutMaze(); }   // the piece board is an SVG that scales to the panel; no per-resize relayout needed
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit').forEach(n=>n.remove());
     const w=mc*MC, h=mc*MR, NS='http://www.w3.org/2000/svg';
@@ -359,22 +422,12 @@
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
     const pad=mc*0.2; dotEl.style.width=(mc-2*pad)+'px'; dotEl.style.height=(mc-2*pad)+'px'; placeDot(); }
   function placeDot(){ if(!dotEl)return; const pad=mc*0.2; dotEl.style.left=(dot.c*mc+pad)+'px'; dotEl.style.top=(dot.r*mc+pad)+'px'; dotEl.classList.toggle('froze',running&&phase!=='move'); }
-  function layoutPanel(){ const pn=$('panel'); pn.querySelectorAll('.ar').forEach(n=>n.remove());
-    for(let r=0;r<bR;r++)for(let c=0;c<bC;c++){ const d=grid[r][c]; if(!d) continue; const el=document.createElement('div'); el.className='ar '+(launchable(r,c)?'live':'lock'); el.innerHTML=arSVG(d); el.style.cssText='left:'+(c*cw)+'px;top:'+(r*ch)+'px;width:'+cw+'px;height:'+ch+'px'; el._rc=[r,c]; pn.appendChild(el); } }
-  function boardEmpty(){ for(let r=0;r<bR;r++)for(let c=0;c<bC;c++) if(grid[r][c]) return false; return true; }
-  function launchM(r,c){ if(won||!running||!launchable(r,c)) return; const d=grid[r][c];
-    const el=[...$('panel').querySelectorAll('.ar')].find(x=>x._rc&&x._rc[0]===r&&x._rc[1]===c);
-    if(el){ const [dr,dc]=DIR[d]; el.classList.add('fly'); el.style.transform='translate('+(dc*cw*4)+'px,'+(dr*ch*4)+'px)'; setTimeout(()=>{try{el.remove();}catch(e){}},240); }
-    grid[r][c]=null;
-    if(boardEmpty()){ enterMove(); } else { setTimeout(layoutPanel,28); } }
-  $('panel').addEventListener('pointerdown',e=>{ if(phase!=='solve') return; const el=e.target.closest('.ar'); if(el&&el._rc) launchM(el._rc[0],el._rc[1]); });
-
   // ===== phase transitions =====
-  function showSolve(){ $('dpad').classList.add('hidden'); $('panel').classList.remove('hidden'); layoutPanel(); }
+  function showSolve(){ $('dpad').classList.add('hidden'); $('panel').classList.remove('hidden'); renderPieces(); }
   function showMove(){ $('panel').classList.add('hidden'); $('dpad').classList.remove('hidden'); }
   function enterMove(){ startRun(); phase='move'; timeLeft=MOVE_WINDOW; boards++; $('boards').textContent=boards; showMove(); placeDot(); }
   function enterBlank(){ phase='blank'; blankUntil=Date.now()+BLANK_MS; moveDir=null; document.querySelectorAll('.dbtn.on').forEach(b=>b.classList.remove('on')); $('play').classList.add('blank'); placeDot(); }
-  function enterSolve(){ phase='solve'; $('play').classList.remove('blank'); grid=genMini(); showSolve(); placeDot(); }
+  function enterSolve(){ phase='solve'; $('play').classList.remove('blank'); genBoard(); showSolve(); placeDot(); }
 
   // ===== movement =====
   function step(d){ if(won||!running||phase!=='move') return false; if(timeLeft<=0 && Date.now()>=frozenUntil) return false; const [dr,dc]=DIR[d];
@@ -430,7 +483,7 @@
   // ===== game flow =====
   function startGame(){ won=false; started=false; running=true; timeLeft=0; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; freezeCharge=0; freezeReady=false; frozenUntil=0; phase='solve'; blankUntil=0;
     $('boards').textContent='0'; $('clock').textContent='0:00'; $('play').classList.remove('blank');
-    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); grid=genMini();
+    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); genBoard();
     document.body.classList.add('game-active'); sizeAll(); buildBigPad(); placeDot(); showSolve(); drawHUD(false); updateFreeze(false);
     $('gate').classList.add('hidden');
     if(rafId) cancelAnimationFrame(rafId); started=true; rafId=requestAnimationFrame(loop); }
@@ -515,11 +568,11 @@
   try{
     applyTheme((lsGet('rumbo-tweaks')==='black')?'black':'light');
     document.body.classList.add('game-active');
-    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); grid=Array.from({length:bR},()=>Array(bC).fill(null));   // empty board until "Empezar"
+    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); pcs={}; owner=new Map();   // empty board until "Empezar"
     $('reto').textContent=fmt(retoSecs);
     sizeAll(); buildBigPad(); placeDot(); buildRankTrack(); showSolve(); drawHUD(false); updateFreeze(false);
-    window.__rumbo={ start:startGame, step, launchM, forceSolve:()=>enterMove(), setTime:ms=>{timeLeft=ms;}, useFreeze, chargeFreeze:()=>{freezeReady=true;updateFreeze(false);}, frozen:()=>Date.now()<frozenUntil, solve:()=>solvePath(), phase:()=>phase,
-      solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<60){ const a=grid.flat().filter(Boolean).length; for(let r=0;r<bR;r++)for(let c=0;c<bC;c++) launchM(r,c); if(grid.flat().filter(Boolean).length===a) break; g++; } },
+    window.__rumbo={ start:startGame, step, tapPiece, forceSolve:()=>enterMove(), setTime:ms=>{timeLeft=ms;}, useFreeze, chargeFreeze:()=>{freezeReady=true;updateFreeze(false);}, frozen:()=>Date.now()<frozenUntil, solve:()=>solvePath(), phase:()=>phase, pieces:()=>Object.keys(pcs).length,
+      solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<80){ const before=Object.keys(pcs).length; for(const id of Object.keys(pcs).map(Number)){ if(pcs[id]&&bLaneClear(pcs[id])) tapPiece(id); } if(Object.keys(pcs).length===before) break; g++; } },
       state:()=>({dot:{...dot},exit:{...exit},timeLeft,boards,won,running,elapsedSecs:elapsedSecs(),rank:won?finalRank:rankFromTime(elapsedSecs()),reto:retoSecs,sol:solSteps,cols:MC,rows:MR}) };
   }catch(e){ try{ console.error(e); }catch(_){} }
   finally{ document.body.classList.add('ready'); }
