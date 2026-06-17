@@ -215,7 +215,7 @@
       <div class="maze" id="maze">
         <div class="gate" id="gate">
           <h2>Rumbo</h2>
-          <p>Despeja el tablero de flechas y se convierte en los controles: maneja el punto por el laberinto hasta que se acabe el tiempo, y vuelve a despejar. Llega a la salida lo más rápido posible.</p>
+          <p>Recorre el laberinto con la cruz. Las <b>puertas</b> cerradas se abren <b>despejando un tablero de flechas</b>. Llega a la salida lo más rápido posible.</p>
           <button class="btn" id="start-btn" type="button">Empezar</button>
         </div>
       </div>
@@ -235,24 +235,15 @@
         </div>
       </div>
     </div>
-    <div class="freeze">
-      <button class="freeze-btn" id="freeze-btn" type="button" aria-label="Congelar">
-        <span class="fill" id="freeze-fill"></span>
-        <span class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg></span>
-        <span class="fnum" id="freeze-num"></span>
-      </button>
-    </div>
   </div>
 
   <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
     <h2>Rumbo</h2>
-    <p>Un laberinto nuevo cada día. Lo recorres con la cruz — pero <b>solo te mueves mientras tengas tiempo</b> en el reloj. Ganas tiempo despejando un tablero de flechas.</p>
+    <p>Un laberinto nuevo cada día. Lo <b>recorres libremente</b> con la cruz; en el camino hay <b>puertas cerradas</b> que solo se abren resolviendo un tablero de flechas.</p>
     <h3>Cómo se juega</h3>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M14 20 L92 20"/><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha con el <b>carril libre</b> para lanzarla. Despeja el tablero entero y ganas <strong style="color:var(--accent)">+5 s</strong> de movimiento.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="10" y="10" width="100" height="20" rx="6" fill="none" stroke="var(--accent-2)" stroke-width="5"/></svg></div><div class="txt">El reloj <b>no para</b> — ni mientras resuelves. Resuelve <b>rápido</b> para seguir corriendo.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><circle cx="60" cy="20" r="10" fill="var(--accent)"/></svg></div><div class="txt">Si te quedas sin tiempo, el punto se <b>congela</b> hasta que despejes otro tablero.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40" fill="none" stroke="#0062E3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="34" y2="20"/><line x1="20" y1="6" x2="20" y2="34"/><path d="m31 25-5-5 5-5"/><path d="m9 15 5 5-5 5"/><path d="m25 9-5 5-5-5"/><path d="m15 31 5-5 5 5"/></svg></div><div class="txt"><strong style="color:#0062E3">❄ Congelar.</strong> Se llena solo; <b>para el reloj 5 s</b> y te mueves <b>gratis</b> por el laberinto.</div></div>
-    <p class="muted">Tu <strong style="color:var(--accent)">rango</strong> es tu <b>tiempo total</b> hasta la salida: empiezas en <strong style="color:var(--accent)">Maestro/a</strong> y bajas cuanto más tardas. Cruza el <strong style="color:var(--accent)">Reto del día</strong> (el tiempo objetivo) y suena <strong style="color:var(--accent)">¡Buen sorbo!</strong></p>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><rect x="6" y="6" width="28" height="28" rx="4" fill="none" stroke="var(--ink-soft)" stroke-width="2.4"/><line x1="20" y1="8" x2="20" y2="32" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/></svg></div><div class="txt">Maneja el punto por el laberinto. Una <strong style="color:var(--accent)">puerta naranja</strong> te bloquea hasta que la abras.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M14 20 L92 20"/><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">En la puerta aparece un tablero de flechas. Toca una flecha con el <b>carril libre</b> para lanzarla; <b>despeja el tablero</b> y la puerta se abre.</div></div>
+    <p class="muted">Tu <strong style="color:var(--accent)">rango</strong> es tu <b>tiempo total</b> hasta la salida: empiezas en <strong style="color:var(--accent)">Maestro/a</strong> y bajas cuanto más tardas. Baja del <strong style="color:var(--accent)">Reto del día</strong> (el tiempo objetivo) y suena <strong style="color:var(--accent)">¡Buen sorbo!</strong></p>
   </div></div>
 
   <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
@@ -285,8 +276,9 @@
   const ISO=isoFromHash()||new Date().toISOString().slice(0,10);
 
   const DIR={U:[-1,0],D:[1,0],L:[0,-1],R:[0,1]}, KEYS=['U','D','L','R'];
-  const MOVE_WINDOW=5000, BLANK_MS=1000, STEP_MS=185;   // move window per solved board, blank buffer, drive speed (tuning knobs)
-  const BU=100, BCOLS=10, BROWS=9, BCOVER=0.45, BMIN=2;   // small Cascada — fine cells (Cascada arrow scale), lighter piece count
+  const STEP_MS=150;   // free-roam drive speed (no clock — you move freely; doors gate progress)
+  const oppDir={U:'D',D:'U',L:'R',R:'L'};
+  const BU=100, BCOLS=13, BROWS=10, BCOVER=0.45, BMIN=2;   // wide-short board: fills the full width with small (Cascada-scale) cells
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // time (seconds) edges; CUT[k] ascending. k=0 -> Maestro(rank 9, t=0), k=9 -> Debutante(rank 0). rank = 9 - band.
   const CUT=[0,30,42,56,72,90,110,134,162,195];
@@ -295,9 +287,9 @@
   // ---- state ----
   let DG=[], MR=0, MC=0, dot={r:0,c:0}, exit={r:0,c:0}, solSteps=0, retoSecs=60;   // DG = doubled wall grid; MR/MC = logical rows/cols
   let grid=[], boardRng=null;
-  let timeLeft=0, moveDir=null, acc=0, lastTs=0, runMs=0, started=false, boards=0, won=false, running=false, elapsedMs=0;
-  let phase='solve', blankUntil=0;   // phase: 'solve' (clear arrows) -> 'move' (drive, central timer) -> 'blank' (1s buffer) -> 'solve'
-  let freezeCharge=0, freezeReady=false, frozenUntil=0; const FREEZE_FILL_MS=18000, FREEZE_DUR_MS=5000;
+  let moveDir=null, acc=0, lastTs=0, runMs=0, started=false, boards=0, won=false, running=false, elapsedMs=0;
+  let phase='move';   // 'move' = roam freely with the d-pad; 'solve' = at a locked door, clear the board to open it
+  let lockedDoors=new Set(), totalDoors=0, doorsOpened=0, currentDoor=null;
   let dotEl=null, mc=0, cw=0, ch=0, rafId=null;
   let rankBuilt=false, dotsEls=[], fillEl=null, bubbleEl=null, markerEl=null;
   const board=$('maze');
@@ -323,11 +315,21 @@
     }
     DG=g; MR=LH; MC=LW; dot={r:0,c:0}; exit={r:LH-1,c:LW-1};
     const sol=solvePath(); solSteps=sol?sol.length:20; retoSecs=55+(fnv('rumbo-reto-'+ISO)%9)*5;   // 55–95s, date-seeded so the family landing shows the same target
+    placeDoors();
   }
-  // movement is on LOGICAL cells; a move is allowed only if the wall segment between cells is open
+  // movement is on LOGICAL cells; a move is allowed only if the wall segment between cells is open (doors don't affect pathing)
   function canMove(r,c,dr,dc){ const nr=r+dr,nc=c+dc; if(nr<0||nr>=MR||nc<0||nc>=MC) return false; return DG[2*r+1+dr][2*c+1+dc]==='.'; }
   function solvePath(){ const seen=new Set(['0,0']); let q=[[0,0,[]]]; while(q.length){ const [r,c,pa]=q.shift(); if(r===exit.r&&c===exit.c) return pa;
       for(const k of KEYS){ const [dr,dc]=DIR[k]; if(canMove(r,c,dr,dc)){ const key2=(r+dr)+','+(c+dc); if(!seen.has(key2)){ seen.add(key2); q.push([r+dr,c+dc,pa.concat(k)]); } } } } return null; }
+  // lock a handful of doors along the solution path — each must be opened by clearing the arrow board
+  function placeDoors(){ lockedDoors=new Set(); doorsOpened=0; currentDoor=null; const path=solvePath(); if(!path){ totalDoors=0; return; }
+    let r=0,c=0; const cells=[[0,0]]; for(const k of path){ const [dr,dc]=DIR[k]; r+=dr;c+=dc; cells.push([r,c]); }
+    const K=Math.max(3,Math.min(6,Math.round(path.length/4))); let n=0;
+    for(let i=1;i<=K;i++){ const idx=Math.floor(i*path.length/(K+1)); if(idx<1||idx>=cells.length) continue;
+      const [ar,ac]=cells[idx-1]; const dir=path[idx-1]; const [dr,dc]=DIR[dir];
+      const k1=ar+','+ac+','+dir; if(lockedDoors.has(k1)) continue;
+      lockedDoors.add(k1); lockedDoors.add((ar+dr)+','+(ac+dc)+','+oppDir[dir]); n++; }
+    totalDoors=n; }
 
   // ===== mini board (deterministic clearable stream) =====
   const Dx=[0,1,0,-1], Dy=[-1,0,1,0];   // up,right,down,left (engine dirs)
@@ -388,7 +390,7 @@
       try{ ln.animate([{strokeDashoffset:'0'},{strokeDashoffset:(-F)+'px'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){}
       try{ const Th=Math.max(1,Math.round(T*mv/F)); hd.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(mv*v[0])+'px,'+(mv*v[1])+'px)'}],{duration:Th,easing:'linear',fill:'forwards'}); }catch(e){}
       setTimeout(()=>{ try{g.remove();}catch(e){} },T);
-      if(boardEmpty()) enterMove();
+      if(boardEmpty()){ openCurrentDoor(); enterMove(); }
     } else { const g=p.el,v=p._v; let steps=0,r=p.head.r+Dy[p.dir],c=p.head.c+Dx[p.dir];
       while(r>=0&&r<BROWS&&c>=0&&c<BCOLS){ const o=owner.get(bkey(r,c)); if(o!==undefined&&o!==p.id) break; steps++; r+=Dy[p.dir]; c+=Dx[p.dir]; }
       const dist=Math.max(38,(steps+1)*BU-46); g.classList.add('blocked'); bounceBlocked(g,v,dist);
@@ -420,7 +422,12 @@
       if(cx<MC-1 && DG[2*cy+1][2*cx+2]==='#') d+='M'+(cx+1)+' '+cy+' V'+(cy+1)+' ';   // east wall
       if(cy<MR-1 && DG[2*cy+2][2*cx+1]==='#') d+='M'+cx+' '+(cy+1)+' H'+(cx+1)+' ';   // south wall
     }
-    const p=document.createElementNS(NS,'path'); p.setAttribute('d',d); p.setAttribute('fill','none'); p.setAttribute('stroke','var(--wall)'); p.setAttribute('stroke-width','0.16'); p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round'); svg.appendChild(p); board.appendChild(svg);
+    const p=document.createElementNS(NS,'path'); p.setAttribute('d',d); p.setAttribute('fill','none'); p.setAttribute('stroke','var(--wall)'); p.setAttribute('stroke-width','0.16'); p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round'); svg.appendChild(p);
+    let dd=''; lockedDoors.forEach(k=>{ const a=k.split(','), r=+a[0], c=+a[1], dir=a[2];   // locked doors = orange gates across the passage
+      if(dir==='R') dd+='M'+(c+1)+' '+(r+0.13)+' V'+(r+0.87)+' '; else if(dir==='L') dd+='M'+c+' '+(r+0.13)+' V'+(r+0.87)+' ';
+      else if(dir==='D') dd+='M'+(c+0.13)+' '+(r+1)+' H'+(c+0.87)+' '; else if(dir==='U') dd+='M'+(c+0.13)+' '+r+' H'+(c+0.87)+' '; });
+    if(dd){ const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dd); dp.setAttribute('fill','none'); dp.setAttribute('stroke','var(--accent)'); dp.setAttribute('stroke-width','0.32'); dp.setAttribute('stroke-linecap','round'); svg.appendChild(dp); }
+    board.appendChild(svg);
     const ex=document.createElement('div'); ex.className='exit'; ex.style.cssText='left:'+(exit.c*mc)+'px;top:'+(exit.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;';
     ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="11"/><circle class="p" cx="20" cy="20" r="3"/></svg>'; board.appendChild(ex);
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
@@ -429,13 +436,17 @@
   // ===== phase transitions =====
   function showSolve(){ $('dpad').classList.add('hidden'); $('panel').classList.remove('hidden'); renderPieces(); }
   function showMove(){ $('panel').classList.add('hidden'); $('dpad').classList.remove('hidden'); }
-  function enterMove(){ startRun(); phase='move'; timeLeft=MOVE_WINDOW; boards++; $('boards').textContent=boards; showMove(); placeDot(); }
-  function enterBlank(){ phase='blank'; blankUntil=Date.now()+BLANK_MS; moveDir=null; document.querySelectorAll('.dbtn.on').forEach(b=>b.classList.remove('on')); $('play').classList.add('blank'); placeDot(); }
-  function enterSolve(){ phase='solve'; $('play').classList.remove('blank'); genBoard(); showSolve(); placeDot(); }
+  function enterMove(){ phase='move'; moveDir=null; document.querySelectorAll('.dbtn.on').forEach(b=>b.classList.remove('on')); showMove(); placeDot(); }
+  function enterSolve(d){ startRun(); phase='solve'; currentDoor={r:dot.r,c:dot.c,d}; genBoard(); showSolve(); placeDot(); }
+  function openCurrentDoor(){ if(!currentDoor) return; const {r,c,d}=currentDoor; const [dr,dc]=DIR[d];
+    lockedDoors.delete(r+','+c+','+d); lockedDoors.delete((r+dr)+','+(c+dc)+','+oppDir[d]); doorsOpened++; boards++; $('boards').textContent=boards; currentDoor=null; layoutMaze(); }
 
-  // ===== movement =====
-  function step(d){ if(won||!running||phase!=='move') return false; if(timeLeft<=0 && Date.now()>=frozenUntil) return false; const [dr,dc]=DIR[d];
-    if(!canMove(dot.r,dot.c,dr,dc)) return false; dot.r+=dr; dot.c+=dc; placeDot(); if(dot.r===exit.r&&dot.c===exit.c) winGame(); return true; }
+  // ===== movement (free roam; a locked door triggers the solve) =====
+  function step(d){ if(won||!running||phase!=='move') return false; startRun(); const [dr,dc]=DIR[d], nr=dot.r+dr, nc=dot.c+dc;
+    if(nr<0||nr>=MR||nc<0||nc>=MC) return false;
+    if(DG[2*dot.r+1+dr][2*dot.c+1+dc]==='#') return false;                  // wall → bump
+    if(lockedDoors.has(dot.r+','+dot.c+','+d)){ enterSolve(d); return false; }   // locked door → solve to open
+    dot.r=nr; dot.c=nc; placeDot(); if(dot.r===exit.r&&dot.c===exit.c) winGame(); return true; }
   function buildBigPad(){ document.querySelectorAll('.dbtn').forEach(b=>{ const d=b.getAttribute('data-d'); b.innerHTML=arSVG(d);
       b.onpointerdown=ev=>{ ev.preventDefault(); if(phase!=='move') return; moveDir=d; acc=0; step(d); b.classList.add('on'); }; }); }
   function releaseAll(){ moveDir=null; document.querySelectorAll('.dbtn.on').forEach(b=>b.classList.remove('on')); }
@@ -464,35 +475,24 @@
 
   // ===== loop =====
   function startRun(){ if(started) return; started=true; }
-  function useFreeze(){ if(!freezeReady||!running||won) return; frozenUntil=Date.now()+FREEZE_DUR_MS; freezeReady=false; freezeCharge=0; updateFreeze(true); }
-  function updateFreeze(frozen){ const btn=$('freeze-btn'); if(!btn) return; const fill=$('freeze-fill'), num=$('freeze-num');
-    if(frozen){ btn.classList.add('frozen'); btn.classList.remove('ready'); if(num) num.textContent=Math.max(0,Math.ceil((frozenUntil-Date.now())/1000)); if(fill) fill.style.transform='scaleX(1)'; return; }
-    btn.classList.remove('frozen'); if(fill) fill.style.transform='scaleX('+Math.min(1,freezeCharge/FREEZE_FILL_MS)+')'; btn.classList.toggle('ready', freezeReady); }
   function loop(ts){ if(!running){ return; } if(!lastTs) lastTs=ts; const dt=Math.min(80,ts-lastTs); lastTs=ts;
-    const now=Date.now(), frozen = now<frozenUntil;
-    if(!frozen && started && !won) runMs+=dt;                                  // total time always counts (except while frozen)
-    if(!frozen && !freezeReady){ freezeCharge=Math.min(FREEZE_FILL_MS,freezeCharge+dt); if(freezeCharge>=FREEZE_FILL_MS) freezeReady=true; }
-    if(phase==='move'){
-      if(!frozen) timeLeft=Math.max(0,timeLeft-dt);
-      if(moveDir){ acc+=dt; if(acc>=STEP_MS){ acc-=STEP_MS; step(moveDir); } } else acc=0;
-      if(timeLeft<=0 && !frozen) enterBlank();
-    } else if(phase==='blank'){ if(now>=blankUntil) enterSolve(); }
-    drawHUD(frozen); updateFreeze(frozen); rafId=requestAnimationFrame(loop); }
+    if(started && !won) runMs+=dt;                                  // total time counts the whole run (no clock to manage)
+    if(phase==='move' && moveDir){ acc+=dt; if(acc>=STEP_MS){ acc-=STEP_MS; step(moveDir); } } else if(!moveDir) acc=0;
+    drawHUD(); rafId=requestAnimationFrame(loop); }
   function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
-  function drawHUD(frozen){ const cl=$('clock'); if(started&&!won) cl.textContent=fmt(Math.floor(runMs/1000));   // top = total time
-    const mv=$('mvtimer'); if(mv){ const s=Math.max(0,timeLeft/1000); mv.textContent=s.toFixed(1); mv.classList.toggle('low', phase==='move'&&s<1.5&&!frozen); }
-    const gf=$('gfill'); if(gf){ gf.style.width=(phase==='move'?Math.max(0,Math.min(100,(timeLeft/MOVE_WINDOW)*100)):0)+'%'; gf.style.background=(phase==='move'&&timeLeft/1000<1.5&&!frozen)?'var(--error)':'var(--accent-2)'; }
-    if(dotEl) dotEl.classList.toggle('frz', !!frozen);
+  function drawHUD(){ const cl=$('clock'); if(started&&!won) cl.textContent=fmt(Math.floor(runMs/1000));   // top = total time
+    const mv=$('mvtimer'); if(mv) mv.textContent=Math.max(0,totalDoors-doorsOpened);                       // d-pad centre = locked doors left
+    const gf=$('gfill'); if(gf) gf.style.width=(totalDoors?Math.round((doorsOpened/totalDoors)*100):0)+'%'; // bar = door progress
     updateRank(); }
 
   // ===== game flow =====
-  function startGame(){ won=false; started=false; running=true; timeLeft=0; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; freezeCharge=0; freezeReady=false; frozenUntil=0; phase='solve'; blankUntil=0;
-    $('boards').textContent='0'; $('clock').textContent='0:00'; $('play').classList.remove('blank');
-    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); genBoard();
-    document.body.classList.add('game-active'); sizeAll(); buildBigPad(); placeDot(); showSolve(); drawHUD(false); updateFreeze(false);
+  function startGame(){ won=false; started=false; running=true; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; phase='move';
+    $('boards').textContent='0'; $('clock').textContent='0:00';
+    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO));
+    document.body.classList.add('game-active'); sizeAll(); buildBigPad(); placeDot(); showMove(); drawHUD();
     $('gate').classList.add('hidden');
     if(rafId) cancelAnimationFrame(rafId); started=true; rafId=requestAnimationFrame(loop); }
-  function winGame(){ if(won) return; won=true; running=false; elapsedMs=runMs; frozenUntil=0; if(rafId) cancelAnimationFrame(rafId);
+  function winGame(){ if(won) return; won=true; running=false; elapsedMs=runMs; if(rafId) cancelAnimationFrame(rafId);
     const secs=Math.floor(elapsedMs/1000); finalRank=rankFromTime(secs); const hit=secs<=retoSecs;
     recordStats(secs, finalRank, hit);
     const best=bestToday(); const isBest=(best===null||secs<best); if(isBest) lsSet('rumbo-best-'+ISO, String(secs));
@@ -551,7 +551,6 @@
 
   // ===== wire =====
   $('start-btn').addEventListener('click', startGame);
-  $('freeze-btn').addEventListener('click', useFreeze);
   $('rules-link').addEventListener('click', ()=>openOv('rules-ov',true));
   $('rules-x').addEventListener('click', ()=>openOv('rules-ov',false));
   $('rules-ov').addEventListener('click', e=>{ if(e.target===$('rules-ov')) openOv('rules-ov',false); });
@@ -573,12 +572,12 @@
   try{
     applyTheme((lsGet('rumbo-tweaks')==='black')?'black':'light');
     document.body.classList.add('game-active');
-    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); pcs={}; owner=new Map();   // empty board until "Empezar"
+    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO));   // board is generated when you reach a door
     $('reto').textContent=fmt(retoSecs);
-    sizeAll(); buildBigPad(); placeDot(); buildRankTrack(); showSolve(); drawHUD(false); updateFreeze(false);
-    window.__rumbo={ start:startGame, step, tapPiece, forceSolve:()=>enterMove(), setTime:ms=>{timeLeft=ms;}, useFreeze, chargeFreeze:()=>{freezeReady=true;updateFreeze(false);}, frozen:()=>Date.now()<frozenUntil, solve:()=>solvePath(), phase:()=>phase, pieces:()=>Object.keys(pcs).length,
-      solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<80){ const before=Object.keys(pcs).length; for(const id of Object.keys(pcs).map(Number)){ if(pcs[id]&&bLaneClear(pcs[id])) tapPiece(id); } if(Object.keys(pcs).length===before) break; g++; } },
-      state:()=>({dot:{...dot},exit:{...exit},timeLeft,boards,won,running,elapsedSecs:elapsedSecs(),rank:won?finalRank:rankFromTime(elapsedSecs()),reto:retoSecs,sol:solSteps,cols:MC,rows:MR}) };
+    sizeAll(); buildBigPad(); placeDot(); buildRankTrack(); showMove(); drawHUD();
+    window.__rumbo={ start:startGame, step, tapPiece, solve:()=>solvePath(), phase:()=>phase, pieces:()=>Object.keys(pcs).length, doorsLeft:()=>totalDoors-doorsOpened, totalDoors:()=>totalDoors,
+      solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<120){ const before=Object.keys(pcs).length; for(const id of Object.keys(pcs).map(Number)){ if(pcs[id]&&bLaneClear(pcs[id])) tapPiece(id); } if(Object.keys(pcs).length===before) break; g++; } },
+      state:()=>({dot:{...dot},exit:{...exit},boards,won,running,elapsedSecs:elapsedSecs(),rank:won?finalRank:rankFromTime(elapsedSecs()),reto:retoSecs,sol:solSteps,cols:MC,rows:MR,doorsLeft:totalDoors-doorsOpened,totalDoors}) };
   }catch(e){ try{ console.error(e); }catch(_){} }
   finally{ document.body.classList.add('ready'); }
 })();
