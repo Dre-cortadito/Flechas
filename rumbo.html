@@ -303,7 +303,7 @@
     return '<svg viewBox="0 0 40 40"><path class="p" d="M '+tlx+' '+tly+' L '+(tx-dx*4)+' '+(ty-dy*4)+'"/><path class="p" d="M '+(bx+px*W)+' '+(by+py*W)+' L '+tx+' '+ty+' L '+(bx-px*W)+' '+(by-py*W)+'"/></svg>'; }
 
   // ===== maze generation (deterministic recursive backtracker) =====
-  function genMaze(){ const r=mulberry32(fnv('rumbo-maze-'+ISO)); const W=5,H=5, Vh=2*H+1, Vw=2*W+1;
+  function genMaze(){ const r=mulberry32(fnv('rumbo-maze-'+ISO)); const W=6,H=4, Vh=2*H+1, Vw=2*W+1;   // wider-than-tall (13x9) so the maze fills the width but stays short
     const vis=Array.from({length:H},()=>Array(W).fill(0));
     const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
     const stack=[[0,0]]; vis[0][0]=1; g[1][1]='.';
@@ -333,15 +333,19 @@
   function launchable(r,c){ return grid[r][c] && laneClear(grid,r,c); }
 
   // ===== sizing & layout =====
-  function sizeAll(){ const vw=Math.min(window.innerWidth||360, 440), vh=window.innerHeight||700;
-    mc=Math.max(18,Math.min((vw*0.94)/MC,(vh*0.30)/MR));
-    const W=mc*MC;                                   // bottom frame matches the maze width
-    document.documentElement.style.setProperty('--gw', W+'px'); // every stacked element shares this exact width
-    const EW=22, EH=22;                              // edges as THIN as possible so the board is as WIDE as possible
-    pc=Math.max(30,(W-2*EW)/bC);                     // board fills the width minus the thin edges
-    board.style.width=(mc*MC)+'px'; board.style.height=(mc*MR)+'px';
+  function sizeAll(){ const vw=window.innerWidth||390, vh=window.innerHeight||780;
+    const gw=Math.min(vw*0.94, 400);                 // standard Cortadito width — same as the other games
+    document.documentElement.style.setProperty('--gw', gw+'px'); // every stacked element shares this width
+    mc=gw/MC;                                         // maze fills the full width; the wide-short grid keeps it from being tall
+    const mazeH=mc*MR;
+    board.style.width=(mc*MC)+'px'; board.style.height=mazeH+'px';
+    // bottom board: also full width. Cells sized by the height left under the maze; side edges absorb the rest (thin when there's room).
+    const availH=Math.max(120, vh - 252 - mazeH);    // ~chrome (header+rank+meta+gauge+freeze+pads) left for the board-unit
+    const EHv=20;
+    pc=Math.max(26, Math.min((gw-2*22)/bC, (availH-2*EHv)/bR));
+    const EW=Math.max(20, (gw-pc*bC)/2);
     $('panel').style.width=(pc*bC)+'px'; $('panel').style.height=(pc*bR)+'px';
-    const fr=$('frame'); if(fr){ fr.style.gridTemplateColumns=EW+'px '+(pc*bC)+'px '+EW+'px'; fr.style.gridTemplateRows=EH+'px '+(pc*bR)+'px '+EH+'px'; }
+    const fr=$('frame'); if(fr){ fr.style.gridTemplateColumns=EW+'px '+(pc*bC)+'px '+EW+'px'; fr.style.gridTemplateRows=EHv+'px '+(pc*bR)+'px '+EHv+'px'; }
     layoutMaze(); layoutPanel(); }
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.cell,.exit').forEach(n=>n.remove());
@@ -500,7 +504,7 @@
   try{
     applyTheme((lsGet('rumbo-tweaks')==='black')?'black':'light');
     document.body.classList.add('game-active');
-    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); grid=genMini();
+    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); grid=[[null,null,null],[null,null,null],[null,null,null]];   // empty board until "Empezar"
     sizeAll(); buildEdges(); placeDot(); buildRankTrack(); drawHUD(false); updateFreeze(false);
     window.__rumbo={ start:startGame, step, launchM, forceSolve:()=>earnTime(), setTime:ms=>{timeLeft=ms;}, useFreeze, chargeFreeze:()=>{freezeReady=true;updateFreeze(false);}, frozen:()=>Date.now()<frozenUntil,
       solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<60){ const a=grid.flat().filter(Boolean).length; for(let r=0;r<bR;r++)for(let c=0;c<bC;c++) launchM(r,c); if(grid.flat().filter(Boolean).length===a) break; g++; } },
