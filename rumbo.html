@@ -81,7 +81,7 @@
   .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--accent-2); transition:color .15s linear; }
   .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
   @keyframes cpulse { 50%{ opacity:.45; } }
-  .gauge { width:var(--gw); height:9px; border-radius:5px; background:var(--ink-line); overflow:hidden; margin:0 auto 8px; }
+  .gauge { width:var(--gw); height:9px; border-radius:5px; background:var(--ink-line); overflow:hidden; margin:7px auto; }
   .gauge .gfill { height:100%; width:0%; background:var(--accent-2); transition:width .09s linear; }
 
   /* ===== Maze ===== */
@@ -104,29 +104,26 @@
   .freeze-btn:not(.ready):not(.frozen) { opacity:.5; cursor:default; }
   .freeze-btn:active { transform:scale(.98); }
 
-  /* ===== D-pad ===== */
-  .dpad { display:grid; grid-template-columns:repeat(3,46px); grid-template-rows:repeat(3,46px); gap:6px; margin:9px auto 5px; }
-  .db { border-radius:10px; border:2px solid var(--ink-line); background:var(--paper); display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; }
-  .db:active,.db.on { background:var(--accent); border-color:var(--accent); } .db:active .p,.db.on .p { stroke:#fff; }
-  .db svg { width:24px; height:24px; } .db .p { fill:none; stroke:var(--ink); stroke-width:2.7; stroke-linecap:round; stroke-linejoin:round; }
-  .dpad.dim { opacity:.32; pointer-events:none; }
-  /* ===== The board's RIM is the d-pad — one unified card ===== */
-  .board-unit { display:grid; gap:0; justify-content:center; align-items:stretch; margin:0 auto; background:var(--paper); border:2px solid var(--box-edge); border-radius:16px; overflow:hidden; }
-  .board-unit > .panel { grid-column:2; grid-row:2; border:none; background:transparent; box-shadow:inset 0 0 0 1.5px var(--ink-line); border-radius:9px; }
-  .edge { width:100%; height:100%; background:transparent; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; }
-  .edge:active,.edge.on { background:var(--accent-soft); }
-  .edge:active .p,.edge.on .p { stroke:var(--accent-deep); }
-  .edge svg { width:19px; height:19px; } .edge .p { fill:none; stroke:var(--ink-soft); stroke-width:2.7; stroke-linecap:round; stroke-linejoin:round; }
-  .e-up { grid-column:2; grid-row:1; } .e-left { grid-column:1; grid-row:2; } .e-right { grid-column:3; grid-row:2; } .e-down { grid-column:2; grid-row:3; }
-  .board-unit.dim .edge { opacity:.32; pointer-events:none; }
-
-  .lbl { font:700 8px var(--font-ui); letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-soft); margin:2px 0 4px; text-align:center; }
-  .panel-wrap { width:100%; display:flex; justify-content:center; }
-  .panel { position:relative; border-radius:12px; overflow:hidden; background:var(--paper); border:2px solid var(--box-edge); }
+  /* ===== Play area: swaps between the arrow board (solve) and the big d-pad (move) ===== */
+  .play-wrap { width:100%; display:flex; justify-content:center; }
+  .play { position:relative; width:var(--gw); margin:0 auto; background:var(--paper); border:2px solid var(--box-edge); border-radius:16px; overflow:hidden; }
+  .play.blank { animation:bpulse .5s ease; }
+  @keyframes bpulse { 50% { background:var(--accent-soft); } }
+  .play.blank .panel, .play.blank .dpad { opacity:.18; pointer-events:none; }
+  .panel { position:absolute; inset:0; }
+  .panel.hidden, .dpad.hidden { display:none; }
   .ar { position:absolute; display:flex; align-items:center; justify-content:center; transition:transform .24s ease, opacity .24s ease; }
-  .ar svg { width:80%; height:80%; overflow:visible; }
-  .ar .p { fill:none; stroke:var(--ink-soft); stroke-width:9; stroke-linecap:round; stroke-linejoin:round; }   /* bold + rounded, like Cascada's arrows */
+  .ar svg { width:78%; height:78%; overflow:visible; }
+  .ar .p { fill:none; stroke:var(--ink-soft); stroke-width:5.6; stroke-linecap:round; stroke-linejoin:round; }   /* refined line+chevron like Cascada */
   .ar.live .p { stroke:var(--arrow); } .ar.live { cursor:pointer; } .ar.fly { opacity:0; }
+  /* big d-pad with the move-timer in the centre */
+  .dpad { position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:6px; padding:6px; }
+  .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:12px; background:var(--accent-soft); }
+  .dbtn:active, .dbtn.on { background:var(--accent); } .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
+  .dbtn svg { width:48%; height:48%; } .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+  .db-up { grid-area:1/2; } .db-left { grid-area:2/1; } .db-right { grid-area:2/3; } .db-down { grid-area:3/2; }
+  .mv-timer { grid-area:2/2; display:flex; align-items:center; justify-content:center; font:800 clamp(28px,12vw,56px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; color:var(--accent-2); line-height:1; }
+  .mv-timer.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
 
   /* ===== Gate / start + result ===== */
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:var(--board-bg); border-radius:12px; text-align:center; padding:24px; }
@@ -207,29 +204,30 @@
       <span class="rank-chev">▾</span>
     </div>
     <div class="meta">
-      <div class="side is-left"><div class="n" id="elapsed">0:00</div><div class="l">Tiempo</div></div>
-      <div class="clock" id="clock">0.0</div>
-      <div class="side is-right"><div class="n" id="boards">0</div><div class="l">Tableros</div></div>
+      <div class="side is-left"><div class="n" id="boards">0</div><div class="l">Tableros</div></div>
+      <div class="clock" id="clock">0:00</div>
+      <div class="side is-right"><div class="n" id="reto">—</div><div class="l">Reto</div></div>
     </div>
-    <div class="gauge"><div class="gfill" id="gfill"></div></div>
-
     <div class="maze-wrap">
       <div class="maze" id="maze">
         <div class="gate" id="gate">
           <h2>Rumbo</h2>
-          <p>Maneja el punto por el laberinto. Solo te mueves mientras te quede tiempo: <b>despeja flechas abajo</b> para ganar segundos. Llega a la salida lo más rápido posible.</p>
+          <p>Despeja el tablero de flechas y se convierte en los controles: maneja el punto por el laberinto hasta que se acabe el tiempo, y vuelve a despejar. Llega a la salida lo más rápido posible.</p>
           <button class="btn" id="start-btn" type="button">Empezar</button>
         </div>
       </div>
     </div>
 
-    <div class="panel-wrap">
-      <div class="board-unit" id="frame">
-        <div class="edge e-up" data-d="U"></div>
-        <div class="edge e-left" data-d="L"></div>
+    <div class="play-wrap">
+      <div class="play" id="play">
         <div class="panel" id="panel"></div>
-        <div class="edge e-right" data-d="R"></div>
-        <div class="edge e-down" data-d="D"></div>
+        <div class="dpad-big hidden" id="dpad">
+          <div class="dbtn db-up" data-d="U"></div>
+          <div class="dbtn db-left" data-d="L"></div>
+          <div class="mv-timer" id="mvtimer">0.0</div>
+          <div class="dbtn db-right" data-d="R"></div>
+          <div class="dbtn db-down" data-d="D"></div>
+        </div>
       </div>
     </div>
     <div class="freeze">
@@ -281,8 +279,8 @@
   const ISO=isoFromHash()||new Date().toISOString().slice(0,10);
 
   const DIR={U:[-1,0],D:[1,0],L:[0,-1],R:[0,1]}, KEYS=['U','D','L','R'];
-  const WINDOW_MS=5000, CAP_MS=12000, STEP_MS=200;     // tuning knobs
-  const bR=3, bC=3, DENS=0.6;
+  const MOVE_WINDOW=5000, BLANK_MS=1000, STEP_MS=185;   // move window per solved board, blank buffer, drive speed (tuning knobs)
+  const bR=4, bC=4, DENS=0.62;   // fuller board = an actual quick Cascada-style puzzle to clear
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // time (seconds) edges; CUT[k] ascending. k=0 -> Maestro(rank 9, t=0), k=9 -> Debutante(rank 0). rank = 9 - band.
   const CUT=[0,30,42,56,72,90,110,134,162,195];
@@ -292,6 +290,7 @@
   let DG=[], MR=0, MC=0, dot={r:0,c:0}, exit={r:0,c:0}, solSteps=0, retoSecs=60;   // DG = doubled wall grid; MR/MC = logical rows/cols
   let grid=[], boardRng=null;
   let timeLeft=0, moveDir=null, acc=0, lastTs=0, runMs=0, started=false, boards=0, won=false, running=false, elapsedMs=0;
+  let phase='solve', blankUntil=0;   // phase: 'solve' (clear arrows) -> 'move' (drive, central timer) -> 'blank' (1s buffer) -> 'solve'
   let freezeCharge=0, freezeReady=false, frozenUntil=0; const FREEZE_FILL_MS=18000, FREEZE_DUR_MS=5000;
   let dotEl=null, mc=0, cw=0, ch=0, rafId=null;
   let rankBuilt=false, dotsEls=[], fillEl=null, bubbleEl=null, markerEl=null;
@@ -304,16 +303,17 @@
 
   // ===== maze generation (deterministic recursive backtracker, thin walls) =====
   const LW=10, LH=7;   // logical cols/rows — fine, wide-short grid → reads like a real maze, fills width, stays short
-  function genMaze(){ const r=mulberry32(fnv('rumbo-maze-'+ISO)); const Vh=2*LH+1, Vw=2*LW+1;
-    const vis=Array.from({length:LH},()=>Array(LW).fill(0));
+  function genMaze(){ const rnd=mulberry32(fnv('rumbo-maze-'+ISO)); const Vh=2*LH+1, Vw=2*LW+1;
     const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
-    const stack=[[0,0]]; vis[0][0]=1; g[1][1]='.';
-    while(stack.length){ const [cx,cy]=stack[stack.length-1];
-      const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
-      for(let i=dirs.length-1;i>0;i--){ const j=(r()*(i+1))|0; const t=dirs[i]; dirs[i]=dirs[j]; dirs[j]=t; }
-      let moved=false;
-      for(const [dx,dy] of dirs){ const nx=cx+dx, ny=cy+dy; if(nx>=0&&nx<LW&&ny>=0&&ny<LH&&!vis[ny][nx]){ vis[ny][nx]=1; g[2*cy+1+dy][2*cx+1+dx]='.'; g[2*ny+1][2*nx+1]='.'; stack.push([nx,ny]); moved=true; break; } }
-      if(!moved) stack.pop();
+    const inM=Array.from({length:LH},()=>Array(LW).fill(false));
+    const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
+    let frontier=[];
+    function addFront(cx,cy){ for(const [dx,dy] of dirs){ const nx=cx+dx,ny=cy+dy; if(nx>=0&&nx<LW&&ny>=0&&ny<LH&&!inM[ny][nx]) frontier.push([cx,cy,dx,dy]); } }
+    inM[0][0]=true; g[1][1]='.'; addFront(0,0);
+    // randomized Prim's — produces a bushy maze with many short dead ends (harder than backtracker's long corridors)
+    while(frontier.length){ const i=(rnd()*frontier.length)|0; const [cx,cy,dx,dy]=frontier.splice(i,1)[0]; const nx=cx+dx,ny=cy+dy;
+      if(nx<0||nx>=LW||ny<0||ny>=LH||inM[ny][nx]) continue;
+      g[2*cy+1+dy][2*cx+1+dx]='.'; g[2*ny+1][2*nx+1]='.'; inM[ny][nx]=true; addFront(nx,ny);
     }
     DG=g; MR=LH; MC=LW; dot={r:0,c:0}; exit={r:LH-1,c:LW-1};
     const sol=solvePath(); solSteps=sol?sol.length:20; retoSecs=55+(fnv('rumbo-reto-'+ISO)%9)*5;   // 55–95s, date-seeded so the family landing shows the same target
@@ -327,8 +327,8 @@
   function laneClear(g,r,c){ const [dr,dc]=DIR[g[r][c]]; let nr=r+dr,nc=c+dc; while(nr>=0&&nr<bR&&nc>=0&&nc<bC){ if(g[nr][nc]) return false; nr+=dr; nc+=dc; } return true; }
   function clearable(g){ const gg=g.map(r=>r.slice()); let rem=gg.flat().filter(Boolean).length; if(!rem) return false;
     let ch=true; while(ch){ ch=false; for(let r=0;r<bR;r++)for(let c=0;c<bC;c++){ if(gg[r][c]&&laneClear(gg,r,c)){ gg[r][c]=null; rem--; ch=true; } } } return rem===0; }
-  function genMini(){ for(let t=0;t<120;t++){ const g=[]; for(let r=0;r<bR;r++){ g[r]=[]; for(let c=0;c<bC;c++) g[r][c]=boardRng()<DENS?KEYS[(boardRng()*4)|0]:null; } if(clearable(g)) return g; }
-    return [['R','R',null],[null,null,null],[null,null,null]]; }
+  function genMini(){ for(let t=0;t<260;t++){ const g=[]; for(let r=0;r<bR;r++){ g[r]=[]; for(let c=0;c<bC;c++) g[r][c]=boardRng()<DENS?KEYS[(boardRng()*4)|0]:null; } if(clearable(g)) return g; }
+    const g=[]; for(let r=0;r<bR;r++){ g[r]=[]; for(let c=0;c<bC;c++) g[r][c]= r===0?'U':null; } return g; }   // clearable fallback
   function launchable(r,c){ return grid[r][c] && laneClear(grid,r,c); }
 
   // ===== sizing & layout =====
@@ -338,13 +338,10 @@
     mc=gw/MC;                                         // maze fills the full width; the wide-short grid keeps it from being tall
     const mazeH=mc*MR;
     board.style.width=(mc*MC)+'px'; board.style.height=mazeH+'px';
-    // bottom board: also full width. Cells sized by the height left under the maze; side edges absorb the rest (thin when there's room).
-    const availH=Math.max(110, vh - 250 - mazeH);    // ~chrome (header+rank+meta+gauge+freeze+pads) left for the board-unit
-    const E=26;                                       // uniform edge thickness on ALL four sides
-    cw=(gw-2*E)/bC;                                   // board cell width fills the unit width
-    ch=Math.max(30, Math.min(cw, (availH-2*E)/bR));   // cell height by leftover room; never taller than wide
-    $('panel').style.width=(cw*bC)+'px'; $('panel').style.height=(ch*bR)+'px';
-    const fr=$('frame'); if(fr){ fr.style.gridTemplateColumns=E+'px '+(cw*bC)+'px '+E+'px'; fr.style.gridTemplateRows=E+'px '+(ch*bR)+'px '+E+'px'; }
+    // play area (holds either the arrow board or the big d-pad): full width, square-ish, capped to the room left under the maze
+    const playH=Math.max(150, Math.min(gw, vh - 250 - mazeH));
+    const play=$('play'); if(play) play.style.height=playH+'px';
+    cw=(gw-4)/bC; ch=(playH-4)/bR;                    // arrow cells fill the play box (inside its 2px border)
     layoutMaze(); layoutPanel(); }
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit').forEach(n=>n.remove());
@@ -361,7 +358,7 @@
     ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="11"/><circle class="p" cx="20" cy="20" r="3"/></svg>'; board.appendChild(ex);
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
     const pad=mc*0.2; dotEl.style.width=(mc-2*pad)+'px'; dotEl.style.height=(mc-2*pad)+'px'; placeDot(); }
-  function placeDot(){ if(!dotEl)return; const pad=mc*0.2; dotEl.style.left=(dot.c*mc+pad)+'px'; dotEl.style.top=(dot.r*mc+pad)+'px'; dotEl.classList.toggle('froze',running&&timeLeft<=0); }
+  function placeDot(){ if(!dotEl)return; const pad=mc*0.2; dotEl.style.left=(dot.c*mc+pad)+'px'; dotEl.style.top=(dot.r*mc+pad)+'px'; dotEl.classList.toggle('froze',running&&phase!=='move'); }
   function layoutPanel(){ const pn=$('panel'); pn.querySelectorAll('.ar').forEach(n=>n.remove());
     for(let r=0;r<bR;r++)for(let c=0;c<bC;c++){ const d=grid[r][c]; if(!d) continue; const el=document.createElement('div'); el.className='ar '+(launchable(r,c)?'live':'lock'); el.innerHTML=arSVG(d); el.style.cssText='left:'+(c*cw)+'px;top:'+(r*ch)+'px;width:'+cw+'px;height:'+ch+'px'; el._rc=[r,c]; pn.appendChild(el); } }
   function boardEmpty(){ for(let r=0;r<bR;r++)for(let c=0;c<bC;c++) if(grid[r][c]) return false; return true; }
@@ -369,18 +366,24 @@
     const el=[...$('panel').querySelectorAll('.ar')].find(x=>x._rc&&x._rc[0]===r&&x._rc[1]===c);
     if(el){ const [dr,dc]=DIR[d]; el.classList.add('fly'); el.style.transform='translate('+(dc*cw*4)+'px,'+(dr*ch*4)+'px)'; setTimeout(()=>{try{el.remove();}catch(e){}},240); }
     grid[r][c]=null;
-    if(boardEmpty()){ earnTime(); } else { setTimeout(layoutPanel,28); } }
-  function earnTime(){ startRun(); timeLeft=Math.min(CAP_MS, timeLeft+WINDOW_MS); boards++; $('boards').textContent=boards; grid=genMini(); setTimeout(layoutPanel,28); placeDot(); }
-  $('panel').addEventListener('pointerdown',e=>{ const el=e.target.closest('.ar'); if(el&&el._rc) launchM(el._rc[0],el._rc[1]); });
+    if(boardEmpty()){ enterMove(); } else { setTimeout(layoutPanel,28); } }
+  $('panel').addEventListener('pointerdown',e=>{ if(phase!=='solve') return; const el=e.target.closest('.ar'); if(el&&el._rc) launchM(el._rc[0],el._rc[1]); });
+
+  // ===== phase transitions =====
+  function showSolve(){ $('dpad').classList.add('hidden'); $('panel').classList.remove('hidden'); layoutPanel(); }
+  function showMove(){ $('panel').classList.add('hidden'); $('dpad').classList.remove('hidden'); }
+  function enterMove(){ startRun(); phase='move'; timeLeft=MOVE_WINDOW; boards++; $('boards').textContent=boards; showMove(); placeDot(); }
+  function enterBlank(){ phase='blank'; blankUntil=Date.now()+BLANK_MS; moveDir=null; document.querySelectorAll('.dbtn.on').forEach(b=>b.classList.remove('on')); $('play').classList.add('blank'); placeDot(); }
+  function enterSolve(){ phase='solve'; $('play').classList.remove('blank'); grid=genMini(); showSolve(); placeDot(); }
 
   // ===== movement =====
-  function step(d){ if(won||!running) return false; if(timeLeft<=0 && Date.now()>=frozenUntil) return false; const [dr,dc]=DIR[d];
+  function step(d){ if(won||!running||phase!=='move') return false; if(timeLeft<=0 && Date.now()>=frozenUntil) return false; const [dr,dc]=DIR[d];
     if(!canMove(dot.r,dot.c,dr,dc)) return false; dot.r+=dr; dot.c+=dc; placeDot(); if(dot.r===exit.r&&dot.c===exit.c) winGame(); return true; }
-  function buildEdges(){ document.querySelectorAll('.edge').forEach(b=>{ const d=b.getAttribute('data-d'); b.innerHTML=arSVG(d);
-      b.onpointerdown=ev=>{ ev.preventDefault(); moveDir=d; acc=0; step(d); b.classList.add('on'); }; }); }
-  function releaseAll(){ moveDir=null; document.querySelectorAll('.edge.on').forEach(b=>b.classList.remove('on')); }
+  function buildBigPad(){ document.querySelectorAll('.dbtn').forEach(b=>{ const d=b.getAttribute('data-d'); b.innerHTML=arSVG(d);
+      b.onpointerdown=ev=>{ ev.preventDefault(); if(phase!=='move') return; moveDir=d; acc=0; step(d); b.classList.add('on'); }; }); }
+  function releaseAll(){ moveDir=null; document.querySelectorAll('.dbtn.on').forEach(b=>b.classList.remove('on')); }
   document.addEventListener('pointerup',releaseAll); document.addEventListener('pointercancel',releaseAll);
-  document.addEventListener('keydown',e=>{ const m={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'}[e.key]; if(m){ e.preventDefault(); if(moveDir!==m){moveDir=m;acc=0;step(m);} } });
+  document.addEventListener('keydown',e=>{ const m={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'}[e.key]; if(m&&phase==='move'){ e.preventDefault(); if(moveDir!==m){moveDir=m;acc=0;step(m);} } });
   document.addEventListener('keyup',e=>{ if(e.key.indexOf('Arrow')===0) moveDir=null; });
 
   // ===== rank (ceiling model on elapsed time) =====
@@ -409,27 +412,28 @@
     if(frozen){ btn.classList.add('frozen'); btn.classList.remove('ready'); if(num) num.textContent=Math.max(0,Math.ceil((frozenUntil-Date.now())/1000)); if(fill) fill.style.transform='scaleX(1)'; return; }
     btn.classList.remove('frozen'); if(fill) fill.style.transform='scaleX('+Math.min(1,freezeCharge/FREEZE_FILL_MS)+')'; btn.classList.toggle('ready', freezeReady); }
   function loop(ts){ if(!running){ return; } if(!lastTs) lastTs=ts; const dt=Math.min(80,ts-lastTs); lastTs=ts;
-    const frozen = Date.now()<frozenUntil;
-    if(!frozen){ if(started) runMs+=dt; if(timeLeft>0) timeLeft=Math.max(0,timeLeft-dt);
-      if(!freezeReady){ freezeCharge=Math.min(FREEZE_FILL_MS,freezeCharge+dt); if(freezeCharge>=FREEZE_FILL_MS) freezeReady=true; } }
-    if(moveDir){ acc+=dt; if(acc>=STEP_MS && (frozen||timeLeft>0)){ acc-=STEP_MS; step(moveDir); } } else acc=0;
-    if(timeLeft<=0 && !frozen) placeDot();
+    const now=Date.now(), frozen = now<frozenUntil;
+    if(!frozen && started && !won) runMs+=dt;                                  // total time always counts (except while frozen)
+    if(!frozen && !freezeReady){ freezeCharge=Math.min(FREEZE_FILL_MS,freezeCharge+dt); if(freezeCharge>=FREEZE_FILL_MS) freezeReady=true; }
+    if(phase==='move'){
+      if(!frozen) timeLeft=Math.max(0,timeLeft-dt);
+      if(moveDir){ acc+=dt; if(acc>=STEP_MS){ acc-=STEP_MS; step(moveDir); } } else acc=0;
+      if(timeLeft<=0 && !frozen) enterBlank();
+    } else if(phase==='blank'){ if(now>=blankUntil) enterSolve(); }
     drawHUD(frozen); updateFreeze(frozen); rafId=requestAnimationFrame(loop); }
   function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
-  function drawHUD(frozen){ const s=timeLeft/1000; const cl=$('clock'); cl.textContent=s.toFixed(1); cl.classList.toggle('low', s>0&&s<1.5&&!frozen);
-    $('gfill').style.width=Math.min(100,(timeLeft/CAP_MS)*100)+'%'; $('gfill').style.background=frozen?'var(--freeze)':((s>0&&s<1.5)?'var(--error)':'var(--accent-2)');
-    $('frame').classList.toggle('dim', running&&timeLeft<=0&&!frozen);
+  function drawHUD(frozen){ const cl=$('clock'); if(started&&!won) cl.textContent=fmt(Math.floor(runMs/1000));   // top = total time
+    const mv=$('mvtimer'); if(mv){ const s=Math.max(0,timeLeft/1000); mv.textContent=s.toFixed(1); mv.classList.toggle('low', phase==='move'&&s<1.5&&!frozen); }
     if(dotEl) dotEl.classList.toggle('frz', !!frozen);
-    if(started&&!won){ $('elapsed').textContent=fmt(Math.floor(runMs/1000)); }
     updateRank(); }
 
   // ===== game flow =====
-  function startGame(){ won=false; started=false; running=true; timeLeft=0; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; freezeCharge=0; freezeReady=false; frozenUntil=0;
-    $('boards').textContent='0'; $('elapsed').textContent='0:00';
+  function startGame(){ won=false; started=false; running=true; timeLeft=0; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; freezeCharge=0; freezeReady=false; frozenUntil=0; phase='solve'; blankUntil=0;
+    $('boards').textContent='0'; $('clock').textContent='0:00'; $('play').classList.remove('blank');
     genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); grid=genMini();
-    document.body.classList.add('game-active'); sizeAll(); buildEdges(); placeDot(); drawHUD(false); updateFreeze(false);
+    document.body.classList.add('game-active'); sizeAll(); buildBigPad(); placeDot(); showSolve(); drawHUD(false); updateFreeze(false);
     $('gate').classList.add('hidden');
-    if(rafId) cancelAnimationFrame(rafId); rafId=requestAnimationFrame(loop); }
+    if(rafId) cancelAnimationFrame(rafId); started=true; rafId=requestAnimationFrame(loop); }
   function winGame(){ if(won) return; won=true; running=false; elapsedMs=runMs; frozenUntil=0; if(rafId) cancelAnimationFrame(rafId);
     const secs=Math.floor(elapsedMs/1000); finalRank=rankFromTime(secs); const hit=secs<=retoSecs;
     recordStats(secs, finalRank, hit);
@@ -511,9 +515,10 @@
   try{
     applyTheme((lsGet('rumbo-tweaks')==='black')?'black':'light');
     document.body.classList.add('game-active');
-    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); grid=[[null,null,null],[null,null,null],[null,null,null]];   // empty board until "Empezar"
-    sizeAll(); buildEdges(); placeDot(); buildRankTrack(); drawHUD(false); updateFreeze(false);
-    window.__rumbo={ start:startGame, step, launchM, forceSolve:()=>earnTime(), setTime:ms=>{timeLeft=ms;}, useFreeze, chargeFreeze:()=>{freezeReady=true;updateFreeze(false);}, frozen:()=>Date.now()<frozenUntil, solve:()=>solvePath(),
+    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); grid=Array.from({length:bR},()=>Array(bC).fill(null));   // empty board until "Empezar"
+    $('reto').textContent=fmt(retoSecs);
+    sizeAll(); buildBigPad(); placeDot(); buildRankTrack(); showSolve(); drawHUD(false); updateFreeze(false);
+    window.__rumbo={ start:startGame, step, launchM, forceSolve:()=>enterMove(), setTime:ms=>{timeLeft=ms;}, useFreeze, chargeFreeze:()=>{freezeReady=true;updateFreeze(false);}, frozen:()=>Date.now()<frozenUntil, solve:()=>solvePath(), phase:()=>phase,
       solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<60){ const a=grid.flat().filter(Boolean).length; for(let r=0;r<bR;r++)for(let c=0;c<bC;c++) launchM(r,c); if(grid.flat().filter(Boolean).length===a) break; g++; } },
       state:()=>({dot:{...dot},exit:{...exit},timeLeft,boards,won,running,elapsedSecs:elapsedSecs(),rank:won?finalRank:rankFromTime(elapsedSecs()),reto:retoSecs,sol:solSteps,cols:MC,rows:MR}) };
   }catch(e){ try{ console.error(e); }catch(_){} }
