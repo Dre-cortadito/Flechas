@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<!--
+  Flechas · Rumbo — a Cortadito News daily game.
+  TOP: a daily maze you DRIVE with a d-pad. You can only move while the movement clock has time.
+  BOTTOM: a tiny arrow board (Cascada's rule). Clearing it banks +5s of movement time. The clock
+  drains continuously, so the skill is SOLVE FAST to keep running. Reach the exit; lowest total
+  time = highest rank. Ceiling model: you start at Maestro/a and drop as the clock climbs.
+  Single self-contained file. Maze + board stream are deterministic from the date (Reto del día).
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rumbo · Flechas · Cortadito News</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+<style>
+  * { touch-action:manipulation; box-sizing:border-box; }
+  :root {
+    --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
+    --accent:#F86624; --accent-deep:#C44E12; --accent-soft:#FCE0D2; --accent-2:#1E8E82; --success:#6b8e3d; --error:#b03434;
+    --board-bg:#FBEEE6; --arrow:#141210; --wall:#3c3732; --freeze:#0062E3; --freeze-fill:#9CCCEC; --gw:min(94vw,400px);
+    --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
+  }
+  body[data-theme="black"] {
+    --bg:#0e0c0b; --paper:#181513; --ink:#f2ede9; --ink-soft:#8a827c; --ink-line:#2a2522; --box-edge:#8a827c;
+    --accent:#FF7E45; --accent-deep:#E0561A; --accent-soft:#3A1C10; --accent-2:#3aa99b; --board-bg:#241b15; --arrow:#ECE7DC; --wall:#cdbfb4; --freeze:#3a8ff0; --freeze-fill:#2E7CB0;
+  }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
+  html { overscroll-behavior:none; }
+  body { display:flex; flex-direction:column; align-items:center; overscroll-behavior:none; opacity:0; }
+  body.ready { opacity:1; }
+  body.game-active { height:100dvh; overflow:hidden; }
+
+  .page-header { position:fixed; top:0; left:0; right:0; z-index:40; height:var(--header-h); display:flex; align-items:center; justify-content:space-between; gap:24px; padding:0 18px; background:var(--bg); border-bottom:1px solid var(--ink-line); }
+  .title-block { display:flex; align-items:center; gap:11px; min-width:0; }
+  .page-logo { width:28px; height:28px; flex:none; }
+  .wordmark { margin:0; font-family:var(--font-display); font-weight:800; font-size:clamp(30px,5.2vw,44px); letter-spacing:-1px; color:var(--ink); line-height:.95; white-space:nowrap; }
+  .wordmark .dot { color:var(--accent); }
+  .wordmark .eb { font:700 9px var(--font-ui); letter-spacing:1.6px; text-transform:uppercase; color:var(--ink-soft); vertical-align:middle; margin-left:6px; }
+  .header-nav { display:flex; align-items:center; gap:20px; flex-shrink:0; }
+  .header-home { width:32px; height:32px; border-radius:50%; flex:none; border:1px solid var(--ink-line); background:transparent; color:var(--ink); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+  .header-home svg { width:17px; height:17px; }
+  .header-nav a { font-size:14px; font-weight:500; color:var(--ink); text-decoration:none; cursor:pointer; white-space:nowrap; }
+  .header-nav a.nav-rules { color:var(--accent); }
+  .more { width:36px; height:36px; border-radius:50%; background:transparent; border:none; padding:0; color:var(--ink); cursor:pointer; flex:none; display:inline-flex; align-items:center; justify-content:center; }
+  .more svg,.more *{ pointer-events:none; }
+  .nav-more-wrap { position:relative; display:inline-block; }
+  .more-menu { position:absolute; top:100%; right:0; margin-top:8px; z-index:1000; background:var(--paper); border:1.5px solid var(--ink-line); border-radius:12px; padding:6px; min-width:230px; display:none; flex-direction:column; box-shadow:0 14px 44px rgba(0,0,0,.2); }
+  .more-menu.open { display:flex; }
+  .more-item { padding:10px 14px; color:var(--ink); border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
+  .more-item.cta { color:var(--accent); font-weight:700; border-top:1px solid var(--ink-line); border-radius:0 0 8px 8px; margin-top:4px; padding-top:12px; }
+  .more-theme-name { color:var(--ink-soft); font-size:12px; font-weight:400; }
+  @media (max-width:620px){ .wordmark{ display:none; } .header-nav{ gap:18px; } }
+  @media (max-width:400px){ .header-nav{ gap:13px; } .header-nav a{ font-size:13px; } }
+
+  .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(14px, env(safe-area-inset-bottom)); box-sizing:border-box; }
+
+  /* ===== Rank bar (standard, ceiling model on time) ===== */
+  .rank-bar { width:var(--gw); display:flex; align-items:center; gap:10px; padding:6px 14px; margin:0 auto 4px; cursor:pointer; user-select:none; }
+  .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
+  .rank-label.at-maestro { color:var(--accent); }
+  .rank-track { position:relative; flex:1; height:22px; }
+  .rank-track-line { position:absolute; top:50%; left:0; right:0; height:3px; transform:translateY(-50%); background:var(--ink-line); border-radius:2px; z-index:0; }
+  .rank-track-fill { position:absolute; top:50%; left:0; width:0; height:3px; transform:translateY(-50%); background:var(--accent); border-radius:2px; z-index:1; transition:width .3s ease; }
+  .rank-dot { position:absolute; top:50%; transform:translate(-50%,-50%); width:6px; height:6px; border-radius:50%; background:var(--ink-soft); z-index:3; }
+  .rank-dot.passed { background:var(--ink); }
+  .rank-bubble { position:absolute; top:50%; transform:translate(0,-50%); width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; font:700 10px var(--font-ui); display:flex; align-items:center; justify-content:center; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .3s ease; }
+  .rank-marker { position:absolute; top:50%; transform:translate(-50%,-50%); width:3px; height:26px; border-radius:2px; background:var(--accent); z-index:4; transition:left .3s ease, background .3s; }
+  .rank-marker.done { background:var(--success); }
+  .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; }
+
+  /* ===== Meta row: elapsed · movement clock · boards ===== */
+  .meta { width:var(--gw); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:0 auto 4px; }
+  .side { line-height:1.05; }
+  .side.is-left { justify-self:start; text-align:left; }
+  .side.is-right { justify-self:end; text-align:right; }
+  .side .n { font:800 22px var(--font-display); font-variant-numeric:tabular-nums; color:var(--ink); }
+  .side .l { font:700 9px var(--font-ui); letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-soft); }
+  .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--accent-2); transition:color .15s linear; }
+  .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
+  @keyframes cpulse { 50%{ opacity:.45; } }
+  .gauge { width:var(--gw); height:9px; border-radius:5px; background:var(--ink-line); overflow:hidden; margin:0 auto 8px; }
+  .gauge .gfill { height:100%; width:0%; background:var(--accent-2); transition:width .09s linear; }
+
+  /* ===== Maze ===== */
+  .maze-wrap { width:100%; display:flex; justify-content:center; }
+  .maze { position:relative; border-radius:12px; overflow:hidden; background:var(--board-bg); border:3px solid var(--accent-2); }
+  .cell { position:absolute; } .cell.wall { background:var(--wall); }
+  .exit { position:absolute; display:flex; align-items:center; justify-content:center; } .exit svg { width:76%; height:76%; }
+  .exit .p { fill:none; stroke:var(--success); stroke-width:3.6; stroke-linecap:round; stroke-linejoin:round; }
+  .dot { position:absolute; border-radius:50%; background:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.3); transition:top .1s linear,left .1s linear; z-index:3; }
+  .dot.froze { filter:grayscale(.75); opacity:.5; }
+  .dot.frz { box-shadow:0 0 0 3px var(--freeze-fill), 0 1px 4px rgba(0,0,0,.3); }
+  /* freeze button (family standard) */
+  .freeze { width:var(--gw); margin:9px auto 0; }
+  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:9px 12px; border-radius:14px; cursor:pointer; color:var(--freeze); background:rgba(0,98,227,.05); border:2px solid var(--freeze); }
+  .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); transition:transform .25s linear; z-index:0; }
+  .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:30px; }
+  .freeze-btn .ficon svg { width:30px; height:30px; display:block; }
+  .freeze-btn .fnum { position:relative; z-index:1; display:none; align-items:center; height:30px; font:800 26px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; }
+  .freeze-btn.frozen .ficon { display:none; } .freeze-btn.frozen .fnum { display:inline-flex; }
+  .freeze-btn:not(.ready):not(.frozen) { opacity:.5; cursor:default; }
+  .freeze-btn:active { transform:scale(.98); }
+
+  /* ===== D-pad ===== */
+  .dpad { display:grid; grid-template-columns:repeat(3,46px); grid-template-rows:repeat(3,46px); gap:6px; margin:9px auto 5px; }
+  .db { border-radius:10px; border:2px solid var(--ink-line); background:var(--paper); display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; }
+  .db:active,.db.on { background:var(--accent); border-color:var(--accent); } .db:active .p,.db.on .p { stroke:#fff; }
+  .db svg { width:24px; height:24px; } .db .p { fill:none; stroke:var(--ink); stroke-width:2.7; stroke-linecap:round; stroke-linejoin:round; }
+  .dpad.dim { opacity:.32; pointer-events:none; }
+  /* ===== The board's RIM is the d-pad — one unified card ===== */
+  .board-unit { display:grid; gap:0; justify-content:center; align-items:stretch; margin:0 auto; background:var(--paper); border:2px solid var(--box-edge); border-radius:16px; overflow:hidden; }
+  .board-unit > .panel { grid-column:2; grid-row:2; border:none; background:transparent; box-shadow:inset 0 0 0 1.5px var(--ink-line); border-radius:9px; }
+  .edge { width:100%; height:100%; background:transparent; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; }
+  .edge:active,.edge.on { background:var(--accent-soft); }
+  .edge:active .p,.edge.on .p { stroke:var(--accent-deep); }
+  .edge svg { width:19px; height:19px; } .edge .p { fill:none; stroke:var(--ink-soft); stroke-width:2.7; stroke-linecap:round; stroke-linejoin:round; }
+  .e-up { grid-column:2; grid-row:1; } .e-left { grid-column:1; grid-row:2; } .e-right { grid-column:3; grid-row:2; } .e-down { grid-column:2; grid-row:3; }
+  .board-unit.dim .edge { opacity:.32; pointer-events:none; }
+
+  .lbl { font:700 8px var(--font-ui); letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-soft); margin:2px 0 4px; text-align:center; }
+  .panel-wrap { width:100%; display:flex; justify-content:center; }
+  .panel { position:relative; border-radius:12px; overflow:hidden; background:var(--paper); border:2px solid var(--box-edge); }
+  .ar { position:absolute; display:flex; align-items:center; justify-content:center; transition:transform .24s ease, opacity .24s ease; }
+  .ar svg { width:62%; height:62%; overflow:visible; }
+  .ar .p { fill:none; stroke:var(--ink-soft); stroke-width:7; stroke-linecap:round; stroke-linejoin:round; }
+  .ar.live .p { stroke:var(--arrow); } .ar.live { cursor:pointer; } .ar.fly { opacity:0; }
+
+  /* ===== Gate / start + result ===== */
+  .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:var(--board-bg); border-radius:12px; text-align:center; padding:24px; }
+  .gate.hidden { display:none; }
+  .gate h2 { font:800 27px var(--font-display); margin:0; }
+  .gate h2.accent { color:var(--accent); }
+  .gate p { margin:0; color:var(--ink-soft); font-size:13px; max-width:260px; line-height:1.5; }
+  .gate .v { font:800 48px var(--font-display); color:var(--accent); line-height:1; }
+  .gate .vlbl { font:700 9px var(--font-ui); letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-soft); margin-top:-6px; }
+  .gate .brand { width:54px; height:54px; }
+  .btn { font:800 16px var(--font-ui); letter-spacing:.4px; color:#fff; background:var(--accent); border:none; border-radius:999px; padding:13px 38px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.14); }
+  .btn.ghost { color:var(--ink-soft); background:transparent; border:1.5px solid var(--ink-line); box-shadow:none; padding:12px 24px; font-size:14px; }
+  .go-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+
+  /* ===== Modals ===== */
+  .modal-ov { position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(20,18,14,.55); overscroll-behavior:contain; overflow:auto; }
+  body[data-theme="black"] .modal-ov { background:rgba(0,0,0,.78); }
+  .modal-ov.open { display:flex; }
+  .modal { position:relative; background:var(--paper); border:1.5px solid var(--ink-line); border-radius:16px; padding:26px 28px; max-width:380px; width:100%; max-height:85vh; overflow:auto; }
+  .modal h2 { font-family:var(--font-display); font-size:26px; margin:0 0 12px; }
+  .modal h3 { font-family:var(--font-ui); font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:1.2px; color:var(--ink); margin:22px 0 8px; }
+  .modal p { font-size:14px; line-height:1.5; color:var(--ink); }
+  .modal .muted { color:var(--ink-soft); font-size:13px; }
+  .x { position:absolute; top:14px; right:16px; background:none; border:none; font-size:18px; color:var(--ink-soft); cursor:pointer; }
+  .legend-row { display:flex; align-items:center; gap:12px; margin:11px 0; }
+  .legend-cell { width:54px; height:40px; flex:none; border-radius:8px; background:var(--board-bg); display:flex; align-items:center; justify-content:center; }
+  .legend-cell svg { width:90%; height:90%; }
+  .legend-row .txt { font-size:14px; line-height:1.45; color:var(--ink); }
+  .cstat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .cstat { background:var(--bg); border:1.5px solid var(--ink-line); border-radius:12px; padding:12px 10px; text-align:center; }
+  .cstat .cv { font:800 26px var(--font-display); color:var(--ink); line-height:1; } .cstat .cv.accent { color:var(--accent); }
+  .cstat .cl { font:700 10px var(--font-ui); letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); margin-top:5px; }
+  .cdist-row { display:flex; align-items:center; gap:8px; margin:3px 0; font-size:12px; }
+  .cdist-row .cdn { width:78px; color:var(--ink-soft); white-space:nowrap; }
+  .cdist-row .cdbar { flex:1; height:14px; background:var(--ink-line); border-radius:6px; overflow:hidden; }
+  .cdist-row .cdfill { height:100%; background:var(--accent); border-radius:6px; }
+  .cdist-row.cur .cdn { color:var(--accent); font-weight:700; }
+  .cdist-row.empty { opacity:.5; }
+  .cdist-row .cdc { width:56px; text-align:right; color:var(--ink-soft); }
+  .ranklist .rl-row { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--ink-line); font-size:14px; }
+  .ranklist .rl-row.cur { color:var(--accent); font-weight:700; }
+  .ranklist .rl-row .rt { color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+
+  /* rotate lock */
+  #rotate-lock { position:fixed; inset:0; z-index:200; background:var(--bg); display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:30px; }
+  #rotate-lock svg { width:54px; height:54px; color:var(--accent); }
+  #rotate-lock .rt { font:800 20px var(--font-display); margin:0; } #rotate-lock .rs { color:var(--ink-soft); font-size:13px; margin:0; }
+  @media (max-height:430px) and (orientation:landscape){ body.game-active #rotate-lock { display:flex; } }
+</style>
+</head>
+<body data-theme="light">
+
+  <header class="page-header">
+    <div class="title-block">
+      <svg class="page-logo" viewBox="0 0 120 120" aria-hidden="true"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M30 30 H64 Q72 30 72 38 V66" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/><path d="M30 58 H50" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".5"/><path d="M34 88 H86" fill="none" stroke="var(--accent-2)" stroke-width="8.5" stroke-linecap="round"/><path d="M78 79 L90 88 L78 97" fill="none" stroke="var(--accent-2)" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="34" cy="58" r="7" fill="#fff"/></svg>
+      <h1 class="wordmark"><span class="full">Rumbo<span class="dot">.</span></span><span class="eb">Flechas</span></h1>
+    </div>
+    <nav class="header-nav" aria-label="Más">
+      <a class="header-home" href="./index.html#landing" aria-label="Inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></a>
+      <a class="nav-rules" id="rules-link" role="button">Reglas ▾</a>
+      <a id="stats-link" role="button">Estadísticas ▾</a>
+      <a id="ranks-link" role="button">Rangos ▾</a>
+      <span class="nav-more-wrap">
+        <button class="more" id="menu-btn" type="button" aria-label="Más opciones"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+        <div class="more-menu" id="menu-pop">
+          <a class="more-item" id="m-theme" role="button"><span>Tema</span><span class="more-theme-name" id="m-theme-name">Claro</span></a>
+          <a class="more-item" id="m-share" role="button"><span>Compartir</span></a>
+          <a class="more-item cta" id="m-sub" role="button"><span>Suscribirse al boletín</span></a>
+        </div>
+      </span>
+    </nav>
+  </header>
+
+  <div class="stage">
+    <div class="rank-bar" id="rank-bar" role="button" tabindex="0" aria-label="Ver rangos">
+      <span class="rank-label" id="rank-label">Maestro/a</span>
+      <div class="rank-track" id="rank-track"><div class="rank-track-line"></div></div>
+      <span class="rank-chev">▾</span>
+    </div>
+    <div class="meta">
+      <div class="side is-left"><div class="n" id="elapsed">0:00</div><div class="l">Tiempo</div></div>
+      <div class="clock" id="clock">0.0</div>
+      <div class="side is-right"><div class="n" id="boards">0</div><div class="l">Tableros</div></div>
+    </div>
+    <div class="gauge"><div class="gfill" id="gfill"></div></div>
+
+    <div class="maze-wrap">
+      <div class="maze" id="maze">
+        <div class="gate" id="gate">
+          <h2>Rumbo</h2>
+          <p>Maneja el punto por el laberinto. Solo te mueves mientras te quede tiempo: <b>despeja flechas abajo</b> para ganar segundos. Llega a la salida lo más rápido posible.</p>
+          <button class="btn" id="start-btn" type="button">Empezar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-wrap">
+      <div class="board-unit" id="frame">
+        <div class="edge e-up" data-d="U"></div>
+        <div class="edge e-left" data-d="L"></div>
+        <div class="panel" id="panel"></div>
+        <div class="edge e-right" data-d="R"></div>
+        <div class="edge e-down" data-d="D"></div>
+      </div>
+    </div>
+    <div class="freeze">
+      <button class="freeze-btn" id="freeze-btn" type="button" aria-label="Congelar">
+        <span class="fill" id="freeze-fill"></span>
+        <span class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg></span>
+        <span class="fnum" id="freeze-num"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
+    <h2>Rumbo</h2>
+    <p>Un laberinto nuevo cada día. Lo recorres con la cruz — pero <b>solo te mueves mientras tengas tiempo</b> en el reloj. Ganas tiempo despejando un tablero de flechas.</p>
+    <h3>Cómo se juega</h3>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M14 20 L92 20"/><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha con el <b>carril libre</b> para lanzarla. Despeja el tablero entero y ganas <strong style="color:var(--accent)">+5 s</strong> de movimiento.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="10" y="10" width="100" height="20" rx="6" fill="none" stroke="var(--accent-2)" stroke-width="5"/></svg></div><div class="txt">El reloj <b>no para</b> — ni mientras resuelves. Resuelve <b>rápido</b> para seguir corriendo.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><circle cx="60" cy="20" r="10" fill="var(--accent)"/></svg></div><div class="txt">Si te quedas sin tiempo, el punto se <b>congela</b> hasta que despejes otro tablero.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40" fill="none" stroke="#0062E3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="34" y2="20"/><line x1="20" y1="6" x2="20" y2="34"/><path d="m31 25-5-5 5-5"/><path d="m9 15 5 5-5 5"/><path d="m25 9-5 5-5-5"/><path d="m15 31 5-5 5 5"/></svg></div><div class="txt"><strong style="color:#0062E3">❄ Congelar.</strong> Se llena solo; <b>para el reloj 5 s</b> y te mueves <b>gratis</b> por el laberinto.</div></div>
+    <p class="muted">Tu <strong style="color:var(--accent)">rango</strong> es tu <b>tiempo total</b> hasta la salida: empiezas en <strong style="color:var(--accent)">Maestro/a</strong> y bajas cuanto más tardas. Cruza el <strong style="color:var(--accent)">Reto del día</strong> (el tiempo objetivo) y suena <strong style="color:var(--accent)">¡Buen sorbo!</strong></p>
+  </div></div>
+
+  <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
+    <h2>Rangos</h2>
+    <p>Tu rango lo decide el <b>tiempo total</b> hasta la salida — más rápido, mejor rango. Reto del día: <b id="ranks-reto">—</b>. Mejor de hoy: <b id="ranks-best">—</b>.</p>
+    <div class="ranklist" id="ranks-list"></div>
+  </div></div>
+
+  <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button">✕</button>
+    <h2>Estadísticas</h2>
+    <div class="cstat-grid" id="rumbo-stats"></div>
+    <h3>Distribución de rangos</h3>
+    <div id="rumbo-dist"></div>
+    <p class="muted" style="margin-top:14px;line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador, <b>tus estadísticas se borrarán</b>.</p>
+  </div></div>
+
+<script>
+(function(){
+  "use strict";
+  function fnv(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
+  function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  const LS=(function(){ try{ return window.localStorage; }catch(e){ return null; } })();
+  function lsGet(k){ try{ return LS&&LS.getItem(k); }catch(e){ return null; } }
+  function lsSet(k,v){ try{ if(LS) LS.setItem(k,v); }catch(e){} }
+  const $=id=>document.getElementById(id);
+
+  // archive: date can come from #YYYY-MM-DD
+  function isoFromHash(){ const h=(location.hash||'').replace('#',''); return /^\d{4}-\d{2}-\d{2}$/.test(h)?h:null; }
+  const ISO=isoFromHash()||new Date().toISOString().slice(0,10);
+
+  const DIR={U:[-1,0],D:[1,0],L:[0,-1],R:[0,1]}, KEYS=['U','D','L','R'];
+  const WINDOW_MS=5000, CAP_MS=12000, STEP_MS=200;     // tuning knobs
+  const bR=3, bC=3, DENS=0.6;
+  const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
+  // time (seconds) edges; CUT[k] ascending. k=0 -> Maestro(rank 9, t=0), k=9 -> Debutante(rank 0). rank = 9 - band.
+  const CUT=[0,30,42,56,72,90,110,134,162,195];
+  const TOP=9;
+
+  // ---- state ----
+  let MAZE=[], MR=0, MC=0, dot={r:0,c:0}, exit={r:0,c:0}, solSteps=0, retoSecs=60;
+  let grid=[], boardRng=null;
+  let timeLeft=0, moveDir=null, acc=0, lastTs=0, runMs=0, started=false, boards=0, won=false, running=false, elapsedMs=0;
+  let freezeCharge=0, freezeReady=false, frozenUntil=0; const FREEZE_FILL_MS=18000, FREEZE_DUR_MS=5000;
+  let dotEl=null, mc=0, pc=0, rafId=null;
+  let rankBuilt=false, dotsEls=[], fillEl=null, bubbleEl=null, markerEl=null;
+  const board=$('maze');
+
+  // ---- arrow svg ----
+  function arSVG(d){ const [dr,dc]=DIR[d], dx=dc,dy=dr, cx=20,cy=20,H=14,BK=11,W=8, px=-dy,py=dx;
+    const tx=cx+dx*H,ty=cy+dy*H,tlx=cx-dx*H,tly=cy-dy*H,bx=tx-dx*BK,by=ty-dy*BK;
+    return '<svg viewBox="0 0 40 40"><path class="p" d="M '+tlx+' '+tly+' L '+(tx-dx*4)+' '+(ty-dy*4)+'"/><path class="p" d="M '+(bx+px*W)+' '+(by+py*W)+' L '+tx+' '+ty+' L '+(bx-px*W)+' '+(by-py*W)+'"/></svg>'; }
+
+  // ===== maze generation (deterministic recursive backtracker) =====
+  function genMaze(){ const r=mulberry32(fnv('rumbo-maze-'+ISO)); const W=5,H=5, Vh=2*H+1, Vw=2*W+1;
+    const vis=Array.from({length:H},()=>Array(W).fill(0));
+    const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
+    const stack=[[0,0]]; vis[0][0]=1; g[1][1]='.';
+    while(stack.length){ const [cx,cy]=stack[stack.length-1];
+      const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
+      for(let i=dirs.length-1;i>0;i--){ const j=(r()*(i+1))|0; const t=dirs[i]; dirs[i]=dirs[j]; dirs[j]=t; }
+      let moved=false;
+      for(const [dx,dy] of dirs){ const nx=cx+dx, ny=cy+dy; if(nx>=0&&nx<W&&ny>=0&&ny<H&&!vis[ny][nx]){ vis[ny][nx]=1; g[2*cy+1+dy][2*cx+1+dx]='.'; g[2*ny+1][2*nx+1]='.'; stack.push([nx,ny]); moved=true; break; } }
+      if(!moved) stack.pop();
+    }
+    g[1][1]='S'; g[Vh-2][Vw-2]='E';
+    MAZE=g.map(row=>row.join('')); MR=MAZE.length; MC=MAZE[0].length;
+    for(let rr=0;rr<MR;rr++)for(let cc=0;cc<MC;cc++){ if(MAZE[rr][cc]==='S'){dot={r:rr,c:cc};} if(MAZE[rr][cc]==='E'){exit={r:rr,c:cc};} }
+    solSteps=bfsSteps(); retoSecs=55+(fnv('rumbo-reto-'+ISO)%9)*5;   // 55–95s, date-seeded so the family landing shows the same target
+  }
+  const wallAt=(r,c)=> r<0||r>=MR||c<0||c>=MC || MAZE[r][c]==='#';
+  function bfsSteps(){ let S=null; for(let r=0;r<MR;r++)for(let c=0;c<MC;c++) if(MAZE[r][c]==='S') S=[r,c];
+    const seen=new Set([S.join()]); let q=[[S,0]]; while(q.length){ const [[r,c],d]=q.shift(); if(r===exit.r&&c===exit.c) return d;
+      for(const k of KEYS){ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; if(!wallAt(nr,nc)&&!seen.has(nr+','+nc)){ seen.add(nr+','+nc); q.push([[nr,nc],d+1]); } } } return 20; }
+
+  // ===== mini board (deterministic clearable stream) =====
+  function laneClear(g,r,c){ const [dr,dc]=DIR[g[r][c]]; let nr=r+dr,nc=c+dc; while(nr>=0&&nr<bR&&nc>=0&&nc<bC){ if(g[nr][nc]) return false; nr+=dr; nc+=dc; } return true; }
+  function clearable(g){ const gg=g.map(r=>r.slice()); let rem=gg.flat().filter(Boolean).length; if(!rem) return false;
+    let ch=true; while(ch){ ch=false; for(let r=0;r<bR;r++)for(let c=0;c<bC;c++){ if(gg[r][c]&&laneClear(gg,r,c)){ gg[r][c]=null; rem--; ch=true; } } } return rem===0; }
+  function genMini(){ for(let t=0;t<120;t++){ const g=[]; for(let r=0;r<bR;r++){ g[r]=[]; for(let c=0;c<bC;c++) g[r][c]=boardRng()<DENS?KEYS[(boardRng()*4)|0]:null; } if(clearable(g)) return g; }
+    return [['R','R',null],[null,null,null],[null,null,null]]; }
+  function launchable(r,c){ return grid[r][c] && laneClear(grid,r,c); }
+
+  // ===== sizing & layout =====
+  function sizeAll(){ const vw=Math.min(window.innerWidth||360, 440), vh=window.innerHeight||700;
+    mc=Math.max(18,Math.min((vw*0.94)/MC,(vh*0.30)/MR));
+    const W=mc*MC;                                   // bottom frame matches the maze width
+    document.documentElement.style.setProperty('--gw', W+'px'); // every stacked element shares this exact width
+    const EW=22, EH=22;                              // edges as THIN as possible so the board is as WIDE as possible
+    pc=Math.max(30,(W-2*EW)/bC);                     // board fills the width minus the thin edges
+    board.style.width=(mc*MC)+'px'; board.style.height=(mc*MR)+'px';
+    $('panel').style.width=(pc*bC)+'px'; $('panel').style.height=(pc*bR)+'px';
+    const fr=$('frame'); if(fr){ fr.style.gridTemplateColumns=EW+'px '+(pc*bC)+'px '+EW+'px'; fr.style.gridTemplateRows=EH+'px '+(pc*bR)+'px '+EH+'px'; }
+    layoutMaze(); layoutPanel(); }
+  window.addEventListener('resize',sizeAll);
+  function layoutMaze(){ board.querySelectorAll('.cell,.exit').forEach(n=>n.remove());
+    for(let r=0;r<MR;r++)for(let c=0;c<MC;c++){ if(MAZE[r][c]==='#'){ const d=document.createElement('div'); d.className='cell wall'; d.style.cssText='left:'+(c*mc)+'px;top:'+(r*mc)+'px;width:'+mc+'px;height:'+mc+'px'; board.appendChild(d); } }
+    const ex=document.createElement('div'); ex.className='exit'; ex.style.cssText='left:'+(exit.c*mc)+'px;top:'+(exit.r*mc)+'px;width:'+mc+'px;height:'+mc+'px';
+    ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="11"/><circle class="p" cx="20" cy="20" r="3"/></svg>'; board.appendChild(ex);
+    if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
+    const pad=mc*0.16; dotEl.style.width=(mc-2*pad)+'px'; dotEl.style.height=(mc-2*pad)+'px'; placeDot(); }
+  function placeDot(){ if(!dotEl)return; const pad=mc*0.16; dotEl.style.left=(dot.c*mc+pad)+'px'; dotEl.style.top=(dot.r*mc+pad)+'px'; dotEl.classList.toggle('froze',running&&timeLeft<=0); }
+  function layoutPanel(){ const pn=$('panel'); pn.querySelectorAll('.ar').forEach(n=>n.remove());
+    for(let r=0;r<bR;r++)for(let c=0;c<bC;c++){ const d=grid[r][c]; if(!d) continue; const el=document.createElement('div'); el.className='ar '+(launchable(r,c)?'live':'lock'); el.innerHTML=arSVG(d); el.style.cssText='left:'+(c*pc)+'px;top:'+(r*pc)+'px;width:'+pc+'px;height:'+pc+'px'; el._rc=[r,c]; pn.appendChild(el); } }
+  function boardEmpty(){ for(let r=0;r<bR;r++)for(let c=0;c<bC;c++) if(grid[r][c]) return false; return true; }
+  function launchM(r,c){ if(won||!running||!launchable(r,c)) return; const d=grid[r][c];
+    const el=[...$('panel').querySelectorAll('.ar')].find(x=>x._rc&&x._rc[0]===r&&x._rc[1]===c);
+    if(el){ const [dr,dc]=DIR[d]; el.classList.add('fly'); el.style.transform='translate('+(dc*pc*4)+'px,'+(dr*pc*4)+'px)'; setTimeout(()=>{try{el.remove();}catch(e){}},240); }
+    grid[r][c]=null;
+    if(boardEmpty()){ earnTime(); } else { setTimeout(layoutPanel,28); } }
+  function earnTime(){ startRun(); timeLeft=Math.min(CAP_MS, timeLeft+WINDOW_MS); boards++; $('boards').textContent=boards; grid=genMini(); setTimeout(layoutPanel,28); placeDot(); }
+  $('panel').addEventListener('pointerdown',e=>{ const el=e.target.closest('.ar'); if(el&&el._rc) launchM(el._rc[0],el._rc[1]); });
+
+  // ===== movement =====
+  function step(d){ if(won||!running) return false; if(timeLeft<=0 && Date.now()>=frozenUntil) return false; const [dr,dc]=DIR[d], nr=dot.r+dr, nc=dot.c+dc;
+    if(wallAt(nr,nc)) return false; dot.r=nr; dot.c=nc; placeDot(); if(dot.r===exit.r&&dot.c===exit.c) winGame(); return true; }
+  function buildEdges(){ document.querySelectorAll('.edge').forEach(b=>{ const d=b.getAttribute('data-d'); b.innerHTML=arSVG(d);
+      b.onpointerdown=ev=>{ ev.preventDefault(); moveDir=d; acc=0; step(d); b.classList.add('on'); }; }); }
+  function releaseAll(){ moveDir=null; document.querySelectorAll('.edge.on').forEach(b=>b.classList.remove('on')); }
+  document.addEventListener('pointerup',releaseAll); document.addEventListener('pointercancel',releaseAll);
+  document.addEventListener('keydown',e=>{ const m={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'}[e.key]; if(m){ e.preventDefault(); if(moveDir!==m){moveDir=m;acc=0;step(m);} } });
+  document.addEventListener('keyup',e=>{ if(e.key.indexOf('Arrow')===0) moveDir=null; });
+
+  // ===== rank (ceiling model on elapsed time) =====
+  function fracBand(t){ if(t<=CUT[0]) return 0; if(t>=CUT[9]) return 9; for(let k=0;k<9;k++){ if(t>=CUT[k]&&t<=CUT[k+1]) return k+(t-CUT[k])/(CUT[k+1]-CUT[k]); } return 9; }
+  function rankFromTime(t){ let n=0; for(let k=1;k<CUT.length;k++) if(t>CUT[k]) n++; return Math.max(0,Math.min(9,9-n)); }
+  function buildRankTrack(){ if(rankBuilt) return; const track=$('rank-track'); dotsEls=[];
+    fillEl=document.createElement('div'); fillEl.className='rank-track-fill'; track.appendChild(fillEl);
+    for(let i=0;i<10;i++){ const d=document.createElement('div'); d.className='rank-dot'; d.style.left=((i/9)*100)+'%'; track.appendChild(d); dotsEls.push(d); }
+    markerEl=document.createElement('div'); markerEl.className='rank-marker'; track.appendChild(markerEl);
+    bubbleEl=document.createElement('div'); bubbleEl.className='rank-bubble'; track.appendChild(bubbleEl);
+    rankBuilt=true; }
+  function updateRank(){ buildRankTrack(); const t=elapsedSecs(); const fr=9-fracBand(t); const pct=(fr/9)*100;
+    const rIdx=won?finalRank:rankFromTime(t);
+    fillEl.style.width=Math.max(0,Math.min(100,pct))+'%';
+    bubbleEl.style.left='clamp(0px, calc('+pct+'% - 12px), calc(100% - 24px))'; bubbleEl.textContent=(rIdx===TOP?'★':RANK_NAMES[rIdx][0]);
+    const rfr=9-fracBand(retoSecs); markerEl.style.left=(rfr/9*100)+'%'; markerEl.classList.toggle('done', won&&elapsedSecs()<=retoSecs);
+    for(let i=0;i<10;i++) dotsEls[i].classList.toggle('passed', i<=Math.round(fr));
+    const lab=$('rank-label'); lab.textContent=RANK_NAMES[rIdx]; lab.classList.toggle('at-maestro', rIdx===TOP); }
+  function elapsedSecs(){ return Math.floor(runMs/1000); }
+  let finalRank=TOP;
+
+  // ===== loop =====
+  function startRun(){ if(started) return; started=true; }
+  function useFreeze(){ if(!freezeReady||!running||won) return; frozenUntil=Date.now()+FREEZE_DUR_MS; freezeReady=false; freezeCharge=0; updateFreeze(true); }
+  function updateFreeze(frozen){ const btn=$('freeze-btn'); if(!btn) return; const fill=$('freeze-fill'), num=$('freeze-num');
+    if(frozen){ btn.classList.add('frozen'); btn.classList.remove('ready'); if(num) num.textContent=Math.max(0,Math.ceil((frozenUntil-Date.now())/1000)); if(fill) fill.style.transform='scaleX(1)'; return; }
+    btn.classList.remove('frozen'); if(fill) fill.style.transform='scaleX('+Math.min(1,freezeCharge/FREEZE_FILL_MS)+')'; btn.classList.toggle('ready', freezeReady); }
+  function loop(ts){ if(!running){ return; } if(!lastTs) lastTs=ts; const dt=Math.min(80,ts-lastTs); lastTs=ts;
+    const frozen = Date.now()<frozenUntil;
+    if(!frozen){ if(started) runMs+=dt; if(timeLeft>0) timeLeft=Math.max(0,timeLeft-dt);
+      if(!freezeReady){ freezeCharge=Math.min(FREEZE_FILL_MS,freezeCharge+dt); if(freezeCharge>=FREEZE_FILL_MS) freezeReady=true; } }
+    if(moveDir){ acc+=dt; if(acc>=STEP_MS && (frozen||timeLeft>0)){ acc-=STEP_MS; step(moveDir); } } else acc=0;
+    if(timeLeft<=0 && !frozen) placeDot();
+    drawHUD(frozen); updateFreeze(frozen); rafId=requestAnimationFrame(loop); }
+  function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
+  function drawHUD(frozen){ const s=timeLeft/1000; const cl=$('clock'); cl.textContent=s.toFixed(1); cl.classList.toggle('low', s>0&&s<1.5&&!frozen);
+    $('gfill').style.width=Math.min(100,(timeLeft/CAP_MS)*100)+'%'; $('gfill').style.background=frozen?'var(--freeze)':((s>0&&s<1.5)?'var(--error)':'var(--accent-2)');
+    $('frame').classList.toggle('dim', running&&timeLeft<=0&&!frozen);
+    if(dotEl) dotEl.classList.toggle('frz', !!frozen);
+    if(started&&!won){ $('elapsed').textContent=fmt(Math.floor(runMs/1000)); }
+    updateRank(); }
+
+  // ===== game flow =====
+  function startGame(){ won=false; started=false; running=true; timeLeft=0; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; freezeCharge=0; freezeReady=false; frozenUntil=0;
+    $('boards').textContent='0'; $('elapsed').textContent='0:00';
+    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); grid=genMini();
+    document.body.classList.add('game-active'); sizeAll(); buildEdges(); placeDot(); drawHUD(false); updateFreeze(false);
+    $('gate').classList.add('hidden');
+    if(rafId) cancelAnimationFrame(rafId); rafId=requestAnimationFrame(loop); }
+  function winGame(){ if(won) return; won=true; running=false; elapsedMs=runMs; frozenUntil=0; if(rafId) cancelAnimationFrame(rafId);
+    const secs=Math.floor(elapsedMs/1000); finalRank=rankFromTime(secs); const hit=secs<=retoSecs;
+    recordStats(secs, finalRank, hit);
+    const best=bestToday(); const isBest=(best===null||secs<best); if(isBest) lsSet('rumbo-best-'+ISO, String(secs));
+    updateRank();
+    const head = finalRank===TOP ? '<h2 class="accent">¡Maestro/a del laberinto!</h2>'
+               : hit ? '<h2>¡Buen sorbo!</h2>' : '<h2>¡Llegaste!</h2>';
+    const brand='<svg class="brand" viewBox="0 0 120 120" aria-hidden="true"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M34 88 H86" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M78 79 L90 88 L78 97" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const g=$('gate'); g.classList.remove('hidden');
+    g.innerHTML=brand+head+'<div class="v">'+fmt(secs)+'</div><div class="vlbl">'+RANK_NAMES[finalRank]+(hit?' · ✅ reto':'')+'</div>'
+      +'<p>'+boards+' tablero'+(boards===1?'':'s')+' despejado'+(boards===1?'':'s')+'.'+(isBest?'<br>¡Tu mejor tiempo de hoy! 🎉':(best!==null?'<br>Mejor de hoy: <b>'+fmt(best)+'</b>':''))+'</p>'
+      +'<div class="go-row"><button class="btn" id="again-btn" type="button">Jugar de nuevo</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+    $('again-btn').addEventListener('click', startGame); $('share-btn').addEventListener('click', doShare); }
+
+  // ===== share =====
+  function longDate(){ try{ const p=ISO.split('-'); const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])); let s=d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return ISO; } }
+  function doShare(){ const secs=Math.floor(elapsedMs/1000);
+    const lines=[ longDate(), '', '🧩 Rumbo · Flechas', '', '⏱️ '+fmt(secs),
+      (finalRank===TOP?'👑 ¡Maestro/a del laberinto!':'🏆 Rango: '+RANK_NAMES[finalRank]),
+      (secs<=retoSecs?'✅ ¡Reto del día logrado!':'📌 Reto del día'),
+      '🧱 '+boards+' tableros', '', 'https://cortadito.news' ];
+    const txt=lines.join('\n');
+    if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); }
+    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>{ const b=$('share-btn'); if(b) b.textContent='Copiado'; }).catch(()=>{}); } }
+
+  // ===== theme / modals =====
+  function applyTheme(t){ document.body.setAttribute('data-theme',t); $('m-theme-name').textContent=(t==='black')?'Oscuro':'Claro'; lsSet('rumbo-tweaks',t); }
+  function toggleMenu(f){ $('menu-pop').classList.toggle('open', f); }
+  function openOv(id,o){ const ov=$(id); if(o){ document.body.style.overflow='hidden'; ov.scrollTop=0; } else { document.body.style.overflow=''; window.scrollTo(0,0); }
+    ov.classList.toggle('open', o); }
+  function openRanks(o){ if(o){ renderRanks(); } openOv('ranks-ov',o); }
+  function openStats(o){ if(o){ renderStats(); } openOv('stats-ov',o); }
+
+  // ===== stats =====
+  function prevISO(iso){ const p=iso.split('-'); const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])-86400000); return d.toISOString().slice(0,10); }
+  function bestToday(){ const v=lsGet('rumbo-best-'+ISO); return v===null||v===undefined?null:+v; }
+  function getStats(){ const d={played:0,best:null,ranks:[0,0,0,0,0,0,0,0,0,0],last:null,cur:0,max:0, lastReto:null,retoCur:0,retoMax:0}; try{ return Object.assign(d, JSON.parse(lsGet('rumbo-stats'))||{}); }catch(e){ return d; } }
+  function recordStats(secs, rIdx, hit){ const s=getStats(); s.played++; if(s.best===null||secs<s.best) s.best=secs; s.ranks[rIdx]=(s.ranks[rIdx]||0)+1;
+    if(s.last!==ISO){ s.cur=(s.last===prevISO(ISO))?s.cur+1:1; s.last=ISO; if(s.cur>s.max) s.max=s.cur; }
+    if(hit && s.lastReto!==ISO){ s.retoCur=(s.lastReto===prevISO(ISO))?s.retoCur+1:1; s.lastReto=ISO; if(s.retoCur>s.retoMax) s.retoMax=s.retoCur; }
+    lsSet('rumbo-stats', JSON.stringify(s)); }
+  function renderRanks(){ const list=$('ranks-list'); const cur=won?finalRank:rankFromTime(elapsedSecs());
+    $('ranks-reto').textContent=fmt(retoSecs); const b=bestToday(); $('ranks-best').textContent=(b===null?'—':fmt(b));
+    let h=''; for(let i=9;i>=0;i--){ const lo=CUT[9-i]; const hi=(9-i===0)?0:CUT[9-i-1];
+      const range=(i===9)?('≤ '+fmt(CUT[1])):(i===0?('> '+fmt(CUT[9])):('≤ '+fmt(CUT[9-i+1])));
+      h+='<div class="rl-row'+(i===cur&&won?' cur':'')+'"><span>'+RANK_NAMES[i]+'</span><span class="rt">'+rangeFor(i)+'</span></div>'; }
+    list.innerHTML=h; }
+  function rangeFor(i){ // i is rank index 9..0; band k=9-i ; you're rank i while CUT[k] < t <= CUT[k+1]
+    const k=9-i; if(i===TOP) return '≤ '+fmt(CUT[1]); if(i===0) return '> '+fmt(CUT[9]); return fmt(CUT[k])+'–'+fmt(CUT[k+1]); }
+  function renderStats(){ const s=getStats();
+    const cell=(v,l,acc)=>'<div class="cstat"><div class="cv'+(acc?' accent':'')+'">'+v+'</div><div class="cl">'+l+'</div></div>';
+    $('rumbo-stats').innerHTML = cell(s.played,'Jugadas')+cell(s.best===null?'—':fmt(s.best),'Mejor tiempo',true)+cell(s.cur,'Racha de juego',true)+cell(s.retoCur,'Racha de reto',true);
+    const cur=won?finalRank:-1; const maxv=Math.max(1,...s.ranks); let h='';
+    for(let i=9;i>=0;i--){ const pct=Math.round((s.ranks[i]/maxv)*100); const tot=s.played||1; const p2=Math.round((s.ranks[i]/tot)*100);
+      h+='<div class="cdist-row'+(i===cur?' cur':'')+(s.ranks[i]===0?' empty':'')+'"><span class="cdn">'+RANK_NAMES[i]+'</span><span class="cdbar"><span class="cdfill" style="width:'+pct+'%"></span></span><span class="cdc">'+s.ranks[i]+' ('+(s.ranks[i]?p2+'%':'—')+')</span></div>'; }
+    $('rumbo-dist').innerHTML=h; }
+
+  // ===== wire =====
+  $('start-btn').addEventListener('click', startGame);
+  $('freeze-btn').addEventListener('click', useFreeze);
+  $('rules-link').addEventListener('click', ()=>openOv('rules-ov',true));
+  $('rules-x').addEventListener('click', ()=>openOv('rules-ov',false));
+  $('rules-ov').addEventListener('click', e=>{ if(e.target===$('rules-ov')) openOv('rules-ov',false); });
+  $('rank-bar').addEventListener('click', ()=>openRanks(true));
+  $('ranks-link').addEventListener('click', ()=>openRanks(true));
+  $('ranks-x').addEventListener('click', ()=>openRanks(false));
+  $('ranks-ov').addEventListener('click', e=>{ if(e.target===$('ranks-ov')) openRanks(false); });
+  $('stats-link').addEventListener('click', ()=>openStats(true));
+  $('stats-x').addEventListener('click', ()=>openStats(false));
+  $('stats-ov').addEventListener('click', e=>{ if(e.target===$('stats-ov')) openStats(false); });
+  $('menu-btn').addEventListener('click', e=>{ e.stopPropagation(); toggleMenu(); });
+  document.addEventListener('click', e=>{ if(!e.target.closest('.nav-more-wrap')) toggleMenu(false); });
+  $('m-theme').addEventListener('click', ()=>{ applyTheme(document.body.getAttribute('data-theme')==='black'?'light':'black'); toggleMenu(false); });
+  $('m-share').addEventListener('click', ()=>{ toggleMenu(false); doShare(); });
+  $('m-sub').addEventListener('click', ()=>{ toggleMenu(false); window.open('https://cortadito.news','_blank'); });
+  window.addEventListener('hashchange',()=>{ if(isoFromHash() && isoFromHash()!==ISO) location.reload(); });
+
+  // ===== boot =====
+  try{
+    applyTheme((lsGet('rumbo-tweaks')==='black')?'black':'light');
+    document.body.classList.add('game-active');
+    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); grid=genMini();
+    sizeAll(); buildEdges(); placeDot(); buildRankTrack(); drawHUD(false); updateFreeze(false);
+    window.__rumbo={ start:startGame, step, launchM, forceSolve:()=>earnTime(), setTime:ms=>{timeLeft=ms;}, useFreeze, chargeFreeze:()=>{freezeReady=true;updateFreeze(false);}, frozen:()=>Date.now()<frozenUntil,
+      solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<60){ const a=grid.flat().filter(Boolean).length; for(let r=0;r<bR;r++)for(let c=0;c<bC;c++) launchM(r,c); if(grid.flat().filter(Boolean).length===a) break; g++; } },
+      state:()=>({dot:{...dot},exit:{...exit},timeLeft,boards,won,running,elapsedSecs:elapsedSecs(),rank:won?finalRank:rankFromTime(elapsedSecs()),reto:retoSecs,sol:solSteps,maze:MAZE.join('|')}) };
+  }catch(e){ try{ console.error(e); }catch(_){} }
+  finally{ document.body.classList.add('ready'); }
+})();
+</script>
+
+<div id="rotate-lock">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><line x1="10" y1="18.5" x2="14" y2="18.5"/></svg>
+  <p class="rt">Este sorbo se disfruta mejor de pie</p>
+  <p class="rs">Gira tu teléfono para seguir jugando.</p>
+</div>
+
+</body>
+</html>
