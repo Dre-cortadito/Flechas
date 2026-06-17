@@ -124,8 +124,8 @@
   .panel-wrap { width:100%; display:flex; justify-content:center; }
   .panel { position:relative; border-radius:12px; overflow:hidden; background:var(--paper); border:2px solid var(--box-edge); }
   .ar { position:absolute; display:flex; align-items:center; justify-content:center; transition:transform .24s ease, opacity .24s ease; }
-  .ar svg { width:62%; height:62%; overflow:visible; }
-  .ar .p { fill:none; stroke:var(--ink-soft); stroke-width:7; stroke-linecap:round; stroke-linejoin:round; }
+  .ar svg { width:80%; height:80%; overflow:visible; }
+  .ar .p { fill:none; stroke:var(--ink-soft); stroke-width:9; stroke-linecap:round; stroke-linejoin:round; }   /* bold + rounded, like Cascada's arrows */
   .ar.live .p { stroke:var(--arrow); } .ar.live { cursor:pointer; } .ar.fly { opacity:0; }
 
   /* ===== Gate / start + result ===== */
@@ -289,11 +289,11 @@
   const TOP=9;
 
   // ---- state ----
-  let MAZE=[], MR=0, MC=0, dot={r:0,c:0}, exit={r:0,c:0}, solSteps=0, retoSecs=60;
+  let DG=[], MR=0, MC=0, dot={r:0,c:0}, exit={r:0,c:0}, solSteps=0, retoSecs=60;   // DG = doubled wall grid; MR/MC = logical rows/cols
   let grid=[], boardRng=null;
   let timeLeft=0, moveDir=null, acc=0, lastTs=0, runMs=0, started=false, boards=0, won=false, running=false, elapsedMs=0;
   let freezeCharge=0, freezeReady=false, frozenUntil=0; const FREEZE_FILL_MS=18000, FREEZE_DUR_MS=5000;
-  let dotEl=null, mc=0, pc=0, rafId=null;
+  let dotEl=null, mc=0, cw=0, ch=0, rafId=null;
   let rankBuilt=false, dotsEls=[], fillEl=null, bubbleEl=null, markerEl=null;
   const board=$('maze');
 
@@ -302,27 +302,26 @@
     const tx=cx+dx*H,ty=cy+dy*H,tlx=cx-dx*H,tly=cy-dy*H,bx=tx-dx*BK,by=ty-dy*BK;
     return '<svg viewBox="0 0 40 40"><path class="p" d="M '+tlx+' '+tly+' L '+(tx-dx*4)+' '+(ty-dy*4)+'"/><path class="p" d="M '+(bx+px*W)+' '+(by+py*W)+' L '+tx+' '+ty+' L '+(bx-px*W)+' '+(by-py*W)+'"/></svg>'; }
 
-  // ===== maze generation (deterministic recursive backtracker) =====
-  function genMaze(){ const r=mulberry32(fnv('rumbo-maze-'+ISO)); const W=6,H=4, Vh=2*H+1, Vw=2*W+1;   // wider-than-tall (13x9) so the maze fills the width but stays short
-    const vis=Array.from({length:H},()=>Array(W).fill(0));
+  // ===== maze generation (deterministic recursive backtracker, thin walls) =====
+  const LW=10, LH=7;   // logical cols/rows — fine, wide-short grid → reads like a real maze, fills width, stays short
+  function genMaze(){ const r=mulberry32(fnv('rumbo-maze-'+ISO)); const Vh=2*LH+1, Vw=2*LW+1;
+    const vis=Array.from({length:LH},()=>Array(LW).fill(0));
     const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
     const stack=[[0,0]]; vis[0][0]=1; g[1][1]='.';
     while(stack.length){ const [cx,cy]=stack[stack.length-1];
       const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
       for(let i=dirs.length-1;i>0;i--){ const j=(r()*(i+1))|0; const t=dirs[i]; dirs[i]=dirs[j]; dirs[j]=t; }
       let moved=false;
-      for(const [dx,dy] of dirs){ const nx=cx+dx, ny=cy+dy; if(nx>=0&&nx<W&&ny>=0&&ny<H&&!vis[ny][nx]){ vis[ny][nx]=1; g[2*cy+1+dy][2*cx+1+dx]='.'; g[2*ny+1][2*nx+1]='.'; stack.push([nx,ny]); moved=true; break; } }
+      for(const [dx,dy] of dirs){ const nx=cx+dx, ny=cy+dy; if(nx>=0&&nx<LW&&ny>=0&&ny<LH&&!vis[ny][nx]){ vis[ny][nx]=1; g[2*cy+1+dy][2*cx+1+dx]='.'; g[2*ny+1][2*nx+1]='.'; stack.push([nx,ny]); moved=true; break; } }
       if(!moved) stack.pop();
     }
-    g[1][1]='S'; g[Vh-2][Vw-2]='E';
-    MAZE=g.map(row=>row.join('')); MR=MAZE.length; MC=MAZE[0].length;
-    for(let rr=0;rr<MR;rr++)for(let cc=0;cc<MC;cc++){ if(MAZE[rr][cc]==='S'){dot={r:rr,c:cc};} if(MAZE[rr][cc]==='E'){exit={r:rr,c:cc};} }
-    solSteps=bfsSteps(); retoSecs=55+(fnv('rumbo-reto-'+ISO)%9)*5;   // 55–95s, date-seeded so the family landing shows the same target
+    DG=g; MR=LH; MC=LW; dot={r:0,c:0}; exit={r:LH-1,c:LW-1};
+    const sol=solvePath(); solSteps=sol?sol.length:20; retoSecs=55+(fnv('rumbo-reto-'+ISO)%9)*5;   // 55–95s, date-seeded so the family landing shows the same target
   }
-  const wallAt=(r,c)=> r<0||r>=MR||c<0||c>=MC || MAZE[r][c]==='#';
-  function bfsSteps(){ let S=null; for(let r=0;r<MR;r++)for(let c=0;c<MC;c++) if(MAZE[r][c]==='S') S=[r,c];
-    const seen=new Set([S.join()]); let q=[[S,0]]; while(q.length){ const [[r,c],d]=q.shift(); if(r===exit.r&&c===exit.c) return d;
-      for(const k of KEYS){ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; if(!wallAt(nr,nc)&&!seen.has(nr+','+nc)){ seen.add(nr+','+nc); q.push([[nr,nc],d+1]); } } } return 20; }
+  // movement is on LOGICAL cells; a move is allowed only if the wall segment between cells is open
+  function canMove(r,c,dr,dc){ const nr=r+dr,nc=c+dc; if(nr<0||nr>=MR||nc<0||nc>=MC) return false; return DG[2*r+1+dr][2*c+1+dc]==='.'; }
+  function solvePath(){ const seen=new Set(['0,0']); let q=[[0,0,[]]]; while(q.length){ const [r,c,pa]=q.shift(); if(r===exit.r&&c===exit.c) return pa;
+      for(const k of KEYS){ const [dr,dc]=DIR[k]; if(canMove(r,c,dr,dc)){ const key2=(r+dr)+','+(c+dc); if(!seen.has(key2)){ seen.add(key2); q.push([r+dr,c+dc,pa.concat(k)]); } } } } return null; }
 
   // ===== mini board (deterministic clearable stream) =====
   function laneClear(g,r,c){ const [dr,dc]=DIR[g[r][c]]; let nr=r+dr,nc=c+dc; while(nr>=0&&nr<bR&&nc>=0&&nc<bC){ if(g[nr][nc]) return false; nr+=dr; nc+=dc; } return true; }
@@ -340,35 +339,43 @@
     const mazeH=mc*MR;
     board.style.width=(mc*MC)+'px'; board.style.height=mazeH+'px';
     // bottom board: also full width. Cells sized by the height left under the maze; side edges absorb the rest (thin when there's room).
-    const availH=Math.max(120, vh - 252 - mazeH);    // ~chrome (header+rank+meta+gauge+freeze+pads) left for the board-unit
-    const EHv=20;
-    pc=Math.max(26, Math.min((gw-2*22)/bC, (availH-2*EHv)/bR));
-    const EW=Math.max(20, (gw-pc*bC)/2);
-    $('panel').style.width=(pc*bC)+'px'; $('panel').style.height=(pc*bR)+'px';
-    const fr=$('frame'); if(fr){ fr.style.gridTemplateColumns=EW+'px '+(pc*bC)+'px '+EW+'px'; fr.style.gridTemplateRows=EHv+'px '+(pc*bR)+'px '+EHv+'px'; }
+    const availH=Math.max(110, vh - 250 - mazeH);    // ~chrome (header+rank+meta+gauge+freeze+pads) left for the board-unit
+    const E=26;                                       // uniform edge thickness on ALL four sides
+    cw=(gw-2*E)/bC;                                   // board cell width fills the unit width
+    ch=Math.max(30, Math.min(cw, (availH-2*E)/bR));   // cell height by leftover room; never taller than wide
+    $('panel').style.width=(cw*bC)+'px'; $('panel').style.height=(ch*bR)+'px';
+    const fr=$('frame'); if(fr){ fr.style.gridTemplateColumns=E+'px '+(cw*bC)+'px '+E+'px'; fr.style.gridTemplateRows=E+'px '+(ch*bR)+'px '+E+'px'; }
     layoutMaze(); layoutPanel(); }
   window.addEventListener('resize',sizeAll);
-  function layoutMaze(){ board.querySelectorAll('.cell,.exit').forEach(n=>n.remove());
-    for(let r=0;r<MR;r++)for(let c=0;c<MC;c++){ if(MAZE[r][c]==='#'){ const d=document.createElement('div'); d.className='cell wall'; d.style.cssText='left:'+(c*mc)+'px;top:'+(r*mc)+'px;width:'+mc+'px;height:'+mc+'px'; board.appendChild(d); } }
-    const ex=document.createElement('div'); ex.className='exit'; ex.style.cssText='left:'+(exit.c*mc)+'px;top:'+(exit.r*mc)+'px;width:'+mc+'px;height:'+mc+'px';
+  function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit').forEach(n=>n.remove());
+    const w=mc*MC, h=mc*MR, NS='http://www.w3.org/2000/svg';
+    const svg=document.createElementNS(NS,'svg'); svg.setAttribute('class','mz-svg'); svg.setAttribute('viewBox','0 0 '+MC+' '+MR); svg.setAttribute('preserveAspectRatio','none');
+    svg.style.cssText='position:absolute;left:0;top:0;width:'+w+'px;height:'+h+'px;z-index:1;';
+    let d='M0 0 H'+MC+' V'+MR+' H0 Z ';   // outer border
+    for(let cy=0;cy<MR;cy++)for(let cx=0;cx<MC;cx++){
+      if(cx<MC-1 && DG[2*cy+1][2*cx+2]==='#') d+='M'+(cx+1)+' '+cy+' V'+(cy+1)+' ';   // east wall
+      if(cy<MR-1 && DG[2*cy+2][2*cx+1]==='#') d+='M'+cx+' '+(cy+1)+' H'+(cx+1)+' ';   // south wall
+    }
+    const p=document.createElementNS(NS,'path'); p.setAttribute('d',d); p.setAttribute('fill','none'); p.setAttribute('stroke','var(--wall)'); p.setAttribute('stroke-width','0.16'); p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round'); svg.appendChild(p); board.appendChild(svg);
+    const ex=document.createElement('div'); ex.className='exit'; ex.style.cssText='left:'+(exit.c*mc)+'px;top:'+(exit.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;';
     ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="11"/><circle class="p" cx="20" cy="20" r="3"/></svg>'; board.appendChild(ex);
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
-    const pad=mc*0.16; dotEl.style.width=(mc-2*pad)+'px'; dotEl.style.height=(mc-2*pad)+'px'; placeDot(); }
-  function placeDot(){ if(!dotEl)return; const pad=mc*0.16; dotEl.style.left=(dot.c*mc+pad)+'px'; dotEl.style.top=(dot.r*mc+pad)+'px'; dotEl.classList.toggle('froze',running&&timeLeft<=0); }
+    const pad=mc*0.2; dotEl.style.width=(mc-2*pad)+'px'; dotEl.style.height=(mc-2*pad)+'px'; placeDot(); }
+  function placeDot(){ if(!dotEl)return; const pad=mc*0.2; dotEl.style.left=(dot.c*mc+pad)+'px'; dotEl.style.top=(dot.r*mc+pad)+'px'; dotEl.classList.toggle('froze',running&&timeLeft<=0); }
   function layoutPanel(){ const pn=$('panel'); pn.querySelectorAll('.ar').forEach(n=>n.remove());
-    for(let r=0;r<bR;r++)for(let c=0;c<bC;c++){ const d=grid[r][c]; if(!d) continue; const el=document.createElement('div'); el.className='ar '+(launchable(r,c)?'live':'lock'); el.innerHTML=arSVG(d); el.style.cssText='left:'+(c*pc)+'px;top:'+(r*pc)+'px;width:'+pc+'px;height:'+pc+'px'; el._rc=[r,c]; pn.appendChild(el); } }
+    for(let r=0;r<bR;r++)for(let c=0;c<bC;c++){ const d=grid[r][c]; if(!d) continue; const el=document.createElement('div'); el.className='ar '+(launchable(r,c)?'live':'lock'); el.innerHTML=arSVG(d); el.style.cssText='left:'+(c*cw)+'px;top:'+(r*ch)+'px;width:'+cw+'px;height:'+ch+'px'; el._rc=[r,c]; pn.appendChild(el); } }
   function boardEmpty(){ for(let r=0;r<bR;r++)for(let c=0;c<bC;c++) if(grid[r][c]) return false; return true; }
   function launchM(r,c){ if(won||!running||!launchable(r,c)) return; const d=grid[r][c];
     const el=[...$('panel').querySelectorAll('.ar')].find(x=>x._rc&&x._rc[0]===r&&x._rc[1]===c);
-    if(el){ const [dr,dc]=DIR[d]; el.classList.add('fly'); el.style.transform='translate('+(dc*pc*4)+'px,'+(dr*pc*4)+'px)'; setTimeout(()=>{try{el.remove();}catch(e){}},240); }
+    if(el){ const [dr,dc]=DIR[d]; el.classList.add('fly'); el.style.transform='translate('+(dc*cw*4)+'px,'+(dr*ch*4)+'px)'; setTimeout(()=>{try{el.remove();}catch(e){}},240); }
     grid[r][c]=null;
     if(boardEmpty()){ earnTime(); } else { setTimeout(layoutPanel,28); } }
   function earnTime(){ startRun(); timeLeft=Math.min(CAP_MS, timeLeft+WINDOW_MS); boards++; $('boards').textContent=boards; grid=genMini(); setTimeout(layoutPanel,28); placeDot(); }
   $('panel').addEventListener('pointerdown',e=>{ const el=e.target.closest('.ar'); if(el&&el._rc) launchM(el._rc[0],el._rc[1]); });
 
   // ===== movement =====
-  function step(d){ if(won||!running) return false; if(timeLeft<=0 && Date.now()>=frozenUntil) return false; const [dr,dc]=DIR[d], nr=dot.r+dr, nc=dot.c+dc;
-    if(wallAt(nr,nc)) return false; dot.r=nr; dot.c=nc; placeDot(); if(dot.r===exit.r&&dot.c===exit.c) winGame(); return true; }
+  function step(d){ if(won||!running) return false; if(timeLeft<=0 && Date.now()>=frozenUntil) return false; const [dr,dc]=DIR[d];
+    if(!canMove(dot.r,dot.c,dr,dc)) return false; dot.r+=dr; dot.c+=dc; placeDot(); if(dot.r===exit.r&&dot.c===exit.c) winGame(); return true; }
   function buildEdges(){ document.querySelectorAll('.edge').forEach(b=>{ const d=b.getAttribute('data-d'); b.innerHTML=arSVG(d);
       b.onpointerdown=ev=>{ ev.preventDefault(); moveDir=d; acc=0; step(d); b.classList.add('on'); }; }); }
   function releaseAll(){ moveDir=null; document.querySelectorAll('.edge.on').forEach(b=>b.classList.remove('on')); }
@@ -506,9 +513,9 @@
     document.body.classList.add('game-active');
     genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO)); grid=[[null,null,null],[null,null,null],[null,null,null]];   // empty board until "Empezar"
     sizeAll(); buildEdges(); placeDot(); buildRankTrack(); drawHUD(false); updateFreeze(false);
-    window.__rumbo={ start:startGame, step, launchM, forceSolve:()=>earnTime(), setTime:ms=>{timeLeft=ms;}, useFreeze, chargeFreeze:()=>{freezeReady=true;updateFreeze(false);}, frozen:()=>Date.now()<frozenUntil,
+    window.__rumbo={ start:startGame, step, launchM, forceSolve:()=>earnTime(), setTime:ms=>{timeLeft=ms;}, useFreeze, chargeFreeze:()=>{freezeReady=true;updateFreeze(false);}, frozen:()=>Date.now()<frozenUntil, solve:()=>solvePath(),
       solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<60){ const a=grid.flat().filter(Boolean).length; for(let r=0;r<bR;r++)for(let c=0;c<bC;c++) launchM(r,c); if(grid.flat().filter(Boolean).length===a) break; g++; } },
-      state:()=>({dot:{...dot},exit:{...exit},timeLeft,boards,won,running,elapsedSecs:elapsedSecs(),rank:won?finalRank:rankFromTime(elapsedSecs()),reto:retoSecs,sol:solSteps,maze:MAZE.join('|')}) };
+      state:()=>({dot:{...dot},exit:{...exit},timeLeft,boards,won,running,elapsedSecs:elapsedSecs(),rank:won?finalRank:rankFromTime(elapsedSecs()),reto:retoSecs,sol:solSteps,cols:MC,rows:MR}) };
   }catch(e){ try{ console.error(e); }catch(_){} }
   finally{ document.body.classList.add('ready'); }
 })();
