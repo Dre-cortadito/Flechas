@@ -215,7 +215,7 @@
       <div class="maze" id="maze">
         <div class="gate" id="gate">
           <h2>Rumbo</h2>
-          <p>Recorre el laberinto con la cruz. Las <b>puertas</b> cerradas se abren <b>despejando un tablero de flechas</b>. Llega a la salida lo más rápido posible.</p>
+          <p>Recoge las <b>3 llaves</b> y llega a la salida (cerrada hasta tenerlas todas). Las <b>puertas</b> del camino se abren <b>despejando un tablero de flechas</b>. ¡Lo más rápido posible!</p>
           <button class="btn" id="start-btn" type="button">Empezar</button>
         </div>
       </div>
@@ -239,8 +239,9 @@
 
   <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
     <h2>Rumbo</h2>
-    <p>Un laberinto nuevo cada día. Lo <b>recorres libremente</b> con la cruz; en el camino hay <b>puertas cerradas</b> que solo se abren resolviendo un tablero de flechas.</p>
+    <p>Un laberinto nuevo cada día. Lo <b>recorres libremente</b> con la cruz, recoges <b>3 llaves</b> y sales — eligiendo bien tu ruta.</p>
     <h3>Cómo se juega</h3>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><circle cx="15" cy="15" r="7" fill="none" stroke="#C8860B" stroke-width="4.5"/><path d="M20 20 L31 31 M31 31 L31 26 M31 31 L26 31" stroke="#C8860B" stroke-width="4.5" stroke-linecap="round" fill="none"/></svg></div><div class="txt">Recoge las <strong style="color:#C8860B">3 llaves</strong> repartidas por el laberinto. La <b>salida está cerrada</b> hasta tenerlas todas — el <b>orden</b> de tu ruta es el reto.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/></svg></div><div class="txt"><strong style="color:var(--accent)">Puerta naranja:</strong> bloquea el <b>único camino</b>. No hay vuelta — hay que abrirla.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--accent-2)" stroke-width="5" stroke-linecap="round"/></svg></div><div class="txt"><strong style="color:var(--accent-2)">Puerta turquesa:</strong> un <b>atajo</b>. Ábrela para acortar… o rodéala por el camino largo. Tú decides.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M14 20 L92 20"/><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Para abrir una puerta, <b>despeja su tablero</b>: toca una flecha con el <b>carril libre</b> hasta vaciarlo.</div></div>
@@ -291,6 +292,7 @@
   let moveDir=null, acc=0, lastTs=0, runMs=0, started=false, boards=0, won=false, running=false, elapsedMs=0;
   let phase='move';   // 'move' = roam freely with the d-pad; 'solve' = at a locked door, clear the board to open it
   let lockedDoors=new Set(), doorType={}, totalDoors=0, doorsOpened=0, currentDoor=null;
+  let keys=[], keysGot=0;   // collect all keys before the exit unlocks → route-order puzzle
   let dotEl=null, mc=0, cw=0, ch=0, rafId=null;
   let rankBuilt=false, dotsEls=[], fillEl=null, bubbleEl=null, markerEl=null;
   const board=$('maze');
@@ -316,7 +318,7 @@
     }
     DG=g; MR=LH; MC=LW; dot={r:0,c:0}; exit={r:LH-1,c:LW-1};
     const sol=solvePath(); solSteps=sol?sol.length:20; retoSecs=55+(fnv('rumbo-reto-'+ISO)%9)*5;   // 55–95s, date-seeded so the family landing shows the same target
-    placeDoors();
+    placeDoors(); placeKeys();
   }
   // movement is on LOGICAL cells; a move is allowed only if the wall segment between cells is open (doors don't affect pathing)
   function canMove(r,c,dr,dc){ const nr=r+dr,nc=c+dc; if(nr<0||nr>=MR||nc<0||nc>=MC) return false; return DG[2*r+1+dr][2*c+1+dc]==='.'; }
@@ -343,6 +345,17 @@
     const prev=bfsP(null); if(!prev) return; const sp=[]; { let cur=exit.r+','+exit.c; while(cur!=='0,0'){ const p=prev.get(cur); if(!p)break; sp.push({r:p[0],c:p[1],d:p[2]}); cur=p[0]+','+p[1]; } sp.reverse(); }
     const mand=[]; for(const e of sp){ const key=e.r+','+e.c+','+e.d; if(lockedDoors.has(key)) continue; if(!bfsP(key)) mand.push(e); }
     const stepm=Math.max(1,Math.ceil(mand.length/3)); for(let i=0,n=0;i<mand.length&&n<3;i+=stepm,n++) addDoor(mand[i].r,mand[i].c,mand[i].d,'mand');
+  }
+  // place 3 keys spread far apart (greedy farthest-point) → the order you visit them is the puzzle
+  function placeKeys(){ keys=[]; keysGot=0;
+    const passable=(r,c,k)=>{ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; return !(nr<0||nr>=MR||nc<0||nc>=MC) && DG[2*r+1+dr][2*c+1+dc]==='.'; };
+    function dists(sr,sc){ const d=Array.from({length:MR},()=>Array(MC).fill(-1)); d[sr][sc]=0; const q=[[sr,sc]]; let h=0; while(h<q.length){ const [r,c]=q[h++]; for(const k of KEYS){ if(!passable(r,c,k))continue; const [dr,dc]=DIR[k],nr=r+dr,nc=c+dc; if(d[nr][nc]<0){ d[nr][nc]=d[r][c]+1; q.push([nr,nc]); } } } return d; }
+    const anchors=[{r:0,c:0},{r:exit.r,c:exit.c}];
+    for(let n=0;n<3;n++){ const dmaps=anchors.map(p=>dists(p.r,p.c)); let best=null,bestScore=-1;
+      for(let r=0;r<MR;r++)for(let c=0;c<MC;c++){ if((r===0&&c===0)||(r===exit.r&&c===exit.c)||keys.some(k=>k.r===r&&k.c===c)) continue;
+        let mn=Infinity; for(const dm of dmaps){ if(dm[r][c]<0){ mn=-1; break; } mn=Math.min(mn,dm[r][c]); }
+        if(mn>bestScore){ bestScore=mn; best={r,c}; } }
+      if(best){ keys.push({r:best.r,c:best.c,got:false}); anchors.push(best); } }
   }
 
   // ===== mini board (deterministic clearable stream) =====
@@ -427,7 +440,7 @@
     const play=$('play'); if(play){ play.style.width=(cell*BCOLS)+'px'; play.style.height=(cell*BROWS)+'px'; }
     layoutMaze(); }   // the piece board is an SVG that scales to the panel; no per-resize relayout needed
   window.addEventListener('resize',sizeAll);
-  function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit').forEach(n=>n.remove());
+  function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit,.keyc').forEach(n=>n.remove());
     const w=mc*MC, h=mc*MR, NS='http://www.w3.org/2000/svg';
     const svg=document.createElementNS(NS,'svg'); svg.setAttribute('class','mz-svg'); svg.setAttribute('viewBox','0 0 '+MC+' '+MR); svg.setAttribute('preserveAspectRatio','none');
     svg.style.cssText='position:absolute;left:0;top:0;width:'+w+'px;height:'+h+'px;z-index:1;';
@@ -444,8 +457,11 @@
     const doorPath=(dstr,col)=>{ if(!dstr) return; const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dstr); dp.setAttribute('fill','none'); dp.setAttribute('stroke',col); dp.setAttribute('stroke-width','0.32'); dp.setAttribute('stroke-linecap','round'); svg.appendChild(dp); };
     doorPath(ddM,'var(--accent)'); doorPath(ddO,'var(--accent-2)');
     board.appendChild(svg);
+    const locked = keysGot < keys.length, exCol = locked ? 'var(--ink-soft)' : 'var(--success)';
     const ex=document.createElement('div'); ex.className='exit'; ex.style.cssText='left:'+(exit.c*mc)+'px;top:'+(exit.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;';
-    ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="11"/><circle class="p" cx="20" cy="20" r="3"/></svg>'; board.appendChild(ex);
+    ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="11" style="stroke:'+exCol+'"/><circle class="p" cx="20" cy="20" r="3" style="stroke:'+exCol+'"/></svg>'; board.appendChild(ex);
+    keys.forEach(k=>{ if(k.got) return; const ke=document.createElement('div'); ke.className='keyc'; ke.style.cssText='position:absolute;left:'+(k.c*mc)+'px;top:'+(k.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;display:flex;align-items:center;justify-content:center;';
+      ke.innerHTML='<svg viewBox="0 0 40 40" style="width:64%;height:64%"><circle cx="14" cy="14" r="7" fill="none" stroke="#C8860B" stroke-width="4.5"/><path d="M19 19 L31 31" stroke="#C8860B" stroke-width="4.5" stroke-linecap="round"/><path d="M31 31 L31 26 M31 31 L26 31" stroke="#C8860B" stroke-width="4.5" stroke-linecap="round"/></svg>'; board.appendChild(ke); });
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
     const pad=mc*0.2; dotEl.style.width=(mc-2*pad)+'px'; dotEl.style.height=(mc-2*pad)+'px'; placeDot(); }
   function placeDot(){ if(!dotEl)return; const pad=mc*0.2; dotEl.style.left=(dot.c*mc+pad)+'px'; dotEl.style.top=(dot.r*mc+pad)+'px'; dotEl.classList.toggle('froze',running&&phase!=='move'); }
@@ -462,7 +478,10 @@
     if(nr<0||nr>=MR||nc<0||nc>=MC) return false;
     if(DG[2*dot.r+1+dr][2*dot.c+1+dc]==='#') return false;                  // wall → bump
     if(lockedDoors.has(dot.r+','+dot.c+','+d)){ enterSolve(d); return false; }   // locked door → solve to open
-    dot.r=nr; dot.c=nc; placeDot(); if(dot.r===exit.r&&dot.c===exit.c) winGame(); return true; }
+    dot.r=nr; dot.c=nc; placeDot();
+    const ki=keys.findIndex(k=>!k.got&&k.r===dot.r&&k.c===dot.c); if(ki>=0){ keys[ki].got=true; keysGot++; layoutMaze(); }   // picked up a key
+    if(dot.r===exit.r&&dot.c===exit.c && keysGot>=keys.length) winGame();   // exit only counts once all keys are collected
+    return true; }
   function buildBigPad(){ document.querySelectorAll('.dbtn').forEach(b=>{ const d=b.getAttribute('data-d'); b.innerHTML=arSVG(d);
       b.onpointerdown=ev=>{ ev.preventDefault(); if(phase!=='move') return; moveDir=d; acc=0; step(d); b.classList.add('on'); }; }); }
   function releaseAll(){ moveDir=null; document.querySelectorAll('.dbtn.on').forEach(b=>b.classList.remove('on')); }
@@ -497,8 +516,8 @@
     drawHUD(); rafId=requestAnimationFrame(loop); }
   function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
   function drawHUD(){ const cl=$('clock'); if(started&&!won) cl.textContent=fmt(Math.floor(runMs/1000));   // top = total time
-    const mv=$('mvtimer'); if(mv) mv.textContent=Math.max(0,totalDoors-doorsOpened);                       // d-pad centre = locked doors left
-    const gf=$('gfill'); if(gf) gf.style.width=(totalDoors?Math.round((doorsOpened/totalDoors)*100):0)+'%'; // bar = door progress
+    const mv=$('mvtimer'); if(mv) mv.textContent=keysGot+'/'+(keys.length||3);                              // d-pad centre = keys collected
+    const gf=$('gfill'); if(gf) gf.style.width=(keys.length?Math.round((keysGot/keys.length)*100):0)+'%';   // bar = key progress
     updateRank(); }
 
   // ===== game flow =====
@@ -593,6 +612,7 @@
     sizeAll(); buildBigPad(); placeDot(); buildRankTrack(); showMove(); drawHUD();
     window.__rumbo={ start:startGame, step, tapPiece, solve:()=>solvePath(), phase:()=>phase, pieces:()=>Object.keys(pcs).length, doorsLeft:()=>totalDoors-doorsOpened, totalDoors:()=>totalDoors,
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
+      keysInfo:()=>keys.map(k=>({r:k.r,c:k.c,got:k.got})), keysGot:()=>keysGot,
       solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<120){ const before=Object.keys(pcs).length; for(const id of Object.keys(pcs).map(Number)){ if(pcs[id]&&bLaneClear(pcs[id])) tapPiece(id); } if(Object.keys(pcs).length===before) break; g++; } },
       state:()=>({dot:{...dot},exit:{...exit},boards,won,running,elapsedSecs:elapsedSecs(),rank:won?finalRank:rankFromTime(elapsedSecs()),reto:retoSecs,sol:solSteps,cols:MC,rows:MR,doorsLeft:totalDoors-doorsOpened,totalDoors}) };
   }catch(e){ try{ console.error(e); }catch(_){} }
