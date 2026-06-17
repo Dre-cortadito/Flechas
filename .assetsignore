@@ -1,0 +1,13 @@
+# Files that must never be served publicly. The game ships its .html files:
+#   index.html, cascada.html, oleada.html, desvio.html
+.git
+.gitignore
+.assetsignore
+wrangler.jsonc
+.wrangler
+.DS_Store
+*.command
+_reference
+_archive
+DEPLOY-GUIDE.md
+RULES.md
