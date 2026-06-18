@@ -424,16 +424,15 @@
 
   // ===== sizing & layout =====
   function sizeAll(){ const vw=window.innerWidth||390, vh=window.innerHeight||780;
-    const gw=Math.min(vw*0.94, 400);                 // standard Cortadito width — same as the other games
-    document.documentElement.style.setProperty('--gw', gw+'px'); // every stacked element shares this width
-    mc=gw/MC;                                         // maze fills the full width; the wide-short grid keeps it from being tall
-    const mazeH=mc*MR;
-    board.style.width=(mc*MC)+'px'; board.style.height=mazeH+'px';
-    // play area (holds either the arrow board or the big d-pad): full width, square-ish, capped to the room left under the maze
-    const availH=Math.max(120, vh - 262 - mazeH);
-    const cell=Math.min(gw/BCOLS, availH/BROWS);     // SQUARE cells → arrows match Cascada exactly (no stretch)
-    const play=$('play'); if(play){ play.style.width=(cell*BCOLS)+'px'; play.style.height=(cell*BROWS)+'px'; }
-    layoutMaze(); }   // the piece board is an SVG that scales to the panel; no per-resize relayout needed
+    const W=Math.min(vw*0.94, 400);                  // target full width
+    const availH=Math.max(150, vh - 238);            // room for BOTH boards (header+rank+meta+gauge+pads)
+    // ONE square cell size shared by maze (MC×MR) and board (BCOLS×BROWS). MC===BCOLS, so both end up the SAME width.
+    mc=Math.min(W/MC, availH/(MR+BROWS));
+    const gw=mc*MC;
+    document.documentElement.style.setProperty('--gw', gw+'px'); // rank/meta/gauge match the boards too
+    board.style.width=(mc*MC)+'px'; board.style.height=(mc*MR)+'px';
+    const play=$('play'); if(play){ play.style.width=(mc*BCOLS)+'px'; play.style.height=(mc*BROWS)+'px'; }
+    layoutMaze(); }
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit,.keyc').forEach(n=>n.remove());
     const w=mc*MC, h=mc*MR, NS='http://www.w3.org/2000/svg';
