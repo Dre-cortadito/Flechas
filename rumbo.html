@@ -78,7 +78,7 @@
   .side.is-right { justify-self:end; text-align:right; }
   .side .n { font:800 22px var(--font-display); font-variant-numeric:tabular-nums; color:var(--ink); }
   .side .l { font:700 9px var(--font-ui); letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-soft); }
-  .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--accent-2); transition:color .15s linear; }
+  .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--ink); transition:color .15s linear; }
   .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
   @keyframes cpulse { 50%{ opacity:.45; } }
   .gauge { width:var(--gw); margin:7px auto; padding:5px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; }   /* encased, like Cascada's bar */
@@ -131,7 +131,7 @@
   .dbtn:active, .dbtn.on { background:var(--accent); } .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
   .dbtn svg { width:52%; height:52%; } .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; }
   .db-up { grid-area:1/2; } .db-left { grid-area:2/1; } .db-right { grid-area:2/3; } .db-down { grid-area:3/2; }
-  .mv-timer { grid-area:2/2; display:flex; align-items:center; justify-content:center; font:700 clamp(15px,4.6vw,22px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink-soft); line-height:1; }   /* small — the maze is the star, not this counter */
+  .mv-timer { grid-area:2/2; display:flex; align-items:center; justify-content:center; font:700 clamp(15px,4.6vw,22px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink); line-height:1; }   /* small — the maze is the star, not this counter */
   .mv-timer.low { color:var(--error); }
 
   /* ===== Gate / start + result ===== */
