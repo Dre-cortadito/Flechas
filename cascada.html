@@ -333,7 +333,7 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path style="stroke:#157145" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al salir <b style="color:#157145">destella en verde</b> y suma puntos.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> una flecha <b>tapada</b> rebota, <b>corta el combo</b> y cuesta <b style="color:#EA3546">½ corazón</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#F9C80E" stroke-width="5"/><text x="60" y="28" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="20" fill="#C99700">&times;3</text></svg></div><div class="txt"><b style="color:#C99700">Combo.</b> Despeja <b>rápido y seguido</b> (×2, ×3…) — más combo, más puntos. El borde se enciende en <b style="color:#C99700">amarillo</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#0E9DA8" d="M14 20 L92 20"/><path style="stroke:#0E9DA8" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#0E9DA8">Escudo (cian).</b> Despéjala y guardas un escudo: tu <b>próximo choque cuesta 0 corazones</b> y <b>no corta el combo</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#0E9DA8" d="M14 20 L92 20"/><path style="stroke:#0E9DA8" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#0E9DA8">Escudo (cian).</b> Despéjala y guardas un escudo: tu <b>próximo choque cuesta 0 corazones</b> y <b>no corta el combo</b>. Se <b>acumulan hasta 3</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#F2711C" d="M14 20 L92 20"/><path style="stroke:#F2711C" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#F2711C">Frenesí (naranja).</b> Despéjala y ganas <b>5 s a doble puntos</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#0062E3" d="M14 20 L92 20"/><path style="stroke:#0062E3" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#0062E3">Congelar (azul).</b> El congelador carga <b>lento solo</b>; las flechas azules lo llenan casi todo (~3 = un congelado).</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="34" y="23" width="52" height="13" rx="3" fill="var(--ink-line)"/><rect x="34" y="5" width="52" height="13" rx="3" fill="var(--accent)"/></svg></div><div class="txt">Cada <b>30 s</b> cae un <b>tablero nuevo</b> que empuja al viejo. Lo que no despejes, <b>se va</b>.</div></div>
@@ -375,6 +375,7 @@
   const FREEZE_FILL=60, FREEZE_DUR=5000;     // freeze auto-charges SLOWLY now; blue arrows do most of the charging
   const FREEZE_BLUE_SECS=20;                  // each blue (Congelar) arrow adds this many SECONDS of charge toward the freeze meter
   const FRENZY_MS=5000;                       // orange Frenesí: double points for 5 s
+  const SHIELD_MAX=3;                          // shields stack up to this many (reward good play, but hearts still matter)
   const BOARD_BONUS=25;                       // points for clearing a whole board before it refreshes
   const BOARD_TIME_BONUS=5;                    // if you're already at full hearts, a clean board buys +5s instead
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
@@ -385,7 +386,7 @@
 
   let pieces={}, ownerMap=new Map(), pid=0, boardNum=0, rng=mulberry32(1);
   let points=0, cleared=0, boardsClear=0, best=0, lives=HEARTS_MAX, timeLeft=GAME_SECS, running=false, over=false;
-  let combo=0, lastClearAt=0, shieldHeld=false, frenzyUntil=0;
+  let combo=0, lastClearAt=0, shields=0, frenzyUntil=0;
   let frozenUntil=0, freezeCharge=0, freezeReady=false;
   let refreshAt=0, lastTick=0, rafId=null, lastNow=0, startMs=0, pausedMs=0, freezeVisual=0;
   let transitioning=false, fallOld=null, fallEnd=0;
@@ -457,13 +458,13 @@
     slots.forEach((p,k)=>{ p.role=deal[k]; }); }
   function frenzyActive(){ return Date.now()<frenzyUntil; }
   // ---- the specials show their state in the bottom status box (no prompts over the board) ----
-  function updateShieldHUD(){ const t=$('t-escudo'), v=$('escudo-v'); if(!t) return; t.classList.toggle('on', !!shieldHeld); if(v) v.textContent=shieldHeld?'Sí':'—'; }
+  function updateShieldHUD(){ const t=$('t-escudo'), v=$('escudo-v'); if(!t) return; t.classList.toggle('on', shields>0); if(v) v.textContent=shields>0?('×'+shields):'—'; }
   function updateFrenesi(){ const t=$('t-frenesi'), v=$('frenesi-v'), bar=$('frenesi-bar'); if(!t) return; const on=frenzyActive();
     t.classList.toggle('on', on);
     if(on){ const rem=frenzyUntil-Date.now(); if(v) v.textContent=Math.ceil(rem/1000)+'s'; if(bar) bar.style.transform='scaleX('+Math.max(0,rem/FRENZY_MS).toFixed(3)+')'; }
     else { if(v) v.textContent='—'; if(bar) bar.style.transform='scaleX(0)'; } }
   function applySpecial(role){ if(!role||role===99) return;
-    if(role==='shield'){ shieldHeld=true; updateShieldHUD(); }
+    if(role==='shield'){ shields=Math.min(SHIELD_MAX, shields+1); updateShieldHUD(); }
     else if(role==='frenzy'){ frenzyUntil=Date.now()+FRENZY_MS; board.classList.add('frenzy'); updateFrenesi(); }
     else if(role==='freeze'){ if(!freezeReady){ freezeCharge=Math.min(1,freezeCharge+FREEZE_BLUE_SECS/FREEZE_FILL); if(freezeCharge>=1) freezeReady=true; updateFreeze(); } } }
 
@@ -516,7 +517,7 @@
       const dist=Math.max(38, (steps+1)*U-46);   // charge ALL the way to the real blocker (no artificial cap), stopping with a clean gap before it, then bounce
       g.classList.add('blocked'); bounceBlocked(g,v,dist);
       const T=Math.max(130, Math.round(110+dist*0.2));
-      if(shieldHeld){ shieldHeld=false; updateShieldHUD(); g.classList.add('blocked-safe'); setTimeout(()=>{ try{g.classList.remove('blocked','blocked-safe');}catch(e){} }, 2*T+120); }   // shield eats the bump: 0 hearts, combo intact (the cyan flash is the feedback)
+      if(shields>0){ shields--; updateShieldHUD(); g.classList.add('blocked-safe'); setTimeout(()=>{ try{g.classList.remove('blocked','blocked-safe');}catch(e){} }, 2*T+120); }   // a shield eats the bump: 0 hearts, combo intact (the cyan flash is the feedback)
       else { setTimeout(()=>{ try{g.classList.remove('blocked');}catch(e){} }, 2*T+120); combo=0; renderCombo(false); loseHeart(); } } }
   // Borde's exact bounce: head + body move at the SAME rate (linear), out then back, at Borde's
   // arrow speed (T = 110 + 0.2·distance). Body dash and head both travel `dist`, so they stay locked.
@@ -609,7 +610,7 @@
   // ================= start / end =================
   function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(COLS*U)+' '+(ROWS*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg); }
   function startGame(){ points=0; cleared=0; boardsClear=0; combo=0; lastClearAt=0; lives=HEARTS_MAX; timeLeft=GAME_SECS; over=false; boardNum=0; transitioning=false; fallOld=null;
-    frozenUntil=0; freezeCharge=0; freezeReady=false; lastTick=0; lastNow=0; startMs=Date.now(); pausedMs=0; freezeVisual=0; shieldHeld=false; frenzyUntil=0; board.classList.remove('frenzy');
+    frozenUntil=0; freezeCharge=0; freezeReady=false; lastTick=0; lastNow=0; startMs=Date.now(); pausedMs=0; freezeVisual=0; shields=0; frenzyUntil=0; board.classList.remove('frenzy');
     best=+(lsGet('cascada-best-'+ISO)||0);
     buildSVG(); rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard(); assignRoles(); layer=newLayer(); renderInto(layer);
     refreshAt=Date.now()+REFRESH_MS;
@@ -680,7 +681,7 @@
     tapId:(id)=>tapPiece(id), step:(ms)=>loop(ms), start:()=>startGame(),
     roles:()=>{ const c={shield:0,frenzy:0,freeze:0}; Object.values(pieces).forEach(p=>{ if(p.role&&c[p.role]!==undefined)c[p.role]++; }); return c; },
     roleOf:(id)=>pieces[id]&&pieces[id].role, idsByRole:(r)=>Object.values(pieces).filter(p=>p.role===r).map(p=>p.id),
-    shield:()=>shieldHeld, frenzy:()=>frenzyActive(), freezeChg:()=>freezeCharge, lives:()=>lives, pts:()=>points, combo:()=>combo, blockedId:()=>{ const p=Object.values(pieces).find(p=>p.el&&!laneClear(p)); return p?p.id:-1; } }; }catch(e){}
+    shield:()=>shields>0, shields:()=>shields, frenzy:()=>frenzyActive(), freezeChg:()=>freezeCharge, lives:()=>lives, pts:()=>points, combo:()=>combo, blockedId:()=>{ const p=Object.values(pieces).find(p=>p.el&&!laneClear(p)); return p?p.id:-1; } }; }catch(e){}
 })();
 </script>
 
