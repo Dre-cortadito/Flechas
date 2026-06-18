@@ -370,7 +370,7 @@
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const COMBO_WINDOW=1800, COMBO_PER_TIER=4, MULT_MAX=3;   // capped at ×3 — keeps the combo rewarding but the score predictable enough to rank
   const FREEZE_FILL=60, FREEZE_DUR=5000;     // freeze auto-charges SLOWLY now; blue arrows do most of the charging
-  const FREEZE_BLUE=0.34;                     // each blue (Congelar) arrow you clear adds this much charge → ~3 = a freeze
+  const FREEZE_BLUE_SECS=20;                  // each blue (Congelar) arrow adds this many SECONDS of charge toward the freeze meter
   const FRENZY_MS=5000;                       // orange Frenesí: double points for 5 s
   const BOARD_BONUS=25;                       // points for clearing a whole board before it refreshes
   const BOARD_TIME_BONUS=5;                    // if you're already at full hearts, a clean board buys +5s instead
@@ -457,7 +457,7 @@
   function applySpecial(role){ if(!role||role===99) return;
     if(role==='shield'){ shieldHeld=true; updateShieldHUD(); showToast('🛡 Escudo listo'); }
     else if(role==='frenzy'){ frenzyUntil=Date.now()+FRENZY_MS; board.classList.add('frenzy'); showToast('⚡ ¡Frenesí 2×!'); }
-    else if(role==='freeze'){ if(!freezeReady){ freezeCharge=Math.min(1,freezeCharge+FREEZE_BLUE); if(freezeCharge>=1) freezeReady=true; updateFreeze(); } showToast('🔵 +Congelar'); } }
+    else if(role==='freeze'){ if(!freezeReady){ freezeCharge=Math.min(1,freezeCharge+FREEZE_BLUE_SECS/FREEZE_FILL); if(freezeCharge>=1) freezeReady=true; updateFreeze(); } showToast('🔵 +'+FREEZE_BLUE_SECS+'s Congelar'); } }
 
   // ================= geometry / rendering (head leads, body trains) =================
   function polyLen(pts){ let s=0; for(let i=1;i<pts.length;i++) s+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return s; }
