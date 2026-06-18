@@ -428,7 +428,13 @@
   // compact marks (≈18px) centred so they sit INSIDE the ~23px pipe rather than spilling over it
   const MARK={ accel:'M45 42 L52 50 L45 58 M53 42 L60 50 L53 58', resist:'M55 42 L48 50 L55 58 M62 42 L55 50 L62 58', burst:'M44 44 L56 56 M56 44 L44 56',
     gold:'M50 40 L60 50 L50 60 L40 50 Z', leak:'M50 41 C56 49 55 57 50 61 C45 57 44 49 50 41 Z' };
-  function pipeD(mask){ let d=''; for(const b of [BU,BR,BD,BL]){ if(mask&b){ const e=armEnd[b]; d+='M50 50 L'+e[0]+' '+e[1]+' '; } } return d||'M50 50 L50 50'; }
+  function pipeD(mask){ const arms=[BU,BR,BD,BL].filter(b=>mask&b); if(!arms.length) return 'M50 50 L50 50';
+    if(arms.length===1){ const e=armEnd[arms[0]]; return 'M50 50 L'+e[0]+' '+e[1]; }
+    if(arms.length===2){ const a=armEnd[arms[0]], b=armEnd[arms[1]]; return 'M'+a[0]+' '+a[1]+' L50 50 L'+b[0]+' '+b[1]; }   // one continuous line → round join smooths the elbow
+    let thr=null; for(let i=0;i<arms.length&&!thr;i++) for(let j=i+1;j<arms.length;j++){ if(arms[j]===opp(arms[i])){ thr=[arms[i],arms[j]]; break; } }   // T: pick the straight-through pair, add the stub
+    let d; if(thr){ const a=armEnd[thr[0]],b=armEnd[thr[1]]; d='M'+a[0]+' '+a[1]+' L50 50 L'+b[0]+' '+b[1]; } else { const a=armEnd[arms[0]]; d='M50 50 L'+a[0]+' '+a[1]; }
+    for(const r of arms){ if(thr&&(r===thr[0]||r===thr[1])) continue; const e=armEnd[r]; d+=' M50 50 L'+e[0]+' '+e[1]; }
+    return d; }
   function rectEl(cls,x,y,w,h,rx){ const r=document.createElementNS(SVGNS,'rect'); r.setAttribute('class',cls); r.setAttribute('x',x); r.setAttribute('y',y); r.setAttribute('width',w); r.setAttribute('height',h); if(rx!=null) r.setAttribute('rx',rx); return r; }
   function circEl(cls,cx,cy,r){ const c=document.createElementNS(SVGNS,'circle'); c.setAttribute('class',cls); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',r); return c; }
   function cellEl(cell){
