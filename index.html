@@ -351,15 +351,15 @@
   body.game-active .landing { display:none; }
   /* top-anchored stack on a steady 16px rhythm (LANDING-STANDARD) */
   .landing-inner { display:flex; flex-direction:column; align-items:center; gap:16px; width:100%; margin-top:clamp(14px,5vh,56px); }
-  /* mode tabs — 3 equal columns so the middle stays centred */
-  .land-tabs { display:grid; grid-template-columns:1fr 1fr 1fr; width:min(350px,92vw); margin:0 auto 2px; }
-  .land-tab { justify-self:center; padding:8px 6px 11px; font:700 15px var(--font-ui); letter-spacing:1.8px;
+  /* mode tabs — 4 equal columns */
+  .land-tabs { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; width:min(392px,96vw); margin:0 auto 2px; }
+  .land-tab { justify-self:center; padding:8px 4px 11px; font:700 13.5px var(--font-ui); letter-spacing:.6px;
     text-transform:uppercase; color:var(--ink-soft); background:none; border:none; cursor:pointer; position:relative; }
   .land-tab.active { color:var(--ink); }
   .land-tab.active::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:2.5px; background:var(--accent); border-radius:2px; }
   .land-tab:not(.active){ animation:tab-hint 2.2s ease-in-out infinite; }
   @keyframes tab-hint { 0%,100%{ color:var(--ink-soft);} 50%{ color:var(--ink);} }
-  @media (max-width:360px){ .land-tab { font-size:13px; } }
+  @media (max-width:360px){ .land-tab { font-size:11.5px; letter-spacing:.2px; padding:8px 2px 11px; } }
   .land-head { display:flex; flex-direction:column; align-items:center; gap:16px; }
   .land-logo { width:96px; height:96px; }
   .land-logo svg { width:100%; height:100%; display:block; }
@@ -651,6 +651,7 @@
         <button class="land-tab" data-mode="perimetro" type="button" role="tab">Borde</button>
         <button class="land-tab active" data-mode="cascada" type="button" role="tab">Cascada</button>
         <button class="land-tab" data-mode="desvio" type="button" role="tab">Rumbo</button>
+        <button class="land-tab" data-mode="flujo" type="button" role="tab">Flujo</button>
       </div>
       <div class="land-head">
         <div class="land-logo" id="land-logo" aria-hidden="true"></div>
@@ -1960,10 +1961,12 @@ const LAND_LOGO_CASCADA='<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/200
 const LAND_LOGO_DESVIO='<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M76 34 V64" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".45"/><path d="M69 42 L76 35 L83 42" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><path d="M34 50 H56" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".45"/><path d="M34 80 H84" fill="none" stroke="var(--accent-2)" stroke-width="8.5" stroke-linecap="round"/><path d="M76 71 L88 80 L76 89" fill="none" stroke="var(--accent-2)" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const LAND_LOGO_OLEADA='<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M42 26 V48 M35 40 L42 49 L49 40" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><path d="M80 30 V54 M73 46 L80 55 L87 46" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><path d="M30 94 H90" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".4"/><path d="M60 88 V58 M51 67 L60 56 L69 67" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const LAND_LOGO_RUMBO='<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M30 30 H64 Q72 30 72 38 V66" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/><path d="M30 58 H50" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".5"/><path d="M34 88 H86" fill="none" stroke="var(--accent-2)" stroke-width="8.5" stroke-linecap="round"/><path d="M78 79 L90 88 L78 97" fill="none" stroke="var(--accent-2)" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="34" cy="58" r="7" fill="#fff"/></svg>';
+const LAND_LOGO_FLUJO='<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M30 44 H66 a16 16 0 0 1 16 16 V90" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity=".88"/><circle cx="30" cy="44" r="9" fill="var(--accent-2)"/></svg>';
 const LAND_MODES={
   perimetro:{ title:'Borde', tag:'Evita el borde, despeja el tablero.', a:'#662E9B', a2:'#F9C80E', logo:LAND_LOGO_PERIMETRO, ready:true },
   cascada:{   title:'Cascada',   tag:'Despeja antes de que caiga.', a:'#4ECDC4', a2:'#ff6b6b', logo:LAND_LOGO_CASCADA, ready:true, href:'./cascada.html' },
   desvio:{    title:'Rumbo',    tag:'Gana tiempo, cruza el laberinto.', a:'#F86624', a2:'#1E8E82', logo:LAND_LOGO_RUMBO, ready:true, href:'./rumbo.html' },
+  flujo:{     title:'Flujo',    tag:'Conecta el agua antes de que se derrame.', a:'#2E8BC0', a2:'#ff6b6b', logo:LAND_LOGO_FLUJO, ready:true, href:'./flujo.html' },
 };
 let landMode='cascada';
 function setLandMode(m){ const d=LAND_MODES[m]; if(!d) return; landMode=m;
@@ -1976,6 +1979,7 @@ function setLandMode(m){ const d=LAND_MODES[m]; if(!d) return; landMode=m;
   const lbl=document.querySelector('#land-reto-row .lbl'), val=document.getElementById('land-reto'), play=document.getElementById('play-btn');
   if(d.ready){ play.textContent='Jugar'; play.classList.remove('is-soon'); play.disabled=false;
     if(m==='cascada'){ lbl.textContent='Reto del día'; val.textContent='2:00'; }
+    else if(m==='flujo'){ lbl.textContent='Reto del día'; val.textContent='≤ 1:18'; }
     else if(m==='desvio'){ lbl.textContent='Reto del día'; const _s='rumbo-reto-'+ISO; let _h=2166136261>>>0; for(let _i=0;_i<_s.length;_i++){_h^=_s.charCodeAt(_i);_h=Math.imul(_h,16777619)>>>0;} const _rt=55+((_h>>>0)%9)*5; val.textContent='≤ '+Math.floor(_rt/60)+':'+String(_rt%60).padStart(2,'0'); }
     else { lbl.textContent='Reto del día'; val.textContent='≤ '+fmtTime(META); } }
   else { lbl.textContent='Estado'; val.textContent='Próximamente'; play.textContent='Próximamente'; play.classList.add('is-soon'); play.disabled=true; }

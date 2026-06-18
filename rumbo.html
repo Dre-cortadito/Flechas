@@ -329,7 +329,9 @@
       for(const k of KEYS){ const [dr,dc]=DIR[k]; if(canMove(r,c,dr,dc)){ const key2=(r+dr)+','+(c+dc); if(!seen.has(key2)){ seen.add(key2); q.push([r+dr,c+dc,pa.concat(k)]); } } } } return null; }
   // ROUTE doors — the whole puzzle. MANDATORY = bridges (must solve to pass). OPTIONAL = engineered shortcuts
   // (a closed wall opened into a short route + a door on it): solve its board to cut through, or walk the long way.
+  const FREE_ROAM=true;   // TEMP: doors off so you can navigate the maze freely. Set false to bring the solve-doors back.
   function placeDoors(){ lockedDoors=new Set(); doorType={}; doorsOpened=0; currentDoor=null; totalDoors=0;
+    if(FREE_ROAM) return;
     const passable=(r,c,k)=>{ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; return !(nr<0||nr>=MR||nc<0||nc>=MC) && DG[2*r+1+dr][2*c+1+dc]==='.'; };
     function dists(sr,sc){ const d=Array.from({length:MR},()=>Array(MC).fill(-1)); d[sr][sc]=0; const q=[[sr,sc]]; let h=0;
       while(h<q.length){ const [r,c]=q[h++]; for(const k of KEYS){ if(!passable(r,c,k))continue; const [dr,dc]=DIR[k],nr=r+dr,nc=c+dc; if(d[nr][nc]<0){ d[nr][nc]=d[r][c]+1; q.push([nr,nc]); } } } return d; }

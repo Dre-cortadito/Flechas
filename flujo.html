@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<!--
+  Flechas · Flujo — a Cortadito News daily game (PRESSURE mode).
+  A grid of pipe tiles. TAP a tile to rotate it 90°. Water pushes out of the SOURCE and
+  creeps through whatever pipes are connected; you must complete the circuit to the SINK
+  before the flow front spills out an open end (a FUGA = +8s). 5 boards, each with a faster
+  flow. FREEZE pauses the creeping water (but not your clock) while you work. Ranked on the
+  total time to finish all five — the clock never stops, so freezing costs you. Deterministic
+  per day (everyone gets the same five boards). Same polish family as Cascada.
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flujo · Flechas · Cortadito News</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+<style>
+  * { touch-action:manipulation; box-sizing:border-box; }
+  :root {
+    --bg:#ffffff; --paper:#fbfaf6; --ink:#15201c; --ink-soft:#7f8a86; --ink-line:#e6ece9; --box-edge:#7f8a86;
+    --accent:#2E8BC0; --accent-deep:#1B5E86; --accent-soft:#d8ebf7; --accent-2:#ff6b6b; --error:#EA3546;
+    --board-bg:#E8F2FA; --pipe:#1d2a2e; --pipe-lock:#b08d2e; --water:#2E8BC0; --freeze-fill:#9CCCEC;
+    --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
+  }
+  body[data-theme="black"] {
+    --bg:#0b0f12; --paper:#141a1d; --ink:#eef3f2; --ink-soft:#7f8b89; --ink-line:#222a2d; --box-edge:#7f8b89;
+    --accent:#43A6DA; --accent-deep:#2c87b8; --accent-soft:#0e2c3d; --accent-2:#ff6b6b; --board-bg:#10222e; --pipe:#cfe0e6; --pipe-lock:#d6b24e; --water:#43A6DA; --freeze-fill:#2E7CB0;
+  }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
+  html { overscroll-behavior:none; }
+  body { display:flex; flex-direction:column; align-items:center; overscroll-behavior:none; }
+
+  .page-header { position:fixed; top:0; left:0; right:0; z-index:40; height:var(--header-h); display:flex; align-items:center; justify-content:space-between; gap:24px; padding:0 18px; background:var(--bg); border-bottom:1px solid var(--ink-line); }
+  .title-block { display:flex; align-items:center; gap:11px; min-width:0; }
+  .page-logo { width:28px; height:28px; flex:none; }
+  .wordmark { margin:0; font-family:var(--font-display); font-weight:800; font-size:clamp(30px,5.2vw,44px); letter-spacing:-1px; color:var(--ink); line-height:.95; white-space:nowrap; }
+  .wordmark .dot { color:var(--accent); }
+  .wordmark .eb { font:700 9px var(--font-ui); letter-spacing:1.6px; text-transform:uppercase; color:var(--ink-soft); vertical-align:middle; margin-left:6px; }
+  .header-nav { display:flex; align-items:center; gap:20px; flex-shrink:0; }
+  .header-home { width:32px; height:32px; border-radius:50%; flex:none; border:1px solid var(--ink-line); background:transparent; color:var(--ink); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+  .header-home svg { width:17px; height:17px; }
+  .header-nav a { font-size:14px; font-weight:500; color:var(--ink); text-decoration:none; cursor:pointer; white-space:nowrap; }
+  .header-nav a.nav-rules { color:var(--accent); }
+  .more { width:36px; height:36px; border-radius:50%; background:transparent; border:none; padding:0; color:var(--ink); cursor:pointer; flex:none; display:inline-flex; align-items:center; justify-content:center; }
+  .more svg,.more *{ pointer-events:none; }
+  .nav-more-wrap { position:relative; display:inline-block; }
+  .more-menu { position:absolute; top:100%; right:0; margin-top:8px; z-index:1000; background:var(--paper); border:1.5px solid var(--ink-line); border-radius:12px; padding:6px; min-width:230px; display:none; flex-direction:column; box-shadow:0 14px 44px rgba(0,0,0,.2); }
+  .more-menu.open { display:flex; }
+  .more-item { padding:10px 14px; color:var(--ink); border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
+  .more-item.cta { color:var(--accent); font-weight:700; border-top:1px solid var(--ink-line); border-radius:0 0 8px 8px; margin-top:4px; padding-top:12px; }
+  .more-theme-name { color:var(--ink-soft); font-size:12px; font-weight:400; }
+  @media (max-width:620px){ .wordmark{ display:none; } .header-nav{ gap:18px; } }
+  @media (max-width:400px){ .header-nav{ gap:13px; } .header-nav a{ font-size:13px; } }
+
+  .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; opacity:1; transition:opacity .2s ease; }
+  body:not(.ready) .stage { opacity:0; }
+
+  /* ===== Rank bar (standard) — driven by time ===== */
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 14px; margin:0 auto 2px; cursor:pointer; user-select:none; }
+  .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
+  .rank-label.at-maestro { color:var(--accent); }
+  .rank-track { position:relative; flex:1; height:22px; }
+  .rank-track-line { position:absolute; top:50%; left:0; right:0; height:3px; transform:translateY(-50%); background:var(--ink-line); border-radius:2px; z-index:0; }
+  .rank-track-fill { position:absolute; top:50%; left:0; width:0; height:3px; transform:translateY(-50%); background:var(--accent); border-radius:2px; z-index:1; transition:width .35s ease; }
+  .rank-dot { position:absolute; top:50%; transform:translate(-50%,-50%); width:6px; height:6px; border-radius:50%; background:var(--ink-soft); z-index:3; }
+  .rank-dot.passed { background:var(--ink); }
+  .rank-dot.current { width:24px; height:24px; background:var(--accent); color:#fff; font:700 11px var(--font-ui); display:flex; align-items:center; justify-content:center; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .35s ease; }
+  .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; }
+
+  .meta { width:min(94vw,400px); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:0 auto 6px; }
+  .side { line-height:1.05; }
+  .side.is-left { justify-self:start; text-align:left; }
+  .side.is-right { justify-self:end; text-align:right; }
+  .side .n { font:800 24px var(--font-display); font-variant-numeric:tabular-nums; color:var(--accent); }
+  .side .l { font:700 9px var(--font-ui); letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-soft); }
+  .timer { font:800 clamp(32px,9vw,44px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; transition:color .15s linear; }
+  .timer.pen { color:var(--error); }
+
+  .board-wrap { width:min(94vw,400px); margin:0 auto 0; }
+  .board { position:relative; width:100%; aspect-ratio:6/7; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
+  #board-inner { position:absolute; inset:14px; }
+  #bsvg { display:block; width:100%; height:100%; overflow:visible; }
+  .cell { cursor:pointer; }
+  .cell .hit { fill:transparent; }
+  .cell .pipe { fill:none; stroke:var(--pipe); stroke-width:17; stroke-linecap:round; stroke-linejoin:round; transition:stroke .28s linear; }
+  .cell.filled .pipe { stroke:var(--water); }
+  .cell.locked .pipe { stroke:var(--pipe-lock); }
+  .cell.locked { cursor:default; }
+  .cell .rotor { transition:transform .16s cubic-bezier(.34,1.4,.5,1); }
+  .cell .lockdot { fill:var(--pipe-lock); }
+  .src .bulb { fill:var(--water); }
+  .snk .ring { fill:none; stroke:var(--pipe); stroke-width:11; transition:stroke .28s linear; }
+  .snk.filled .ring { stroke:#157145; }
+  .snk.filled .pipe { stroke:#157145; }
+  .gridline { stroke:var(--ink-line); stroke-width:2; opacity:.6; }
+  .board.clearflash { animation:boardclear .8s ease; }
+  @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:var(--accent-soft);} 100%{ background:var(--board-bg);} }
+  .board.leakflash { animation:boardleak .5s ease; }
+  @keyframes boardleak { 0%{ background:var(--board-bg);} 40%{ background:#f6dada;} 100%{ background:var(--board-bg);} }
+  .board.frozen::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; z-index:16; box-shadow:inset 0 0 0 8px var(--freeze-fill); opacity:.9; }
+
+  .refresh-box { width:min(94vw,400px); margin:9px auto 0; padding:5px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; }
+  .refresh-box .refresh-track { height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
+  .refresh-box .refresh-bar { display:block; height:100%; width:0; background:var(--water); border-radius:5px; transition:width .12s linear, background .2s linear; }
+  .refresh-box .refresh-bar.warn { background:var(--error); }
+
+  .statusbox { width:min(94vw,400px); margin:8px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
+  .stile { position:relative; padding:8px 6px 9px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }
+  .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); min-height:20px; display:flex; align-items:center; }
+  .stile .slbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
+  .stile.leaks .sval { color:var(--ink); transition:color .15s; }
+  .stile.leaks.hot .sval { color:var(--error); }
+  .speed-dots { display:flex; gap:3px; align-items:center; }
+  .speed-dots i { width:7px; height:7px; border-radius:50%; background:var(--ink-line); }
+  .speed-dots i.on { background:var(--accent); }
+
+  .freeze { width:min(94vw,400px); margin:10px auto 0; }
+  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#0062E3; background:rgba(0,98,227,.05); border:2px solid #0062E3; }
+  .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); transition:transform .25s linear; z-index:0; }
+  .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:34px; }
+  .freeze-btn .ficon svg { width:34px; height:34px; display:block; }
+  .freeze-btn .fnum { position:relative; z-index:1; display:none; align-items:center; height:34px; font:800 30px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; }
+  .freeze-btn.frozen .ficon { display:none; }
+  .freeze-btn.frozen .fnum { display:inline-flex; }
+  .freeze-btn:not(.ready):not(.frozen){ cursor:default; opacity:.92; }
+  .freeze-btn:active { transform:scale(.98); }
+
+  .toast { position:absolute; top:14px; left:50%; transform:translate(-50%,-8px); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:#fff; font:800 13px var(--font-ui); letter-spacing:.4px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .2s ease, transform .2s ease; }
+  .toast.show { opacity:1; transform:translate(-50%,0); }
+  .toast.leak { background:var(--error); }
+
+  .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; background:var(--board-bg); border-radius:18px; text-align:center; padding:26px; }
+  .gate.hidden { display:none; }
+  .gate h2 { font:800 28px var(--font-display); margin:0; }
+  .gate p { margin:0; color:var(--ink-soft); font-size:13.5px; max-width:262px; line-height:1.5; }
+  .gate .v { font:800 50px var(--font-display); color:var(--accent); line-height:1; }
+  .gate .vlbl { font:700 9px var(--font-ui); letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-soft); margin-top:-8px; }
+  .btn { font:800 16px var(--font-ui); letter-spacing:.4px; color:#fff; background:var(--accent); border:none; border-radius:999px; padding:13px 40px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.14); }
+  .btn.ghost { color:var(--ink-soft); background:transparent; border:1.5px solid var(--ink-line); box-shadow:none; padding:12px 26px; font-size:14px; }
+  .go-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+  .modal-ov { position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(14,20,18,.55); }
+  .modal-ov.open { display:flex; }
+  .cstat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .cstat { background:var(--bg); border:1.5px solid var(--ink-line); border-radius:12px; padding:12px 10px; text-align:center; }
+  .cstat .cv { font:800 26px var(--font-display); color:var(--ink); line-height:1; }
+  .cstat .cl { font:700 10px var(--font-ui); letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); margin-top:5px; }
+  .cdist-row { display:flex; align-items:center; gap:8px; margin:3px 0; font-size:12px; }
+  .cdist-row .cdn { width:74px; color:var(--ink-soft); white-space:nowrap; }
+  .cdist-row .cdbar { flex:1; height:12px; background:var(--ink-line); border-radius:6px; overflow:hidden; }
+  .cdist-row .cdfill { height:100%; background:var(--accent); border-radius:6px; }
+  .cdist-row.cur .cdn { color:var(--accent); font-weight:700; }
+  .cdist-row .cdc { width:22px; text-align:right; color:var(--ink-soft); }
+  .modal { position:relative; background:var(--paper); border:1.5px solid var(--ink-line); border-radius:16px; padding:26px 28px; max-width:380px; width:100%; max-height:85vh; overflow:auto; }
+  .legend-row { display:flex; align-items:center; gap:12px; margin:11px 0; }
+  .legend-cell { width:54px; height:46px; flex:none; border-radius:8px; background:var(--board-bg); display:flex; align-items:center; justify-content:center; }
+  .legend-cell svg { width:84%; height:84%; }
+  .legend-cell svg .pp { fill:none; stroke:var(--pipe); stroke-width:11; stroke-linecap:round; stroke-linejoin:round; }
+  .legend-row .txt { font-size:14px; line-height:1.45; color:var(--ink); }
+  .modal h2 { font:800 24px var(--font-display); margin:0 0 12px; }
+  .modal h3 { margin:18px 0 6px; font-size:15px; }
+  .modal p { font-size:14px; line-height:1.6; color:var(--ink); margin:0 0 10px; }
+  .modal .x { position:absolute; top:12px; right:12px; width:32px; height:32px; border:none; background:transparent; color:var(--ink-soft); font-size:20px; cursor:pointer; }
+  .rank-row { display:flex; justify-content:space-between; align-items:center; padding:7px 11px; border-radius:8px; font-size:14px; }
+  .rank-row .rname { font-weight:600; }
+  .rank-row .rband { color:var(--ink-soft); font-variant-numeric:tabular-nums; font-weight:600; }
+  .rank-row.current { background:var(--accent-soft); }
+  .rank-row.current .rname { color:var(--accent-deep); font-weight:800; }
+
+  #rotate-lock { display:none; }
+  @media (max-height:480px) and (orientation:landscape){
+    #rotate-lock { display:flex; position:fixed; inset:0; z-index:200; background:var(--bg); color:var(--ink); flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; }
+    #rotate-lock svg { width:54px; height:54px; color:var(--accent); margin-bottom:14px; }
+    #rotate-lock .rt { font:800 20px var(--font-display); margin:0 0 6px; }
+    #rotate-lock .rs { font-size:14px; color:var(--ink-soft); margin:0; }
+    .stage { display:none; }
+  }
+</style>
+</head>
+<body data-theme="light">
+
+  <header class="page-header">
+    <div class="title-block">
+      <svg class="page-logo" viewBox="0 0 120 120" aria-hidden="true"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M30 44 H66 a16 16 0 0 1 16 16 V90" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity=".88"/><circle cx="30" cy="44" r="9" fill="var(--accent-2)"/></svg>
+      <h1 class="wordmark"><span class="full">Flujo<span class="dot">.</span></span><span class="eb">Flechas</span></h1>
+    </div>
+    <nav class="header-nav" aria-label="Más">
+      <a class="header-home" href="./index.html#landing" aria-label="Inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></a>
+      <a class="nav-rules" id="rules-link" role="button">Reglas ▾</a>
+      <a id="stats-link" role="button">Estadísticas ▾</a>
+      <a id="ranks-link" role="button">Rangos ▾</a>
+      <span class="nav-more-wrap">
+        <button class="more" id="menu-btn" type="button" aria-label="Más opciones"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+        <div class="more-menu" id="menu-pop">
+          <a class="more-item" id="m-theme" role="button"><span>Tema</span><span class="more-theme-name" id="m-theme-name">Claro</span></a>
+          <a class="more-item" id="m-share" role="button"><span>Compartir</span></a>
+          <a class="more-item cta" id="m-sub" role="button"><span>Suscribirse al boletín</span></a>
+        </div>
+      </span>
+    </nav>
+  </header>
+
+  <div class="stage">
+    <div class="rank-bar" id="rank-bar" role="button" tabindex="0" aria-label="Ver rangos">
+      <span class="rank-label" id="rank-label">Listo</span>
+      <div class="rank-track" id="rank-track"><div class="rank-track-line"></div></div>
+      <span class="rank-chev">▾</span>
+    </div>
+    <div class="meta">
+      <div class="side is-left"><div class="n" id="leaks">0</div><div class="l">Fugas</div></div>
+      <div class="timer" id="timer">0:00</div>
+      <div class="side is-right"><div class="n" id="board-of">1/5</div><div class="l">Tablero</div></div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <div id="board-inner"></div>
+        <div class="toast" id="toast"></div>
+        <div class="gate" id="gate">
+          <h2>Flujo</h2>
+          <p>Gira las tuberías para llevar el agua de la <b>fuente</b> al <b>desagüe</b> antes de que se derrame. <b>5 tableros</b>, cada uno fluye más rápido. Te cronometra de principio a fin.</p>
+          <button class="btn" id="start-btn" type="button">Empezar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="refresh-box"><div class="refresh-track"><i class="refresh-bar" id="flow-bar"></i></div></div>
+
+    <div class="statusbox" id="statusbox">
+      <div class="stile"><div class="sval" id="t-board">1/5</div><div class="slbl">Tablero</div></div>
+      <div class="stile leaks" id="t-leaks"><div class="sval" id="s-leaks">0</div><div class="slbl">Fugas</div></div>
+      <div class="stile"><div class="sval"><span class="speed-dots" id="speed-dots"></span></div><div class="slbl">Flujo</div></div>
+      <div class="stile"><div class="sval" id="s-best">—</div><div class="slbl">Mejor</div></div>
+    </div>
+
+    <div class="freeze">
+      <button class="freeze-btn" id="freeze-btn" type="button" aria-label="Congelar">
+        <span class="fill" id="freeze-fill"></span>
+        <span class="ficon" id="freeze-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg></span>
+        <span class="fnum" id="freeze-num"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
+    <h2>Flujo</h2>
+    <p>El modo presión: <b>5 tableros</b> de tuberías. El reloj corre de principio a fin — termínalos lo más rápido que puedas.</p>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><circle cx="22" cy="50" r="11" fill="var(--accent-2)"/><path class="pp" d="M22 50 H78"/></svg></div><div class="txt"><b>Fuente</b> (punto rojo) → <b>desagüe</b>. Toca una tubería para <b>girarla 90°</b> y armar el camino.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--water)" d="M14 50 H50 V86"/></svg></div><div class="txt">El <b style="color:var(--water)">agua</b> avanza sola desde la fuente. Conéctala al desagüe y <b style="color:#157145">se completa el tablero</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--error)" d="M14 50 H58"/><path class="pp" style="stroke:var(--error)" d="M70 38 l14 12 l-14 12"/></svg></div><div class="txt"><b style="color:var(--error)">Fuga:</b> si el agua llega a un extremo abierto antes de conectar, se derrama: <b>+8 s</b> y vuelve al inicio.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--pipe-lock)" d="M30 50 H70"/><circle cx="50" cy="50" r="7" fill="var(--pipe-lock)"/></svg></div><div class="txt"><b style="color:var(--pipe-lock)">Tubería fija</b> (dorada): ya está puesta y <b>no gira</b>. Construye a su alrededor.</div></div>
+    <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#0062E3">❄ Congelar.</b> Se llena solo; <b>detiene el agua 5 s</b> mientras giras — pero <b>el reloj sigue</b>.</div></div>
+    <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Tu <b>rango</b> es el <b>tiempo total</b> de los 5 tableros. Las fugas suman segundos.</p>
+  </div></div>
+
+  <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
+    <h2>Rangos</h2>
+    <p>Tu rango lo decide el <b>tiempo total</b> de los 5 tableros (menos es mejor). Récord de hoy: <b id="ranks-best">—</b>.</p>
+    <div id="ranks-list"></div>
+  </div></div>
+
+  <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button">✕</button>
+    <h2>Estadísticas</h2>
+    <div class="cstat-grid" id="casc-stats"></div>
+    <h3>Distribución de rangos</h3>
+    <div id="casc-dist"></div>
+    <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a ningún servidor.</p>
+  </div></div>
+
+  <div id="rotate-lock">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><line x1="10" y1="18.5" x2="14" y2="18.5"/></svg>
+    <p class="rt">Este sorbo se disfruta de pie</p>
+    <p class="rs">Gira tu teléfono para seguir jugando.</p>
+  </div>
+
+<script>
+(function(){
+  function fnv(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
+  function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  const ISO=new Date().toISOString().slice(0,10);
+  const LS=(function(){ try{ return window.localStorage; }catch(e){ return null; } })();
+  function lsGet(k){ try{ return LS&&LS.getItem(k); }catch(e){ return null; } }
+  function lsSet(k,v){ try{ if(LS) LS.setItem(k,v); }catch(e){} }
+  const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
+
+  // ===== config =====
+  const U=100, GC=6, GR=7, BOARDS=5;
+  const SPEED=[0.95,1.2,1.5,1.9,2.35];     // cells/sec the water creeps, per board
+  const LEAD =[3.8,3.3,2.9,2.5,2.1];       // seconds of grace before water starts moving
+  const LOCKN=[0,0,1,2,3];                  // fixed (golden) pipes per board
+  const LEAK_PEN=8, LEAK_GRACE=1.3;
+  const FREEZE_FILL=16, FREEZE_DUR=5000;
+  const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
+  const RANK_LADDER=[78,95,116,142,172,208,250,300,360];   // total-seconds thresholds, ascending (<=78 = Maestro)
+  const TOP=RANK_NAMES.length-1;
+
+  // bit dirs: U=1 R=2 D=4 L=8
+  const BU=1,BR=2,BD=4,BL=8;
+  const BASE={I:BU|BD, L:BU|BR, T:BU|BR|BL, X:BU|BR|BD|BL};
+  function opp(b){ return b===BU?BD : b===BD?BU : b===BR?BL : BR; }
+  function rot1(m){ let n=0; if(m&BL)n|=BU; if(m&BU)n|=BR; if(m&BR)n|=BD; if(m&BD)n|=BL; return n; }   // one CW turn
+  function rotMask(m,r){ r=((r%4)+4)%4; for(let i=0;i<r;i++) m=rot1(m); return m; }
+
+  let grid=[], src={r:0,c:0}, snk={r:0,c:0}, bi=0;
+  let running=false, over=false, won=false;
+  let startMs=0, penaltyMs=0, leaks=0, bestSecs=0, bestSecs0=0;
+  let flowDist=0, leadUntil=0, frozenUntil=0, freezeCharge=0, freezeReady=false;
+  let lastTick=0, rafId=null, transitioning=false;
+  const board=$('board'), inner=$('board-inner'); let svg=null;
+
+  function dirBit(a,b){ if(b.r<a.r) return BU; if(b.r>a.r) return BD; if(b.c>a.c) return BR; return BL; }
+  function maskOf(cell){ if(cell.kind==='src'||cell.kind==='snk') return cell.mask; if(cell.type==='W') return 0; return rotMask(BASE[cell.type], cell.rot); }
+  function inb(r,c){ return r>=0&&r<GR&&c>=0&&c<GC; }
+  function neigh(r,c,b){ if(b===BU) return {r:r-1,c}; if(b===BD) return {r:r+1,c}; if(b===BR) return {r,c:c+1}; return {r,c:c-1}; }
+
+  // ===== generation =====
+  function carve(rng){
+    const seen=Array.from({length:GR},()=>Array(GC).fill(false));
+    const stack=[{r:src.r,c:src.c}]; seen[src.r][src.c]=true; const parent=new Map();
+    const kk=(r,c)=>r+','+c;
+    while(stack.length){
+      const cur=stack[stack.length-1];
+      if(cur.r===snk.r&&cur.c===snk.c) break;
+      const dirs=[BU,BR,BD,BL]; for(let i=dirs.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=dirs[i]; dirs[i]=dirs[j]; dirs[j]=t; }
+      let moved=false;
+      for(const b of dirs){ const n=neigh(cur.r,cur.c,b); if(inb(n.r,n.c)&&!seen[n.r][n.c]){ seen[n.r][n.c]=true; parent.set(kk(n.r,n.c),cur); stack.push(n); moved=true; break; } }
+      if(!moved) stack.pop();
+    }
+    const path=[]; let cur={r:snk.r,c:snk.c};
+    while(cur){ path.push(cur); cur=parent.get(kk(cur.r,cur.c)); }
+    path.reverse(); return path;   // path[0]=src ... last=snk
+  }
+  function solvedRotFor(mask){ for(let r=0;r<4;r++){ if(rotMask(BASE.I,r)===mask) return {type:'I',rot:r}; }
+    for(let r=0;r<4;r++){ if(rotMask(BASE.L,r)===mask) return {type:'L',rot:r}; } return {type:'I',rot:0}; }
+  function genBoard(idx){
+    const rng=mulberry32(fnv('flujo-'+ISO+'-'+idx));
+    src={r:(rng()*GR)|0, c:0}; snk={r:(rng()*GR)|0, c:GC-1};
+    grid=Array.from({length:GR},(_,r)=>Array.from({length:GC},(_,c)=>({type:'I',rot:0,locked:false,onPath:false,solvedRot:0,kind:null,mask:0,r,c})));
+    const path=carve(rng);
+    const onP=Array.from({length:GR},()=>Array(GC).fill(false));
+    for(const p of path) onP[p.r][p.c]=true;
+    const g0=grid[src.r][src.c]; g0.kind='src'; g0.locked=true; g0.mask=dirBit(src, path[1]);
+    const gN=grid[snk.r][snk.c]; gN.kind='snk'; gN.locked=true; gN.mask=dirBit(snk, path[path.length-2]);
+    for(let i=1;i<path.length-1;i++){ const p=path[i]; const a=dirBit(p,path[i-1]), b=dirBit(p,path[i+1]); const need=a|b;
+      const sr=solvedRotFor(need); const cell=grid[p.r][p.c]; cell.onPath=true; cell.type=sr.type; cell.solvedRot=sr.rot; cell.rot=sr.rot; }
+    const FT=['I','I','L','L','L','T','X'];
+    for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ if(onP[r][c]) continue; const cell=grid[r][c]; cell.type=FT[(rng()*FT.length)|0]; cell.rot=(rng()*4)|0; }
+    const interior=path.slice(1,path.length-1);
+    for(let i=interior.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=interior[i]; interior[i]=interior[j]; interior[j]=t; }
+    for(let i=0;i<Math.min(LOCKN[idx],interior.length);i++){ const p=interior[i]; const cell=grid[p.r][p.c]; cell.rot=cell.solvedRot; cell.locked=true; }
+    for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(cell.locked||cell.kind) continue;
+      let nr=(rng()*4)|0; if(cell.onPath&&cell.type!=='X'&&nr===cell.solvedRot) nr=(nr+1)%4; cell.rot=nr; }
+    flowDist=0;
+  }
+
+  // ===== connectivity / flow =====
+  function computeNet(){
+    const dist=new Map(); const kk=(r,c)=>r+','+c; const q=[{r:src.r,c:src.c}]; dist.set(kk(src.r,src.c),0);
+    let h=0, max=0, sinkIn=false;
+    while(h<q.length){ const cur=q[h++]; const cm=maskOf(grid[cur.r][cur.c]); const cd=dist.get(kk(cur.r,cur.c));
+      for(const b of [BU,BR,BD,BL]){ if(!(cm&b)) continue; const n=neigh(cur.r,cur.c,b); if(!inb(n.r,n.c)) continue;
+        const nm=maskOf(grid[n.r][n.c]); if(!(nm&opp(b))) continue; const nkk=kk(n.r,n.c);
+        if(!dist.has(nkk)){ dist.set(nkk,cd+1); if(cd+1>max) max=cd+1; if(n.r===snk.r&&n.c===snk.c) sinkIn=true; q.push(n); } } }
+    return {dist,max,sinkIn};
+  }
+
+  // ===== render =====
+  function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(GC*U)+' '+(GR*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg); }
+  const armEnd={1:[50,0],2:[100,50],4:[50,100],8:[0,50]};
+  function pipeD(mask){ let d=''; for(const b of [BU,BR,BD,BL]){ if(mask&b){ const e=armEnd[b]; d+='M50 50 L'+e[0]+' '+e[1]+' '; } } return d||'M50 50 L50 50'; }
+  function cellEl(cell){
+    const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','cell'+(cell.locked?' locked':'')+(cell.kind==='src'?' src':'')+(cell.kind==='snk'?' snk':''));
+    g.setAttribute('transform','translate('+(cell.c*U)+','+(cell.r*U)+')'); cell._g=g;
+    const hit=document.createElementNS(SVGNS,'rect'); hit.setAttribute('class','hit'); hit.setAttribute('x','0'); hit.setAttribute('y','0'); hit.setAttribute('width',U); hit.setAttribute('height',U); g.appendChild(hit);
+    const rotor=document.createElementNS(SVGNS,'g'); rotor.setAttribute('class','rotor'); rotor.style.transformOrigin='50px 50px'; cell._rotor=rotor;
+    if(cell.kind==='src'||cell.kind==='snk'){
+      const pp=document.createElementNS(SVGNS,'path'); pp.setAttribute('class','pipe'); pp.setAttribute('d',pipeD(cell.mask)); rotor.appendChild(pp);
+      if(cell.kind==='src'){ const b=document.createElementNS(SVGNS,'circle'); b.setAttribute('class','bulb'); b.setAttribute('cx','50'); b.setAttribute('cy','50'); b.setAttribute('r','17'); rotor.appendChild(b); }
+      else { const rg=document.createElementNS(SVGNS,'circle'); rg.setAttribute('class','ring'); rg.setAttribute('cx','50'); rg.setAttribute('cy','50'); rg.setAttribute('r','19'); rotor.appendChild(rg); }
+    } else {
+      const pp=document.createElementNS(SVGNS,'path'); pp.setAttribute('class','pipe'); pp.setAttribute('d',pipeD(BASE[cell.type])); rotor.appendChild(pp);
+      rotor.style.transform='rotate('+(cell.rot*90)+'deg)';
+      if(cell.locked){ const ld=document.createElementNS(SVGNS,'circle'); ld.setAttribute('class','lockdot'); ld.setAttribute('cx','50'); ld.setAttribute('cy','50'); ld.setAttribute('r','7'); rotor.appendChild(ld); }
+    }
+    g.appendChild(rotor);
+    if(!cell.locked) g.addEventListener('click',()=>rotateCell(cell.r,cell.c));
+    return g;
+  }
+  function render(){ buildSVG();
+    for(let c=1;c<GC;c++){ const l=document.createElementNS(SVGNS,'line'); l.setAttribute('class','gridline'); l.setAttribute('x1',c*U);l.setAttribute('y1',0);l.setAttribute('x2',c*U);l.setAttribute('y2',GR*U); svg.appendChild(l); }
+    for(let r=1;r<GR;r++){ const l=document.createElementNS(SVGNS,'line'); l.setAttribute('class','gridline'); l.setAttribute('x1',0);l.setAttribute('y1',r*U);l.setAttribute('x2',GC*U);l.setAttribute('y2',r*U); svg.appendChild(l); }
+    for(let r=0;r<GR;r++)for(let c=0;c<GC;c++) svg.appendChild(cellEl(grid[r][c]));
+    paintFlow(computeNet());
+  }
+  function paintFlow(net){ const kk=(r,c)=>r+','+c;
+    for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(!cell._g) continue; const d=net.dist.get(kk(r,c));
+      const filled = d!==undefined && (d<=flowDist || cell.kind==='src' || won);
+      cell._g.classList.toggle('filled', !!filled); } }
+
+  function rotateCell(r,c){ if(!running||over||transitioning) return; const cell=grid[r][c]; if(cell.locked||cell.kind) return;
+    if(!startMs) startMs=Date.now();
+    cell.rot=(cell.rot+1)%4; if(cell._rotor) cell._rotor.style.transform='rotate('+(cell.rot*90)+'deg)';
+    const net=computeNet(); paintFlow(net); if(net.sinkIn) winBoard(); }
+
+  // ===== timing =====
+  function fmt(s){ s=Math.max(0,Math.round(s)); const m=Math.floor(s/60); return m+':'+String(s%60).padStart(2,'0'); }
+  function elapsedSecs(){ if(!startMs) return 0; return (Date.now()-startMs+penaltyMs)/1000; }
+
+  function loop(ts){ if(!running) return; if(!lastTick) lastTick=ts; const dt=Math.min(64,ts-lastTick); lastTick=ts; const now=Date.now(); const fz=now<frozenUntil;
+    board.classList.toggle('frozen', fz);
+    if(!transitioning && startMs){
+      const net=computeNet();
+      if(net.sinkIn){ winBoard(); }
+      else {
+        if(!fz && now>=leadUntil) flowDist += SPEED[bi]*(dt/1000);
+        paintFlow(net);
+        if(flowDist > net.max + 0.5) leak();
+        const fb=$('flow-bar'); if(fb){ const denom=Math.max(1,net.max); const p=Math.min(1, flowDist/denom); fb.style.width=(p*100)+'%'; fb.classList.toggle('warn', p>0.7); }
+      }
+    }
+    $('timer').textContent=fmt(elapsedSecs());
+    renderRank();
+    if(!fz && !freezeReady){ freezeCharge=Math.min(1, freezeCharge+(dt/1000)/FREEZE_FILL); if(freezeCharge>=1) freezeReady=true; }
+    updateFreeze();
+    rafId=requestAnimationFrame(loop);
+  }
+
+  function leak(){ leaks++; penaltyMs+=LEAK_PEN*1000; flowDist=0; leadUntil=Date.now()+LEAK_GRACE*1000;
+    $('leaks').textContent=leaks; $('s-leaks').textContent=leaks; const tl=$('t-leaks'); if(tl){ tl.classList.add('hot'); setTimeout(()=>{try{tl.classList.remove('hot');}catch(e){}},600); }
+    board.classList.add('leakflash'); setTimeout(()=>{try{board.classList.remove('leakflash');}catch(e){}},520);
+    showToast('¡Fuga! +'+LEAK_PEN+'s', true);
+    const tm=$('timer'); tm.classList.add('pen'); setTimeout(()=>{try{tm.classList.remove('pen');}catch(e){}},500);
+  }
+
+  function winBoard(){ if(transitioning) return; transitioning=true; won=true; paintFlow(computeNet());
+    board.classList.add('clearflash'); showToast(bi+1<BOARDS?('¡Tablero '+(bi+1)+'!'):'¡Completo!');
+    setTimeout(()=>{ board.classList.remove('clearflash'); won=false;
+      if(bi+1>=BOARDS){ transitioning=false; endGame(); return; }
+      bi++; genBoard(bi); render(); leadUntil=Date.now()+LEAD[bi]*1000; setStatus(); transitioning=false;
+    }, 820);
+  }
+
+  function setStatus(){ $('t-board').textContent=(bi+1)+'/'+BOARDS; $('board-of').textContent=(bi+1)+'/'+BOARDS;
+    const sd=$('speed-dots'); if(sd){ let h=''; for(let i=0;i<BOARDS;i++) h+='<i class="'+(i<=bi?'on':'')+'"></i>'; sd.innerHTML=h; }
+    $('s-best').textContent=bestSecs?fmt(bestSecs):'—'; }
+
+  // ===== rank =====
+  function rankFromTime(t){ for(let i=0;i<RANK_LADDER.length;i++){ if(t<=RANK_LADDER[i]) return TOP-i; } return 0; }
+  function curIdx(){ return rankFromTime(over?bestSecs0:elapsedSecs()); }
+  function renderRank(){ const track=$('rank-track'); if(!track) return; const idx=curIdx();
+    let html='<div class="rank-track-line"></div><div class="rank-track-fill" id="rtf"></div>';
+    for(let i=0;i<=TOP;i++){ const left=(i/TOP)*100; if(i===idx) html+='<div class="rank-dot current" style="left:'+left+'%">'+(idx+1)+'</div>'; else html+='<div class="rank-dot'+(i<idx?' passed':'')+'" style="left:'+left+'%"></div>'; }
+    track.innerHTML=html; const f=$('rtf'); if(f) f.style.width=((idx/TOP)*100)+'%';
+    const lbl=$('rank-label'); if(lbl){ lbl.textContent=(!running&&!over)?'Listo':RANK_NAMES[idx]; lbl.classList.toggle('at-maestro', (running||over)&&idx===TOP); } }
+  function renderRanks(){ const list=$('ranks-list'); if(!list) return; const cur=(running||over)?curIdx():-1; let html='';
+    for(let i=TOP;i>=0;i--){ const band=(i===TOP)?('≤ '+fmt(RANK_LADDER[0])):(i===0?('> '+fmt(RANK_LADDER[TOP-1])):(fmt(RANK_LADDER[TOP-i-1])+'–'+fmt(RANK_LADDER[TOP-i])));
+      html+='<div class="rank-row'+(i===cur?' current':'')+'"><span class="rname">'+RANK_NAMES[i]+'</span><span class="rband">'+band+'</span></div>'; }
+    list.innerHTML=html; const rb=$('ranks-best'); if(rb) rb.textContent=bestSecs?fmt(bestSecs):'—'; }
+
+  // ===== freeze =====
+  function useFreeze(){ if(!freezeReady||!running||over) return; frozenUntil=Date.now()+FREEZE_DUR; freezeCharge=0; freezeReady=false; updateFreeze(); }
+  function updateFreeze(){ const btn=$('freeze-btn'), num=$('freeze-num'), fill=$('freeze-fill'); if(!btn) return; const fz=Date.now()<frozenUntil;
+    if(fz){ btn.classList.add('frozen'); btn.classList.remove('ready'); fill.style.transform='scaleX(1)'; num.textContent=Math.ceil((frozenUntil-Date.now())/1000); }
+    else { btn.classList.remove('frozen'); if(freezeReady){ fill.style.transform='scaleX(1)'; btn.classList.add('ready'); } else { fill.style.transform='scaleX('+freezeCharge.toFixed(3)+')'; btn.classList.remove('ready'); } } }
+
+  function showToast(t,leak){ const el=$('toast'); if(!el) return; el.textContent=t; el.classList.toggle('leak',!!leak); el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>{ try{el.classList.remove('show');}catch(e){} },1200); }
+
+  // ===== lifecycle =====
+  function startGame(){ bi=0; running=true; over=false; won=false; transitioning=false; leaks=0; penaltyMs=0; startMs=0; flowDist=0; bestSecs0=0;
+    frozenUntil=0; freezeCharge=0; freezeReady=false; lastTick=0;
+    bestSecs=+(lsGet('flujo-best-'+ISO)||0);
+    genBoard(0); render(); startMs=Date.now(); leadUntil=startMs+LEAD[0]*1000;
+    $('leaks').textContent='0'; $('s-leaks').textContent='0'; $('timer').textContent='0:00'; $('timer').classList.remove('pen');
+    setStatus(); renderRank(); updateFreeze();
+    $('gate').classList.add('hidden'); rafId=requestAnimationFrame(loop);
+  }
+  function endGame(){ if(over) return; over=true; running=false; if(rafId) cancelAnimationFrame(rafId); board.classList.remove('frozen');
+    const secs=Math.round(elapsedSecs()); bestSecs0=secs;
+    const prev=+(lsGet('flujo-best-'+ISO)||0); const isBest=!prev||secs<prev; if(isBest){ bestSecs=secs; lsSet('flujo-best-'+ISO,String(secs)); } else bestSecs=prev;
+    recordStats(secs);
+    const idx=rankFromTime(secs); renderRank(); $('timer').textContent=fmt(secs);
+    const g=$('gate'); g.classList.remove('hidden');
+    g.innerHTML='<h2>¡Completado!</h2><div class="v">'+fmt(secs)+'</div><div class="vlbl">'+RANK_NAMES[idx]+'</div>'
+      +'<p>5 tableros · '+leaks+' fuga'+(leaks===1?'':'s')+'.<br>'+(isBest?'¡Mejor tiempo de hoy! 🎉':'Mejor de hoy: <b>'+fmt(bestSecs)+'</b>')+'</p>'
+      +'<div class="go-row"><button class="btn" id="again-btn" type="button">Jugar de nuevo</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+    $('again-btn').addEventListener('click', startGame); $('share-btn').addEventListener('click', doShare);
+  }
+  function doShare(){ const idx=rankFromTime(bestSecs0); const txt='💧 Flujo · Flechas\n'+fmt(bestSecs0)+' · '+RANK_NAMES[idx]+'\nhttps://flechas.dre-c8f.workers.dev/flujo.html';
+    if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); } else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>{ const b=$('share-btn'); if(b) b.textContent='Copiado'; }).catch(()=>{}); } }
+
+  // ===== theme + menus =====
+  function applyTheme(t){ document.body.setAttribute('data-theme',t); $('m-theme-name').textContent=(t==='black')?'Oscuro':'Claro'; lsSet('flujo-theme',t); }
+  function toggleMenu(f){ $('menu-pop').classList.toggle('open', f); }
+  function openRules(o){ $('rules-ov').classList.toggle('open', o); }
+  function openRanks(o){ if(o) renderRanks(); $('ranks-ov').classList.toggle('open', o); }
+  function cPrevISO(iso){ const p=iso.split('-'); const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])-86400000); return d.toISOString().slice(0,10); }
+  function getStats(){ const d={played:0,best:0,ranks:[0,0,0,0,0,0,0,0,0,0],last:null,cur:0,max:0}; try{ return Object.assign(d, JSON.parse(lsGet('flujo-stats'))||{}); }catch(e){ return d; } }
+  function recordStats(secs){ const s=getStats(); s.played++; if(!s.best||secs<s.best) s.best=secs; const idx=rankFromTime(secs); s.ranks[idx]=(s.ranks[idx]||0)+1;
+    if(s.last!==ISO){ s.cur=(s.last===cPrevISO(ISO))?s.cur+1:1; s.last=ISO; if(s.cur>s.max) s.max=s.cur; }
+    lsSet('flujo-stats', JSON.stringify(s)); }
+  function openStats(o){ if(o) renderStats(); $('stats-ov').classList.toggle('open', o); }
+  function renderStats(){ const s=getStats(); const cell=(v,l)=>'<div class="cstat"><div class="cv">'+v+'</div><div class="cl">'+l+'</div></div>';
+    $('casc-stats').innerHTML = cell(s.played,'Jugadas')+cell(s.best?fmt(s.best):'—','Récord')+cell(s.cur,'Racha')+cell(s.max,'Racha máx.');
+    const tot=s.ranks.reduce((a,b)=>a+b,0)||1, cur=over?rankFromTime(bestSecs0):-1; let h='';
+    for(let i=TOP;i>=0;i--){ const pct=Math.round(s.ranks[i]/tot*100);
+      h+='<div class="cdist-row'+(i===cur?' cur':'')+'"><span class="cdn">'+RANK_NAMES[i]+'</span><span class="cdbar"><span class="cdfill" style="width:'+pct+'%"></span></span><span class="cdc">'+s.ranks[i]+'</span></div>'; }
+    $('casc-dist').innerHTML=h; }
+
+  // ===== wiring =====
+  $('start-btn').addEventListener('click', startGame);
+  $('freeze-btn').addEventListener('click', useFreeze);
+  $('rules-link').addEventListener('click', ()=>openRules(true));
+  $('rules-x').addEventListener('click', ()=>openRules(false));
+  $('rules-ov').addEventListener('click', e=>{ if(e.target===$('rules-ov')) openRules(false); });
+  $('rank-bar').addEventListener('click', ()=>openRanks(true));
+  $('ranks-link').addEventListener('click', ()=>openRanks(true));
+  $('ranks-x').addEventListener('click', ()=>openRanks(false));
+  $('ranks-ov').addEventListener('click', e=>{ if(e.target===$('ranks-ov')) openRanks(false); });
+  $('stats-link').addEventListener('click', ()=>openStats(true));
+  $('stats-x').addEventListener('click', ()=>openStats(false));
+  $('stats-ov').addEventListener('click', e=>{ if(e.target===$('stats-ov')) openStats(false); });
+  $('menu-btn').addEventListener('click', e=>{ e.stopPropagation(); toggleMenu(); });
+  document.addEventListener('click', e=>{ if(!e.target.closest('.nav-more-wrap')) toggleMenu(false); });
+  $('m-theme').addEventListener('click', ()=>{ applyTheme(document.body.getAttribute('data-theme')==='black'?'light':'black'); toggleMenu(false); });
+  $('m-share').addEventListener('click', ()=>{ toggleMenu(false); doShare(); });
+  $('m-sub').addEventListener('click', ()=>{ toggleMenu(false); window.open('https://cortadito.news','_blank'); });
+
+  applyTheme((lsGet('flujo-theme')==='black')?'black':'light');
+  bestSecs=+(lsGet('flujo-best-'+ISO)||0);
+  genBoard(0); render(); setStatus(); renderRank(); updateFreeze();
+  document.body.classList.add('ready');
+
+  try{ window.__flujo={ start:startGame, rotate:(r,c)=>rotateCell(r,c), step:(ms)=>loop(ms),
+    solve:()=>{ for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(cell.kind||cell.locked) continue; if(cell.onPath){ cell.rot=cell.solvedRot; if(cell._rotor) cell._rotor.style.transform='rotate('+(cell.rot*90)+'deg)'; } } const net=computeNet(); paintFlow(net); if(net.sinkIn) winBoard(); return net.sinkIn; },
+    net:()=>computeNet(), board:()=>bi, leaks:()=>leaks, over:()=>over, won:()=>won, secs:()=>Math.round(elapsedSecs()), bestSecs:()=>bestSecs0,
+    grid:()=>grid, src:()=>src, snk:()=>snk, advance:(d)=>{ flowDist+=d; paintFlow(computeNet()); }, doLeak:()=>leak() }; }catch(e){}
+})();
+</script>
+</body>
+</html>
