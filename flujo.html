@@ -91,13 +91,13 @@
   #bsvg { display:block; width:100%; height:100%; overflow:visible; }
   .cell { cursor:pointer; }
   .cell .hit { fill:transparent; }
-  .cell .pipe { fill:none; stroke:var(--pipe); stroke-width:17; stroke-linecap:round; stroke-linejoin:round; transition:stroke .28s linear; }
-  .cell .water { fill:none; stroke:var(--water); stroke-width:17; stroke-linecap:butt; stroke-linejoin:round; pointer-events:none; }   /* liquid overlay — flat caps so per-cell segments meet flush (no "beads" at seams); round joins keep elbows smooth */
+  .cell .pipe { fill:none; stroke:var(--pipe); stroke-width:23; stroke-linecap:round; stroke-linejoin:round; transition:stroke .28s linear; }   /* chunky conduit — thick enough to *contain* the special marks (the pipe owns the effect) */
+  .cell .water { fill:none; stroke:var(--water); stroke-width:23; stroke-linecap:butt; stroke-linejoin:round; pointer-events:none; }   /* liquid overlay — flat caps so per-cell segments meet flush (no "beads" at seams); round joins keep elbows smooth */
   .cell.filled .pipe { stroke:var(--water); }
   /* special tiles — each a distinct colour you read in a second; white mark stays visible over the blue water */
   .cell.accel  .pipe { stroke:#F2711C; }   /* Acelerador — faster */
   .cell.gold   .pipe { stroke:#D9A520; }   /* Oro — time bonus */
-  .cell.resist .pipe { stroke:#2FA39A; }   /* Resistor — slower */
+  .cell.resist .pipe { stroke:#3B82F6; }   /* Resistor — slower (cold blue; green read as "go/fast") */
   .cell.leak   .pipe { stroke:#8E63CE; }   /* Tubería rota — costs a life */
   .cell.burst  .pipe { stroke:#D7263D; }   /* Sobrecarga — danger, route around */
   .cell .mk-line { fill:none; stroke:#fff; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
@@ -268,8 +268,8 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--error)" d="M14 50 H58"/><path class="pp" style="stroke:var(--error)" d="M70 38 l14 12 l-14 12"/></svg></div><div class="txt"><b style="color:var(--error)">Fuga:</b> si el agua llega a un extremo abierto antes de conectar, se derrama: <b>+8 s</b> y vuelve al inicio.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#64748b" d="M30 50 H70"/><circle cx="50" cy="50" r="7" fill="#e2e8f0"/></svg></div><div class="txt"><b style="color:#64748b">Tubería fija</b> (gris): ya está puesta y <b>no gira</b>. Construye a su alrededor.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#F2711C" d="M30 50 H70"/><path d="M40 38 L52 50 L40 62 M54 38 L66 50 L54 62" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="txt"><b style="color:#F2711C">Acelerador (naranja).</b> El agua <b>fluye más rápido</b> al cruzarlo. Bueno cerca del final, malo al principio.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#2FA39A" d="M30 50 H70"/><path d="M56 38 L46 50 L56 62 M68 38 L58 50 L68 62" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="txt"><b style="color:#2FA39A">Resistor (verde).</b> El agua <b>va más lento</b> — te da tiempo.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#D9A520" d="M30 50 H70"/><path d="M50 36 L55 47 L66 48 L57 55 L60 67 L50 60 L40 67 L43 55 L34 48 L45 47 Z" fill="#fff"/></svg></div><div class="txt"><b style="color:#D9A520">Oro.</b> Si el agua lo cruza, <b>te quita 4 s</b> del tiempo. A veces vale el rodeo.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#3B82F6" d="M30 50 H70"/><path d="M55 42 L48 50 L55 58 M62 42 L55 50 L62 58" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="txt"><b style="color:#3B82F6">Resistor (azul).</b> El agua <b>va más lento</b> — te da tiempo.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#D9A520" d="M30 50 H70"/><path d="M50 40 L60 50 L50 60 L40 50 Z" fill="#fff"/></svg></div><div class="txt"><b style="color:#D9A520">Oro.</b> Si el agua lo cruza, <b>te quita 4 s</b> del tiempo. A veces vale el rodeo.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#8E63CE" d="M30 50 H70"/><path d="M50 37 C58 49 57 59 50 64 C43 59 42 49 50 37 Z" fill="#fff"/></svg></div><div class="txt"><b style="color:#8E63CE">Tubería rota.</b> El agua pasa, pero <b>cuesta una vida</b> ❤. A veces conviene sacrificarla para terminar rápido.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#D7263D" d="M30 50 H70"/><path d="M41 41 L59 59 M59 41 L41 59" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg></div><div class="txt"><b style="color:#D7263D">Sobrecarga.</b> Si el agua entra, <b>pierdes una vida</b> y vuelve al inicio. <b>Rodéala</b>.</div></div>
     <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#0062E3">❄ Congelar.</b> Se llena solo; <b>detiene el agua 5 s</b> mientras giras — pero <b>el reloj sigue</b>.</div></div>
@@ -410,8 +410,9 @@
   // ===== render =====
   function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(GC*U)+' '+(GR*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg); }
   const armEnd={1:[50,0],2:[100,50],4:[50,100],8:[0,50]};
-  const MARK={ accel:'M44 38 L54 50 L44 62 M56 38 L66 50 L56 62', resist:'M56 38 L46 50 L56 62 M68 38 L58 50 L68 62', burst:'M41 41 L59 59 M59 41 L41 59',
-    gold:'M50 34 L55 46 L68 47 L58 56 L61 69 L50 61 L39 69 L42 56 L32 47 L45 46 Z', leak:'M50 36 C59 49 58 60 50 65 C42 60 41 49 50 36 Z' };
+  // compact marks (≈18px) centred so they sit INSIDE the ~23px pipe rather than spilling over it
+  const MARK={ accel:'M45 42 L52 50 L45 58 M53 42 L60 50 L53 58', resist:'M55 42 L48 50 L55 58 M62 42 L55 50 L62 58', burst:'M44 44 L56 56 M56 44 L44 56',
+    gold:'M50 40 L60 50 L50 60 L40 50 Z', leak:'M50 41 C56 49 55 57 50 61 C45 57 44 49 50 41 Z' };
   function pipeD(mask){ let d=''; for(const b of [BU,BR,BD,BL]){ if(mask&b){ const e=armEnd[b]; d+='M50 50 L'+e[0]+' '+e[1]+' '; } } return d||'M50 50 L50 50'; }
   function cellEl(cell){
     const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','cell'+(cell.locked?' locked':'')+(cell.kind==='src'?' src':'')+(cell.kind==='snk'?' snk':''));
