@@ -104,14 +104,12 @@
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error) !important; }   /* a mistake (bump) → red */
   .piece.firing .pline, .piece.firing .phead { stroke:#157145 !important; }   /* successful launch → green as it leaves */
   .piece.blocked-safe .pline, .piece.blocked-safe .phead { stroke:#0E9DA8 !important; }   /* bump ABSORBED by the shield → cyan, no heart lost */
-  .board.hot .piece:not(.firing):not(.blocked):not(.sp-shield):not(.sp-frenzy):not(.sp-freeze) .pline, .board.hot .piece:not(.firing):not(.blocked):not(.sp-shield):not(.sp-frenzy):not(.sp-freeze) .phead { stroke:#F9C80E; }   /* combo live → normal arrows glow yellow; specials keep their role colour */
+  /* combo live → arrows STAY black (the board ring is the racha indicator); specials keep their role colour */
   /* ===== Special arrows — solid role colour, a touch thicker (Borde style) ===== */
   .piece.sp-shield .pline, .piece.sp-shield .phead { stroke:#0E9DA8; stroke-width:16; }   /* deep cyan — Escudo */
   .piece.sp-frenzy .pline, .piece.sp-frenzy .phead { stroke:#F2711C; stroke-width:16; }   /* orange — Frenesí */
   .piece.sp-freeze .pline, .piece.sp-freeze .phead { stroke:#0062E3; stroke-width:16; }   /* blue — Congelar */
   .board.frenzy::before { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; z-index:17; box-shadow:inset 0 0 0 6px #F2711C; opacity:.85; }   /* Frenesí active → orange inset ring */
-  .shield-badge { display:none; margin-top:4px; font:800 11px var(--font-ui); letter-spacing:.4px; color:#0E9DA8; }
-  .shield-badge.on { display:inline-flex; align-items:center; }
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
   /* combo live → a SOLID yellow ring around the board (the Borde yellow); fades in when the combo turns on. */
   .board::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; opacity:0; z-index:16;
@@ -142,6 +140,11 @@
   .stile .sbar { position:absolute; left:0; bottom:0; height:3px; width:100%; background:#F9C80E; transform-origin:left; transform:scaleX(0); }   /* combo timer bar → combo yellow */
   .stile.next .sval { color:var(--accent); }        /* "Nuevo" countdown is teal by default */
   .stile.next.warn .sval { color:#ff6b6b; }         /* …and turns pink in the last 5 s */
+  .stile.escudo .sval { color:var(--ink-soft); transition:color .15s; }
+  .stile.escudo.on .sval { color:#0E9DA8; }          /* holding a shield → cyan */
+  .stile.frenesi .sval { color:var(--ink-soft); transition:color .15s; }
+  .stile.frenesi.on .sval { color:#F2711C; }         /* Frenesí active → orange */
+  .stile.frenesi .sbar { background:#F2711C; }       /* its countdown bar is orange, not the combo yellow */
 
   .freeze { width:min(94vw,400px); margin:10px auto 0; }
   .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#0062E3; background:rgba(0,98,227,.05); border:2px solid #0062E3; }   /* intense freeze blue — border always full; only the fill grows */
@@ -286,7 +289,7 @@
       <span class="rank-chev">▾</span>
     </div>
     <div class="meta">
-      <div class="side is-left"><div class="lives-row" id="lives-row" aria-label="Vidas"></div><span class="shield-badge" id="shield-badge"></span></div>
+      <div class="side is-left"><div class="lives-row" id="lives-row" aria-label="Vidas"></div></div>
       <div class="timer" id="timer">2:00</div>
       <div class="side is-right"><div class="n" id="score">0</div><div class="l">Puntos</div></div>
     </div>
@@ -308,8 +311,8 @@
 
     <div class="statusbox" id="statusbox">
       <div class="stile combo" id="t-combo"><div class="sval" id="combo-x">×1</div><div class="slbl">Combo</div><i class="sbar" id="combo-bar"></i></div>
-      <div class="stile"><div class="sval" id="cleared">0</div><div class="slbl">Despejadas</div></div>
-      <div class="stile"><div class="sval" id="boards-done">0</div><div class="slbl">Tableros</div></div>
+      <div class="stile escudo" id="t-escudo"><div class="sval" id="escudo-v">—</div><div class="slbl">Escudo</div></div>
+      <div class="stile frenesi" id="t-frenesi"><div class="sval" id="frenesi-v">—</div><div class="slbl">Frenesí</div><i class="sbar" id="frenesi-bar"></i></div>
       <div class="stile next" id="t-next"><div class="sval" id="nextin">15</div><div class="slbl">Nuevo</div></div>
     </div>
 
@@ -453,11 +456,16 @@
     for(let i=0; deal.length<slots.length; i++){ const c=i%3; if(cnt[c]>0){ deal.push(rol[c]); cnt[c]--; } }
     slots.forEach((p,k)=>{ p.role=deal[k]; }); }
   function frenzyActive(){ return Date.now()<frenzyUntil; }
-  function updateShieldHUD(){ const b=$('shield-badge'); if(!b) return; b.classList.toggle('on', !!shieldHeld); b.textContent=shieldHeld?'🛡 Escudo':''; }
+  // ---- the specials show their state in the bottom status box (no prompts over the board) ----
+  function updateShieldHUD(){ const t=$('t-escudo'), v=$('escudo-v'); if(!t) return; t.classList.toggle('on', !!shieldHeld); if(v) v.textContent=shieldHeld?'Sí':'—'; }
+  function updateFrenesi(){ const t=$('t-frenesi'), v=$('frenesi-v'), bar=$('frenesi-bar'); if(!t) return; const on=frenzyActive();
+    t.classList.toggle('on', on);
+    if(on){ const rem=frenzyUntil-Date.now(); if(v) v.textContent=Math.ceil(rem/1000)+'s'; if(bar) bar.style.transform='scaleX('+Math.max(0,rem/FRENZY_MS).toFixed(3)+')'; }
+    else { if(v) v.textContent='—'; if(bar) bar.style.transform='scaleX(0)'; } }
   function applySpecial(role){ if(!role||role===99) return;
-    if(role==='shield'){ shieldHeld=true; updateShieldHUD(); showToast('🛡 Escudo listo'); }
-    else if(role==='frenzy'){ frenzyUntil=Date.now()+FRENZY_MS; board.classList.add('frenzy'); showToast('⚡ ¡Frenesí 2×!'); }
-    else if(role==='freeze'){ if(!freezeReady){ freezeCharge=Math.min(1,freezeCharge+FREEZE_BLUE_SECS/FREEZE_FILL); if(freezeCharge>=1) freezeReady=true; updateFreeze(); } showToast('🔵 +'+FREEZE_BLUE_SECS+'s Congelar'); } }
+    if(role==='shield'){ shieldHeld=true; updateShieldHUD(); }
+    else if(role==='frenzy'){ frenzyUntil=Date.now()+FRENZY_MS; board.classList.add('frenzy'); updateFrenesi(); }
+    else if(role==='freeze'){ if(!freezeReady){ freezeCharge=Math.min(1,freezeCharge+FREEZE_BLUE_SECS/FREEZE_FILL); if(freezeCharge>=1) freezeReady=true; updateFreeze(); } } }
 
   // ================= geometry / rendering (head leads, body trains) =================
   function polyLen(pts){ let s=0; for(let i=1;i<pts.length;i++) s+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return s; }
@@ -508,7 +516,7 @@
       const dist=Math.max(38, (steps+1)*U-46);   // charge ALL the way to the real blocker (no artificial cap), stopping with a clean gap before it, then bounce
       g.classList.add('blocked'); bounceBlocked(g,v,dist);
       const T=Math.max(130, Math.round(110+dist*0.2));
-      if(shieldHeld){ shieldHeld=false; updateShieldHUD(); g.classList.add('blocked-safe'); setTimeout(()=>{ try{g.classList.remove('blocked','blocked-safe');}catch(e){} }, 2*T+120); showToast('🛡 Escudo absorbió'); }   // shield eats the bump: 0 hearts, combo intact
+      if(shieldHeld){ shieldHeld=false; updateShieldHUD(); g.classList.add('blocked-safe'); setTimeout(()=>{ try{g.classList.remove('blocked','blocked-safe');}catch(e){} }, 2*T+120); }   // shield eats the bump: 0 hearts, combo intact (the cyan flash is the feedback)
       else { setTimeout(()=>{ try{g.classList.remove('blocked');}catch(e){} }, 2*T+120); combo=0; renderCombo(false); loseHeart(); } } }
   // Borde's exact bounce: head + body move at the SAME rate (linear), out then back, at Borde's
   // arrow speed (T = 110 + 0.2·distance). Body dash and head both travel `dist`, so they stay locked.
@@ -591,7 +599,7 @@
         const bar=$('refresh-bar'); bar.style.transform='scaleX('+Math.max(0,Math.min(1,tToRef/REFRESH_MS)).toFixed(3)+')'; bar.classList.toggle('warn', tToRef<=WARN_MS);
         const ni=$('nextin'); if(ni) ni.textContent=Math.max(0,Math.ceil(tToRef/1000)); $('t-next').classList.toggle('warn', tToRef<=WARN_MS); } }
     if(combo>0 && now-lastClearAt>COMBO_WINDOW){ combo=0; renderCombo(false); }
-    board.classList.toggle('frenzy', frenzyActive());
+    board.classList.toggle('frenzy', frenzyActive()); updateFrenesi();
     { const cb=$('combo-bar'); if(cb) cb.style.transform='scaleX('+(multNow()>1?Math.max(0,1-(now-lastClearAt)/COMBO_WINDOW):0).toFixed(3)+')'; }   // always drive it — reset to 0 when the combo ends so it can't freeze halfway
     if(!fz && !freezeReady){ freezeCharge=Math.min(1, freezeCharge+(dt/1000)/FREEZE_FILL); if(freezeCharge>=1) freezeReady=true; }
     updateFreeze(); if(transitioning && !fz){ $('timer').style.color='var(--accent)'; }   // clock paused for the cascade → timer goes teal
@@ -604,8 +612,8 @@
     best=+(lsGet('cascada-best-'+ISO)||0);
     buildSVG(); rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard(); assignRoles(); layer=newLayer(); renderInto(layer);
     refreshAt=Date.now()+REFRESH_MS;
-    $('score').textContent='0'; $('cleared').textContent='0'; { const bd=$('boards-done'); if(bd) bd.textContent='0'; } $('nextin').textContent=Math.round(REFRESH_MS/1000); $('timer').textContent=fmt(GAME_SECS); $('timer').classList.remove('low');
-    renderLives(); updateShieldHUD(); running=true; renderRank(); renderCombo(false);
+    $('score').textContent='0'; { const cl=$('cleared'); if(cl) cl.textContent='0'; } { const bd=$('boards-done'); if(bd) bd.textContent='0'; } $('nextin').textContent=Math.round(REFRESH_MS/1000); $('timer').textContent=fmt(GAME_SECS); $('timer').classList.remove('low');
+    renderLives(); updateShieldHUD(); updateFrenesi(); running=true; renderRank(); renderCombo(false);
     $('gate').classList.add('hidden'); updateFreeze(); rafId=requestAnimationFrame(loop); }
   function endGame(reason){ if(over) return; over=true; running=false; if(rafId) cancelAnimationFrame(rafId); board.classList.remove('expiring','hot');
     const isBest=points>best; if(isBest){ best=points; lsSet('cascada-best-'+ISO,String(points)); }
