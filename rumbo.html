@@ -18,14 +18,14 @@
 <style>
   * { touch-action:manipulation; box-sizing:border-box; }
   :root {
-    --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
-    --accent:#F86624; --accent-deep:#C44E12; --accent-soft:#FCE0D2; --accent-2:#1E8E82; --success:#6b8e3d; --error:#b03434;
-    --board-bg:#FBEEE6; --arrow:#141210; --wall:#3c3732; --freeze:#0062E3; --freeze-fill:#9CCCEC; --gw:min(94vw,400px);
+    --bg:#ffffff; --paper:#f5f4f2; --ink:#1c1c1c; --ink-soft:#8a8a8a; --ink-line:#e4e3e1; --box-edge:#5e5e5e;
+    --accent:#1c1c1c; --accent-deep:#000000; --accent-soft:#e6e6e4; --accent-2:#5e5e5e; --success:#1c1c1c; --error:#b03434;
+    --board-bg:#f0efed; --arrow:#1c1c1c; --wall:#2b2b2b; --door:#8c8c8c; --gw:min(94vw,400px);
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
-    --bg:#0e0c0b; --paper:#181513; --ink:#f2ede9; --ink-soft:#8a827c; --ink-line:#2a2522; --box-edge:#8a827c;
-    --accent:#FF7E45; --accent-deep:#E0561A; --accent-soft:#3A1C10; --accent-2:#3aa99b; --board-bg:#241b15; --arrow:#ECE7DC; --wall:#cdbfb4; --freeze:#3a8ff0; --freeze-fill:#2E7CB0;
+    --bg:#0d0d0d; --paper:#191919; --ink:#eee; --ink-soft:#8f8f8f; --ink-line:#2a2a2a; --box-edge:#9a9a9a;
+    --accent:#eee; --accent-deep:#fff; --accent-soft:#2e2e2e; --accent-2:#9a9a9a; --success:#eee; --board-bg:#1c1c1c; --arrow:#e6e6e6; --wall:#cfcfcf; --door:#888;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { overscroll-behavior:none; }
@@ -92,10 +92,10 @@
   .cell { position:absolute; } .cell.wall { background:var(--wall); }
   .exit { position:absolute; display:flex; align-items:center; justify-content:center; } .exit svg { width:96%; height:96%; }
   .exit .p { fill:none; stroke:var(--success); stroke-width:4.3; stroke-linecap:round; stroke-linejoin:round; }
-  .exit.open { filter:drop-shadow(0 0 4px rgba(107,142,61,.85)); animation:exitpulse 1.4s ease-in-out infinite; }
+  .exit.open { filter:drop-shadow(0 0 4px rgba(0,0,0,.45)); animation:exitpulse 1.4s ease-in-out infinite; }
   @keyframes exitpulse { 50%{ transform:scale(1.08); } }
-  /* keys = the objective: bigger, brighter gold, a soft glow */
-  .keyc { filter:drop-shadow(0 0 3px rgba(232,147,12,.7)); animation:keyglow 1.8s ease-in-out infinite; }
+  /* keys = the objective: bold, with a soft shadow + pulse */
+  .keyc { filter:drop-shadow(0 0 2px rgba(0,0,0,.4)); animation:keyglow 1.8s ease-in-out infinite; }
   @keyframes keyglow { 50%{ opacity:.78; transform:scale(1.06); } }
   .dot { position:absolute; border-radius:50%; background:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.3); transition:top .1s linear,left .1s linear; z-index:3; }
   .dot.froze { filter:grayscale(.75); opacity:.5; }
@@ -127,8 +127,8 @@
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
   /* big d-pad with the move-timer in the centre */
   .dpad { position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:6px; padding:6px; }
-  .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:14px; background:transparent; transition:background .12s; }   /* compass feel: no peach box until pressed (full cell stays tappable) */
-  .dbtn:active, .dbtn.on { background:var(--accent-soft); } .dbtn:active .p, .dbtn.on .p { stroke:var(--accent); }
+  .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:14px; background:var(--accent-soft); transition:background .12s; }   /* visible buttons always */
+  .dbtn:active, .dbtn.on { background:var(--accent); } .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
   .dbtn svg { width:52%; height:52%; } .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; }
   .db-up { grid-area:1/2; } .db-left { grid-area:2/1; } .db-right { grid-area:2/3; } .db-down { grid-area:3/2; }
   .mv-timer { grid-area:2/2; display:flex; align-items:center; justify-content:center; font:700 clamp(15px,4.6vw,22px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink-soft); line-height:1; }   /* small — the maze is the star, not this counter */
@@ -247,11 +247,9 @@
     <h2>Rumbo</h2>
     <p>Un laberinto nuevo cada día. Lo <b>recorres libremente</b> con la cruz, recoges las <b>3 llaves</b> y sales — eligiendo bien tu ruta.</p>
     <h3>Cómo se juega</h3>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><path d="M20 8 L32 20 L20 32 L8 20 Z" fill="#EA9A0C" stroke="#A8650A" stroke-width="2.2" stroke-linejoin="round"/></svg></div><div class="txt">Recoge las <strong style="color:#C8860B">3 llaves</strong> repartidas por el laberinto; el <b>orden</b> de tu ruta es el reto. La salida abre al tenerlas las 3.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/></svg></div><div class="txt">Algunas llaves están <strong style="color:var(--accent)">tras una puerta</strong>: ¿la abres (despejando su tablero) o buscas otra llave más lejos?</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/></svg></div><div class="txt"><strong style="color:var(--accent)">Puerta naranja:</strong> bloquea el <b>único camino</b>. No hay vuelta — hay que abrirla.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--accent-2)" stroke-width="5" stroke-linecap="round"/></svg></div><div class="txt"><strong style="color:var(--accent-2)">Puerta turquesa:</strong> un <b>atajo</b>. Ábrela para acortar… o rodéala por el camino largo. Tú decides.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M14 20 L92 20"/><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Para abrir una puerta, <b>despeja su tablero</b>: toca una flecha con el <b>carril libre</b> hasta vaciarlo.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><path d="M20 8 L32 20 L20 32 L8 20 Z" fill="var(--ink)" stroke="var(--board-bg)" stroke-width="1.6" stroke-linejoin="round"/><circle cx="20" cy="20" r="3.6" fill="var(--board-bg)"/></svg></div><div class="txt">Recoge las <strong>3 llaves</strong> repartidas por el laberinto; el <b>orden</b> de tu ruta es el reto. La salida abre al tenerlas las 3.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--door)" stroke-width="4" stroke-linecap="round"/></svg></div><div class="txt">Algunas llaves están <b>tras una puerta</b> (un muro gris). Para abrirla, <b>despeja su tablero</b> de flechas.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M14 20 L92 20"/><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Despejar = toca una flecha con el <b>carril libre</b> hasta vaciar el tablero.</div></div>
     <p class="muted">Tu <strong style="color:var(--accent)">rango</strong> es tu <b>tiempo total</b> hasta la salida: empiezas en <strong style="color:var(--accent)">Maestro/a</strong> y bajas cuanto más tardas. Baja del <strong style="color:var(--accent)">Reto del día</strong> (el tiempo objetivo) y suena <strong style="color:var(--accent)">¡Buen sorbo!</strong></p>
   </div></div>
 
@@ -448,13 +446,13 @@
       if(dir==='R') seg='M'+(c+1)+' '+r+' V'+(r+1)+' '; else if(dir==='L') seg='M'+c+' '+r+' V'+(r+1)+' ';
       else if(dir==='D') seg='M'+c+' '+(r+1)+' H'+(c+1)+' '; else seg='M'+c+' '+r+' H'+(c+1)+' ';
       if(seen2.has(seg)) return; seen2.add(seg); dseg+=seg; });
-    if(dseg){ const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dseg); dp.setAttribute('fill','none'); dp.setAttribute('stroke','var(--accent)'); dp.setAttribute('stroke-width','0.16'); dp.setAttribute('stroke-linecap','round'); dp.setAttribute('stroke-linejoin','round'); svg.appendChild(dp); }
+    if(dseg){ const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dseg); dp.setAttribute('fill','none'); dp.setAttribute('stroke','var(--door)'); dp.setAttribute('stroke-width','0.16'); dp.setAttribute('stroke-linecap','round'); dp.setAttribute('stroke-linejoin','round'); svg.appendChild(dp); }
     board.appendChild(svg);
     const locked = keysGot < KEYS_NEED, exCol = locked ? 'var(--ink-soft)' : 'var(--success)';
     const ex=document.createElement('div'); ex.className='exit'+(locked?'':' open'); ex.style.cssText='left:'+(exit.c*mc)+'px;top:'+(exit.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;';
     ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="13" style="stroke:'+exCol+'"/><circle class="p" cx="20" cy="20" r="4" style="stroke:'+exCol+'"/></svg>'; board.appendChild(ex);
     keys.forEach(k=>{ if(k.got) return; const ke=document.createElement('div'); ke.className='keyc'; ke.style.cssText='position:absolute;left:'+(k.c*mc)+'px;top:'+(k.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;display:flex;align-items:center;justify-content:center;';
-      ke.innerHTML='<svg viewBox="0 0 40 40" style="width:74%;height:74%"><path d="M20 3 L37 20 L20 37 L3 20 Z" fill="#EA9A0C" stroke="#A8650A" stroke-width="2.6" stroke-linejoin="round"/><circle cx="20" cy="20" r="3.6" fill="#FCEBCB"/></svg>'; board.appendChild(ke); });
+      ke.innerHTML='<svg viewBox="0 0 40 40" style="width:74%;height:74%"><path d="M20 3 L37 20 L20 37 L3 20 Z" fill="var(--ink)" stroke="var(--board-bg)" stroke-width="1.6" stroke-linejoin="round"/><circle cx="20" cy="20" r="4" fill="var(--board-bg)"/></svg>'; board.appendChild(ke); });
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
     const pad=mc*0.2; dotEl.style.width=(mc-2*pad)+'px'; dotEl.style.height=(mc-2*pad)+'px'; placeDot(); }
   function placeDot(){ if(!dotEl)return; const pad=mc*0.2; dotEl.style.left=(dot.c*mc+pad)+'px'; dotEl.style.top=(dot.r*mc+pad)+'px'; dotEl.classList.toggle('froze',running&&phase!=='move'); }
