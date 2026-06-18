@@ -87,7 +87,7 @@
 
   /* ===== Maze ===== */
   .maze-wrap { width:100%; display:flex; justify-content:center; }
-  .maze { position:relative; border-radius:12px; overflow:hidden; background:var(--board-bg); border:3px solid var(--accent-2); }
+  .maze { position:relative; border-radius:18px; overflow:hidden; background:var(--board-bg); border:4px solid var(--accent-2); box-shadow:0 2px 10px rgba(0,0,0,.06); }
   .cell { position:absolute; } .cell.wall { background:var(--wall); }
   .exit { position:absolute; display:flex; align-items:center; justify-content:center; } .exit svg { width:96%; height:96%; }
   .exit .p { fill:none; stroke:var(--success); stroke-width:4.3; stroke-linecap:round; stroke-linejoin:round; }
@@ -112,7 +112,7 @@
 
   /* ===== Play area: swaps between the arrow board (solve) and the big d-pad (move) ===== */
   .play-wrap { width:100%; display:flex; justify-content:center; }
-  .play { position:relative; width:var(--gw); margin:0 auto; background:var(--paper); border:2px solid var(--box-edge); border-radius:16px; overflow:hidden; }
+  .play { position:relative; width:var(--gw); margin:0 auto; background:var(--board-bg); border:4px solid var(--accent-2); border-radius:18px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.06); }
   .play.blank { animation:bpulse .5s ease; }
   @keyframes bpulse { 50% { background:var(--accent-soft); } }
   .play.blank .panel, .play.blank .dpad { opacity:.18; pointer-events:none; }
@@ -445,17 +445,17 @@
     }
     const p=document.createElementNS(NS,'path'); p.setAttribute('d',d); p.setAttribute('fill','none'); p.setAttribute('stroke','var(--wall)'); p.setAttribute('stroke-width','0.16'); p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round'); svg.appendChild(p);
     let ddM='', ddO=''; lockedDoors.forEach(k=>{ const a=k.split(','), r=+a[0], c=+a[1], dir=a[2]; let seg='';   // mandatory = orange gate; optional shortcut = teal gate
-      if(dir==='R') seg='M'+(c+1)+' '+(r+0.13)+' V'+(r+0.87)+' '; else if(dir==='L') seg='M'+c+' '+(r+0.13)+' V'+(r+0.87)+' ';
-      else if(dir==='D') seg='M'+(c+0.13)+' '+(r+1)+' H'+(c+0.87)+' '; else seg='M'+(c+0.13)+' '+r+' H'+(c+0.87)+' ';
+      if(dir==='R') seg='M'+(c+1)+' '+(r+0.06)+' V'+(r+0.94)+' '; else if(dir==='L') seg='M'+c+' '+(r+0.06)+' V'+(r+0.94)+' ';
+      else if(dir==='D') seg='M'+(c+0.06)+' '+(r+1)+' H'+(c+0.94)+' '; else seg='M'+(c+0.06)+' '+r+' H'+(c+0.94)+' ';
       if(doorType[k]==='opt') ddO+=seg; else ddM+=seg; });
-    const doorPath=(dstr,col)=>{ if(!dstr) return; const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dstr); dp.setAttribute('fill','none'); dp.setAttribute('stroke',col); dp.setAttribute('stroke-width','0.32'); dp.setAttribute('stroke-linecap','round'); svg.appendChild(dp); };
+    const doorPath=(dstr,col)=>{ if(!dstr) return; const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dstr); dp.setAttribute('fill','none'); dp.setAttribute('stroke',col); dp.setAttribute('stroke-width','0.46'); dp.setAttribute('stroke-linecap','butt'); svg.appendChild(dp); };
     doorPath(ddM,'var(--accent)'); doorPath(ddO,'var(--accent-2)');
     board.appendChild(svg);
     const locked = keysGot < KEYS_NEED, exCol = locked ? 'var(--ink-soft)' : 'var(--success)';
     const ex=document.createElement('div'); ex.className='exit'+(locked?'':' open'); ex.style.cssText='left:'+(exit.c*mc)+'px;top:'+(exit.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;';
     ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="13" style="stroke:'+exCol+'"/><circle class="p" cx="20" cy="20" r="4" style="stroke:'+exCol+'"/></svg>'; board.appendChild(ex);
     keys.forEach(k=>{ if(k.got) return; const ke=document.createElement('div'); ke.className='keyc'; ke.style.cssText='position:absolute;left:'+(k.c*mc)+'px;top:'+(k.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;display:flex;align-items:center;justify-content:center;';
-      ke.innerHTML='<svg viewBox="0 0 40 40" style="width:92%;height:92%"><circle cx="14" cy="14" r="7.5" fill="none" stroke="#E8930C" stroke-width="5.4"/><path d="M19 19 L31 31" stroke="#E8930C" stroke-width="5.4" stroke-linecap="round"/><path d="M31 31 L31 25 M31 31 L25 31" stroke="#E8930C" stroke-width="5.4" stroke-linecap="round"/></svg>'; board.appendChild(ke); });
+      ke.innerHTML='<svg viewBox="0 0 40 40" style="width:74%;height:74%"><path d="M20 3 L37 20 L20 37 L3 20 Z" fill="#EA9A0C" stroke="#A8650A" stroke-width="2.6" stroke-linejoin="round"/><circle cx="20" cy="20" r="3.6" fill="#FCEBCB"/></svg>'; board.appendChild(ke); });
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
     const pad=mc*0.2; dotEl.style.width=(mc-2*pad)+'px'; dotEl.style.height=(mc-2*pad)+'px'; placeDot(); }
   function placeDot(){ if(!dotEl)return; const pad=mc*0.2; dotEl.style.left=(dot.c*mc+pad)+'px'; dotEl.style.top=(dot.r*mc+pad)+'px'; dotEl.classList.toggle('froze',running&&phase!=='move'); }
