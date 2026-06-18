@@ -95,7 +95,7 @@
   .cell .hit { fill:transparent; }
   /* every cell is a visible TILE — the board reads as a tray of parts you swap (not pipes floating on a field) */
   .cell .tile { fill:var(--tile); stroke:var(--tile-edge); stroke-width:1.6; }
-  .cell .pipe { fill:none; stroke:var(--pipe); stroke-width:23; stroke-linecap:round; stroke-linejoin:round; transition:stroke .28s linear; }
+  .cell .pipe { fill:none; stroke:var(--pipe); stroke-width:23; stroke-linecap:butt; stroke-linejoin:round; transition:stroke .28s linear; }   /* butt caps: ends stop at the cell edge so a neighbour's pipe can't poke a dark dot over the water */
   .cell .water { fill:none; stroke:var(--water); stroke-width:23; stroke-linecap:butt; stroke-linejoin:round; pointer-events:none; }
   .cell.filled .pipe { stroke:var(--water); }
   /* one machine: charcoal pipes + brass/steel specials. A muted, aged-metal family, told apart by colour + white mark */
