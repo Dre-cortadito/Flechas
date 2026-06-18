@@ -374,7 +374,7 @@
   }
   function solvedRotFor(mask){ for(let r=0;r<4;r++){ if(rotMask(BASE.I,r)===mask) return {type:'I',rot:r}; }
     for(let r=0;r<4;r++){ if(rotMask(BASE.L,r)===mask) return {type:'L',rot:r}; } return {type:'I',rot:0}; }
-  const FT=['I','I','L','L','L','T','X'];
+  const FT=['I','I','I','L','L','L','T'];   // no 4-way cross — it connects everything and kills the routing puzzle (BioShock omits it too)
   function snapCell(cl){ return {type:cl.type,rot:cl.rot,accel:cl.accel,gold:cl.gold,resist:cl.resist,leak:cl.leak,burst:cl.burst}; }
   function setCell(cl,s){ cl.type=s.type; cl.rot=s.rot; cl.accel=s.accel; cl.gold=s.gold; cl.resist=s.resist; cl.leak=s.leak; cl.burst=s.burst; }
   function swapData(a,b){ const t=snapCell(a); setCell(a,snapCell(b)); setCell(b,t); a._done=false; b._done=false; }
