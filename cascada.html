@@ -148,7 +148,7 @@
 
   .freeze { width:min(94vw,400px); margin:10px auto 0; }
   .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#0062E3; background:rgba(0,98,227,.05); border:2px solid #0062E3; }   /* intense freeze blue — border always full; only the fill grows */
-  .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); transition:transform .25s linear; z-index:0; }   /* charge fill = the exact frozen-board blue, so button-full and frozen board match */
+  .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); z-index:0; }   /* smoothing is done in JS (eased each frame) — a CSS transition here fights the per-frame updates and stutters */   /* charge fill = the exact frozen-board blue, so button-full and frozen board match */
   .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:34px; }   /* fixed height so the button doesn't resize when the number swaps in */
   .freeze-btn .ficon svg { width:34px; height:34px; display:block; }   /* icon-only, large within reason */
   .freeze-btn .fnum { position:relative; z-index:1; display:none; align-items:center; height:34px; font:800 30px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; }
@@ -387,7 +387,7 @@
   let points=0, cleared=0, boardsClear=0, best=0, lives=HEARTS_MAX, timeLeft=GAME_SECS, running=false, over=false;
   let combo=0, lastClearAt=0, shieldHeld=false, frenzyUntil=0;
   let frozenUntil=0, freezeCharge=0, freezeReady=false;
-  let refreshAt=0, lastTick=0, rafId=null;
+  let refreshAt=0, lastTick=0, rafId=null, lastNow=0, startMs=0, pausedMs=0, freezeVisual=0;
   let transitioning=false, fallOld=null, fallEnd=0;
   let svg=null, layer=null; const board=$('board'), inner=$('board-inner');
 
@@ -505,7 +505,7 @@
       if(!Object.keys(pieces).length){ points+=BOARD_BONUS; boardsClear++;
         let rwd;                                                                                // clean board → ½ heart back; if already full, +5s on the clock instead
         if(lives<HEARTS_MAX){ lives=Math.min(HEARTS_MAX, lives+0.5); renderLives(); rwd='+½ ❤'; }
-        else { timeLeft+=BOARD_TIME_BONUS; $('timer').textContent=fmt(Math.ceil(timeLeft)); $('timer').classList.toggle('low', timeLeft<=15); rwd='+'+BOARD_TIME_BONUS+'s ⏱'; }
+        else { pausedMs+=BOARD_TIME_BONUS*1000; timeLeft+=BOARD_TIME_BONUS; $('timer').textContent=fmt(Math.ceil(timeLeft)); $('timer').classList.toggle('low', timeLeft<=15); rwd='+'+BOARD_TIME_BONUS+'s ⏱'; }
         const bd=$('boards-done'); if(bd) bd.textContent=boardsClear;
         board.classList.remove('clearflash'); void board.offsetWidth; board.classList.add('clearflash');   // pink ring pulses once
         setTimeout(()=>{ try{ board.classList.remove('clearflash'); }catch(e){} },950);
@@ -573,7 +573,7 @@
   function finishFall(){ if(fallOld){ try{fallOld.remove();}catch(e){} fallOld=null; } if(layer) layer.style.transform=''; transitioning=false; refreshAt=Date.now()+REFRESH_MS; }
 
   // ================= freeze =================
-  function useFreeze(){ if(!freezeReady||!running||over) return; frozenUntil=Date.now()+FREEZE_DUR; freezeCharge=0; freezeReady=false; updateFreeze(); }
+  function useFreeze(){ if(!freezeReady||!running||over) return; frozenUntil=Date.now()+FREEZE_DUR; freezeCharge=0; freezeReady=false; freezeVisual=0; updateFreeze(); }
   function lerpHex(a,b,t){ a=a.trim();b=b.trim(); const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16); const r=Math.round((pa>>16)+(( pb>>16)-(pa>>16))*t),g=Math.round(((pa>>8)&255)+((( pb>>8)&255)-((pa>>8)&255))*t),bl=Math.round((pa&255)+((pb&255)-(pa&255))*t); return 'rgb('+r+','+g+','+bl+')'; }
   function updateFreeze(){ const btn=$('freeze-btn'), num=$('freeze-num'), fill=$('freeze-fill'), tm=$('timer'); const fz=Date.now()<frozenUntil;
     if(fz){ const rem=frozenUntil-Date.now(); num.textContent=Math.ceil(rem/1000);
@@ -583,13 +583,14 @@
       board.style.background=DK;            // STATIC frozen colour — no pulse
       if(tm) tm.style.color='#0062E3'; }
     else { btn.classList.remove('frozen'); board.style.background=''; if(tm) tm.style.color='';
-      if(freezeReady){ fill.style.transform='scaleX(1)'; btn.classList.add('ready'); }
-      else { fill.style.transform='scaleX('+freezeCharge.toFixed(3)+')'; btn.classList.remove('ready'); } } }
+      if(freezeReady){ freezeVisual=1; fill.style.transform='scaleX(1)'; btn.classList.add('ready'); }
+      else { freezeVisual += (freezeCharge-freezeVisual)*0.18; if(Math.abs(freezeCharge-freezeVisual)<0.002) freezeVisual=freezeCharge; fill.style.transform='scaleX('+Math.max(0,freezeVisual).toFixed(3)+')'; btn.classList.remove('ready'); } } }
 
   // ================= loop =================
   function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
-  function loop(ts){ if(!running) return; if(!lastTick) lastTick=ts; const dt=Math.min(64,ts-lastTick); lastTick=ts; const now=Date.now(); const fz=now<frozenUntil;
-    if(!fz && !transitioning) timeLeft-=dt/1000;   // clock pauses during the cascade
+  function loop(ts){ if(!running) return; const now=Date.now(); if(!lastNow) lastNow=now; const slice=now-lastNow; lastNow=now; const dt=Math.min(64,slice); const fz=now<frozenUntil;
+    if(fz || transitioning) pausedMs+=slice;                          // freeze + cascade don't count against your 2:00
+    timeLeft=GAME_SECS-(now-startMs-pausedMs)/1000;                   // wall-clock: robust to frame throttling / backgrounded tabs (no undercount)
     if(timeLeft<=0){ timeLeft=0; $('timer').textContent='0:00'; endGame('time'); return; }
     $('timer').textContent=fmt(Math.ceil(timeLeft)); $('timer').classList.toggle('low', timeLeft<=15);
     if(transitioning){ if(now>=fallEnd) finishFall(); }
@@ -608,7 +609,7 @@
   // ================= start / end =================
   function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(COLS*U)+' '+(ROWS*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg); }
   function startGame(){ points=0; cleared=0; boardsClear=0; combo=0; lastClearAt=0; lives=HEARTS_MAX; timeLeft=GAME_SECS; over=false; boardNum=0; transitioning=false; fallOld=null;
-    frozenUntil=0; freezeCharge=0; freezeReady=false; lastTick=0; shieldHeld=false; frenzyUntil=0; board.classList.remove('frenzy');
+    frozenUntil=0; freezeCharge=0; freezeReady=false; lastTick=0; lastNow=0; startMs=Date.now(); pausedMs=0; freezeVisual=0; shieldHeld=false; frenzyUntil=0; board.classList.remove('frenzy');
     best=+(lsGet('cascada-best-'+ISO)||0);
     buildSVG(); rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard(); assignRoles(); layer=newLayer(); renderInto(layer);
     refreshAt=Date.now()+REFRESH_MS;
