@@ -101,9 +101,17 @@
   .piece { cursor:pointer; }
   .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .18s; }
   .piece .phit { fill:none; stroke:transparent; stroke-width:62; stroke-linecap:round; stroke-linejoin:round; }
-  .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }   /* a mistake (bump) → the same red token as Borde */
-  .piece.firing .pline, .piece.firing .phead { stroke:#157145; }   /* successful launch → green as it leaves (matches Borde) */
-  .board.hot .piece:not(.firing):not(.blocked) .pline, .board.hot .piece:not(.firing):not(.blocked) .phead { stroke:#F9C80E; }   /* racha live → arrows glow the combo yellow (launch green / bump red still win) */
+  .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error) !important; }   /* a mistake (bump) → red */
+  .piece.firing .pline, .piece.firing .phead { stroke:#157145 !important; }   /* successful launch → green as it leaves */
+  .piece.blocked-safe .pline, .piece.blocked-safe .phead { stroke:#0E9DA8 !important; }   /* bump ABSORBED by the shield → cyan, no heart lost */
+  .board.hot .piece:not(.firing):not(.blocked):not(.sp-shield):not(.sp-frenzy):not(.sp-freeze) .pline, .board.hot .piece:not(.firing):not(.blocked):not(.sp-shield):not(.sp-frenzy):not(.sp-freeze) .phead { stroke:#F9C80E; }   /* combo live → normal arrows glow yellow; specials keep their role colour */
+  /* ===== Special arrows — solid role colour, a touch thicker (Borde style) ===== */
+  .piece.sp-shield .pline, .piece.sp-shield .phead { stroke:#0E9DA8; stroke-width:16; }   /* deep cyan — Escudo */
+  .piece.sp-frenzy .pline, .piece.sp-frenzy .phead { stroke:#F2711C; stroke-width:16; }   /* orange — Frenesí */
+  .piece.sp-freeze .pline, .piece.sp-freeze .phead { stroke:#0062E3; stroke-width:16; }   /* blue — Congelar */
+  .board.frenzy::before { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; z-index:17; box-shadow:inset 0 0 0 6px #F2711C; opacity:.85; }   /* Frenesí active → orange inset ring */
+  .shield-badge { display:none; margin-top:4px; font:800 11px var(--font-ui); letter-spacing:.4px; color:#0E9DA8; }
+  .shield-badge.on { display:inline-flex; align-items:center; }
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
   /* combo live → a SOLID yellow ring around the board (the Borde yellow); fades in when the combo turns on. */
   .board::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; opacity:0; z-index:16;
@@ -278,7 +286,7 @@
       <span class="rank-chev">▾</span>
     </div>
     <div class="meta">
-      <div class="side is-left"><div class="lives-row" id="lives-row" aria-label="Vidas"></div></div>
+      <div class="side is-left"><div class="lives-row" id="lives-row" aria-label="Vidas"></div><span class="shield-badge" id="shield-badge"></span></div>
       <div class="timer" id="timer">2:00</div>
       <div class="side is-right"><div class="n" id="score">0</div><div class="l">Puntos</div></div>
     </div>
@@ -322,6 +330,9 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path style="stroke:#157145" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al salir <b style="color:#157145">destella en verde</b> y suma puntos.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> una flecha <b>tapada</b> rebota, <b>corta el combo</b> y cuesta <b style="color:#EA3546">½ corazón</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#F9C80E" stroke-width="5"/><text x="60" y="28" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="20" fill="#C99700">&times;3</text></svg></div><div class="txt"><b style="color:#C99700">Combo.</b> Despeja <b>rápido y seguido</b> (×2, ×3…) — más combo, más puntos. El borde se enciende en <b style="color:#C99700">amarillo</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#0E9DA8" d="M14 20 L92 20"/><path style="stroke:#0E9DA8" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#0E9DA8">Escudo (cian).</b> Despéjala y guardas un escudo: tu <b>próximo choque cuesta 0 corazones</b> y <b>no corta el combo</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#F2711C" d="M14 20 L92 20"/><path style="stroke:#F2711C" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#F2711C">Frenesí (naranja).</b> Despéjala y ganas <b>5 s a doble puntos</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#0062E3" d="M14 20 L92 20"/><path style="stroke:#0062E3" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#0062E3">Congelar (azul).</b> El congelador carga <b>lento solo</b>; las flechas azules lo llenan casi todo (~3 = un congelado).</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="34" y="23" width="52" height="13" rx="3" fill="var(--ink-line)"/><rect x="34" y="5" width="52" height="13" rx="3" fill="var(--accent)"/></svg></div><div class="txt">Cada <b>30 s</b> cae un <b>tablero nuevo</b> que empuja al viejo. Lo que no despejes, <b>se va</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#ff6b6b" stroke-width="5"/><text x="60" y="27" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="17" fill="var(--accent)">+25</text></svg></div><div class="txt"><b>Tablero limpio:</b> despeja uno entero → <b style="color:var(--accent)">+25</b>, borde rosa y <b>+½ corazón</b> (o <b>+5 s</b> si vas lleno).</div></div>
     <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#0062E3">❄ Congelar.</b> Se llena solo; <b>para el reloj y el cambio de tablero 5 s</b>.</div></div>
@@ -358,7 +369,9 @@
   const COVER=0.8, MIN_LAUNCH=7;
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const COMBO_WINDOW=1800, COMBO_PER_TIER=4, MULT_MAX=3;   // capped at ×3 — keeps the combo rewarding but the score predictable enough to rank
-  const FREEZE_FILL=20, FREEZE_DUR=5000;     // seconds to charge a freeze (faster = more freezes per run)
+  const FREEZE_FILL=60, FREEZE_DUR=5000;     // freeze auto-charges SLOWLY now; blue arrows do most of the charging
+  const FREEZE_BLUE=0.34;                     // each blue (Congelar) arrow you clear adds this much charge → ~3 = a freeze
+  const FRENZY_MS=5000;                       // orange Frenesí: double points for 5 s
   const BOARD_BONUS=25;                       // points for clearing a whole board before it refreshes
   const BOARD_TIME_BONUS=5;                    // if you're already at full hearts, a clean board buys +5s instead
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
@@ -369,7 +382,7 @@
 
   let pieces={}, ownerMap=new Map(), pid=0, boardNum=0, rng=mulberry32(1);
   let points=0, cleared=0, boardsClear=0, best=0, lives=HEARTS_MAX, timeLeft=GAME_SECS, running=false, over=false;
-  let combo=0, lastClearAt=0;
+  let combo=0, lastClearAt=0, shieldHeld=false, frenzyUntil=0;
   let frozenUntil=0, freezeCharge=0, freezeReady=false;
   let refreshAt=0, lastTick=0, rafId=null;
   let transitioning=false, fallOld=null, fallEnd=0;
@@ -424,6 +437,28 @@
       const score=(full?1000:0)+lc; if(score>bestScore){ bestScore=score; bestSnap=snap(); } }
     if(bestSnap) restore(bestSnap); }
 
+  // ================= special arrows (Escudo / Frenesí / Congelar) =================
+  function _pcCenter(p){ let sx=0,sy=0; for(const cl of p.cells){ const c=center(cl.r,cl.c); sx+=c[0]; sy+=c[1]; } return [sx/p.cells.length, sy/p.cells.length]; }
+  // pick N evenly-spread pieces (farthest-point), then deal the three colours across them in board order
+  function assignRoles(){ const all=Object.values(pieces); for(const p of all) p.role=0;
+    const N=all.length; if(!N) return;
+    const nFreeze=Math.max(3,Math.round(N*0.10)), nShield=Math.max(1,Math.round(N*0.045)), nFrenzy=Math.max(1,Math.round(N*0.045));
+    const pool=all.filter(p=>p.cells.length>=3); if(!pool.length) return; const placed=[];
+    const pick=()=>{ const avail=pool.filter(p=>!p.role); if(!avail.length) return null;
+      if(!placed.length) return avail[(rng()*avail.length)|0];
+      let best=null,bd=-1; for(const cand of avail){ const a=_pcCenter(cand); let md=1e9; for(const q of placed){ const b=_pcCenter(q); const d=(a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1]); if(d<md)md=d; } md+=rng()*0.01; if(md>bd){ bd=md; best=cand; } } return best; };
+    const slots=[]; for(let k=0;k<nFreeze+nShield+nFrenzy;k++){ const p=pick(); if(!p) break; p.role=99; placed.push(p); slots.push(p); }
+    slots.sort((x,y)=>{ const a=_pcCenter(x),b=_pcCenter(y); return (a[0]-b[0])||(a[1]-b[1]); });
+    const cnt=[nFreeze,nShield,nFrenzy], rol=['freeze','shield','frenzy'], deal=[];
+    for(let i=0; deal.length<slots.length; i++){ const c=i%3; if(cnt[c]>0){ deal.push(rol[c]); cnt[c]--; } }
+    slots.forEach((p,k)=>{ p.role=deal[k]; }); }
+  function frenzyActive(){ return Date.now()<frenzyUntil; }
+  function updateShieldHUD(){ const b=$('shield-badge'); if(!b) return; b.classList.toggle('on', !!shieldHeld); b.textContent=shieldHeld?'🛡 Escudo':''; }
+  function applySpecial(role){ if(!role||role===99) return;
+    if(role==='shield'){ shieldHeld=true; updateShieldHUD(); showToast('🛡 Escudo listo'); }
+    else if(role==='frenzy'){ frenzyUntil=Date.now()+FRENZY_MS; board.classList.add('frenzy'); showToast('⚡ ¡Frenesí 2×!'); }
+    else if(role==='freeze'){ if(!freezeReady){ freezeCharge=Math.min(1,freezeCharge+FREEZE_BLUE); if(freezeCharge>=1) freezeReady=true; updateFreeze(); } showToast('🔵 +Congelar'); } }
+
   // ================= geometry / rendering (head leads, body trains) =================
   function polyLen(pts){ let s=0; for(let i=1;i<pts.length;i++) s+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return s; }
   function polyD(pts){ return pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' '); }
@@ -438,6 +473,7 @@
     const tip=head; const ext=distToBorder(head,v)+46; const L=polyLen(pts); return {pts, tip, v, L, F:L+ext, move:ext}; }
   function makeEl(p){ const t=trackData(p); p._F=t.F; p._move=t.move; p._v=t.v;
     const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','piece'); g.id='pc-'+p.id;
+    if(p.role&&p.role!==99) g.classList.add('sp-'+p.role);
     const shapeD=polyD(t.pts), fullD=polyD(t.pts.concat([[t.tip[0]+t.v[0]*t.move, t.tip[1]+t.v[1]*t.move]]));
     const hit=document.createElementNS(SVGNS,'path'); hit.setAttribute('class','phit'); hit.setAttribute('d',shapeD); g.appendChild(hit);
     const ln=document.createElementNS(SVGNS,'path'); ln.setAttribute('class','pline'); ln.setAttribute('d',fullD);
@@ -449,9 +485,10 @@
   // ================= launch / combo =================
   function multNow(){ return Math.min(MULT_MAX, 1+Math.floor(combo/COMBO_PER_TIER)); }
   function tapPiece(id){ if(!running||over||transitioning) return; const p=pieces[id]; if(!p||!p.el) return;
-    if(laneClear(p)){ p.cells.forEach(cl=>ownerMap.delete(key(cl.r,cl.c))); const g=p.el, F=p._F, mv=p._move, v=p._v; delete pieces[id];
+    if(laneClear(p)){ const role=p.role; p.cells.forEach(cl=>ownerMap.delete(key(cl.r,cl.c))); const g=p.el, F=p._F, mv=p._move, v=p._v; delete pieces[id];
       const now=Date.now(); combo = (now-lastClearAt<=COMBO_WINDOW)? combo+1 : 1; lastClearAt=now;
-      const m=multNow(); points+=m; cleared++; $('score').textContent=points; renderRank(); renderCombo(true); renderStatus();
+      const m=multNow(); points+=m*(frenzyActive()?2:1); cleared++; $('score').textContent=points; renderRank(); renderCombo(true); renderStatus();
+      applySpecial(role);
       const line=g.querySelector('.pline'), hd=g.querySelector('.phead'); const T=Math.max(200, Math.round(110+F*0.20));
       g.classList.add('firing');                                   // green as it leaves
       try{ line.animate([{strokeDashoffset:'0'},{strokeDashoffset:(-F)+'px'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){}
@@ -470,8 +507,9 @@
       while(r>=0&&r<ROWS&&c>=0&&c<COLS){ const o=ownerMap.get(key(r,c)); if(o!==undefined && o!==p.id) break; steps++; r+=DYn[p.dir]; c+=DXn[p.dir]; }   // walk past own body to the real blocker
       const dist=Math.max(38, (steps+1)*U-46);   // charge ALL the way to the real blocker (no artificial cap), stopping with a clean gap before it, then bounce
       g.classList.add('blocked'); bounceBlocked(g,v,dist);
-      const T=Math.max(130, Math.round(110+dist*0.2)); setTimeout(()=>{ try{g.classList.remove('blocked');}catch(e){} }, 2*T+120);
-      combo=0; renderCombo(false); loseHeart(); } }
+      const T=Math.max(130, Math.round(110+dist*0.2));
+      if(shieldHeld){ shieldHeld=false; updateShieldHUD(); g.classList.add('blocked-safe'); setTimeout(()=>{ try{g.classList.remove('blocked','blocked-safe');}catch(e){} }, 2*T+120); showToast('🛡 Escudo absorbió'); }   // shield eats the bump: 0 hearts, combo intact
+      else { setTimeout(()=>{ try{g.classList.remove('blocked');}catch(e){} }, 2*T+120); combo=0; renderCombo(false); loseHeart(); } } }
   // Borde's exact bounce: head + body move at the SAME rate (linear), out then back, at Borde's
   // arrow speed (T = 110 + 0.2·distance). Body dash and head both travel `dist`, so they stay locked.
   function bounceBlocked(g,v,dist){ const line=g.querySelector('.pline'), hd=g.querySelector('.phead'); const T=Math.max(130, Math.round(110+dist*0.2));
@@ -518,7 +556,7 @@
   function fallRefresh(){ if(transitioning) return; transitioning=true; board.classList.remove('expiring');
     board.classList.remove('cascading'); void board.offsetWidth; board.classList.add('cascading'); setTimeout(function(){ try{ board.classList.remove('cascading'); }catch(e){} }, CASCADE_MS+120);
     const old=layer; fallOld=old;
-    rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard();
+    rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard(); assignRoles();
     const nl=newLayer(); layer=nl; renderInto(nl);
     const H=ROWS*U; nl.style.transform='translateY('+(-H)+'px)';
     try{ old.animate([{transform:'translateY(0)'},{transform:'translateY('+H+'px)'}],{duration:SLIDE_MS,easing:'linear',fill:'forwards'}); }catch(e){}
@@ -553,6 +591,7 @@
         const bar=$('refresh-bar'); bar.style.transform='scaleX('+Math.max(0,Math.min(1,tToRef/REFRESH_MS)).toFixed(3)+')'; bar.classList.toggle('warn', tToRef<=WARN_MS);
         const ni=$('nextin'); if(ni) ni.textContent=Math.max(0,Math.ceil(tToRef/1000)); $('t-next').classList.toggle('warn', tToRef<=WARN_MS); } }
     if(combo>0 && now-lastClearAt>COMBO_WINDOW){ combo=0; renderCombo(false); }
+    board.classList.toggle('frenzy', frenzyActive());
     { const cb=$('combo-bar'); if(cb) cb.style.transform='scaleX('+(multNow()>1?Math.max(0,1-(now-lastClearAt)/COMBO_WINDOW):0).toFixed(3)+')'; }   // always drive it — reset to 0 when the combo ends so it can't freeze halfway
     if(!fz && !freezeReady){ freezeCharge=Math.min(1, freezeCharge+(dt/1000)/FREEZE_FILL); if(freezeCharge>=1) freezeReady=true; }
     updateFreeze(); if(transitioning && !fz){ $('timer').style.color='var(--accent)'; }   // clock paused for the cascade → timer goes teal
@@ -561,12 +600,12 @@
   // ================= start / end =================
   function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(COLS*U)+' '+(ROWS*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg); }
   function startGame(){ points=0; cleared=0; boardsClear=0; combo=0; lastClearAt=0; lives=HEARTS_MAX; timeLeft=GAME_SECS; over=false; boardNum=0; transitioning=false; fallOld=null;
-    frozenUntil=0; freezeCharge=0; freezeReady=false; lastTick=0;
+    frozenUntil=0; freezeCharge=0; freezeReady=false; lastTick=0; shieldHeld=false; frenzyUntil=0; board.classList.remove('frenzy');
     best=+(lsGet('cascada-best-'+ISO)||0);
-    buildSVG(); rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard(); layer=newLayer(); renderInto(layer);
+    buildSVG(); rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard(); assignRoles(); layer=newLayer(); renderInto(layer);
     refreshAt=Date.now()+REFRESH_MS;
     $('score').textContent='0'; $('cleared').textContent='0'; { const bd=$('boards-done'); if(bd) bd.textContent='0'; } $('nextin').textContent=Math.round(REFRESH_MS/1000); $('timer').textContent=fmt(GAME_SECS); $('timer').classList.remove('low');
-    renderLives(); running=true; renderRank(); renderCombo(false);
+    renderLives(); updateShieldHUD(); running=true; renderRank(); renderCombo(false);
     $('gate').classList.add('hidden'); updateFreeze(); rafId=requestAnimationFrame(loop); }
   function endGame(reason){ if(over) return; over=true; running=false; if(rafId) cancelAnimationFrame(rafId); board.classList.remove('expiring','hot');
     const isBest=points>best; if(isBest){ best=points; lsSet('cascada-best-'+ISO,String(points)); }
@@ -629,7 +668,10 @@
       while(prog){ prog=false; for(const id of [...remain]){ const p=ps[id]; if(lc2(p)){ for(const cl of p.cells) occ2.delete(key(cl.r,cl.c)); remain.delete(id); prog=true; } } }
       return Math.round((start-remain.size)/start*100); },
     blocked:()=>{ const p=Object.values(pieces).find(p=>p.el&&!laneClear(p)); return p?p.id:-1; },
-    tapId:(id)=>tapPiece(id), step:(ms)=>loop(ms), start:()=>startGame() }; }catch(e){}
+    tapId:(id)=>tapPiece(id), step:(ms)=>loop(ms), start:()=>startGame(),
+    roles:()=>{ const c={shield:0,frenzy:0,freeze:0}; Object.values(pieces).forEach(p=>{ if(p.role&&c[p.role]!==undefined)c[p.role]++; }); return c; },
+    roleOf:(id)=>pieces[id]&&pieces[id].role, idsByRole:(r)=>Object.values(pieces).filter(p=>p.role===r).map(p=>p.id),
+    shield:()=>shieldHeld, frenzy:()=>frenzyActive(), freezeChg:()=>freezeCharge, lives:()=>lives, pts:()=>points, combo:()=>combo, blockedId:()=>{ const p=Object.values(pieces).find(p=>p.el&&!laneClear(p)); return p?p.id:-1; } }; }catch(e){}
 })();
 </script>
 
