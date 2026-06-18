@@ -85,9 +85,10 @@
   .cell { cursor:pointer; }
   .cell .hit { fill:transparent; }
   .cell .pipe { fill:none; stroke:var(--pipe); stroke-width:17; stroke-linecap:round; stroke-linejoin:round; transition:stroke .28s linear; }
-  .cell .water { fill:none; stroke:var(--water); stroke-width:17; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }   /* liquid overlay — revealed progressively along the pipe (creeps from inlet to outlet) */
+  .cell .water { fill:none; stroke:var(--water); stroke-width:17; stroke-linecap:butt; stroke-linejoin:round; pointer-events:none; }   /* liquid overlay — flat caps so per-cell segments meet flush (no "beads" at seams); round joins keep elbows smooth */
   .cell.filled .pipe { stroke:var(--water); }
-  .cell.accel .acc { fill:none; stroke:#F2711C; stroke-width:5.5; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }   /* Acelerador marker (»» fast-forward) */
+  .cell.accel .pipe { stroke:#F2711C; }   /* Acelerador: the whole tile is orange until the water reaches it */
+  .cell.accel .acc { fill:none; stroke:#fff; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }   /* white »» fast-forward mark, visible over both the orange pipe and the blue water */
   .cell.locked .pipe { stroke:var(--pipe-lock); }
   .cell.locked { cursor:default; }
   .cell .rotor { transition:transform .16s cubic-bezier(.34,1.4,.5,1); }
