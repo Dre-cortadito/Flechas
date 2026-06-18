@@ -75,6 +75,13 @@
   .side.is-right { justify-self:end; text-align:right; }
   .side .n { font:800 24px var(--font-display); font-variant-numeric:tabular-nums; color:var(--accent); }
   .side .l { font:700 9px var(--font-ui); letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-soft); }
+  .lives-row { display:flex; gap:3px; align-items:center; }
+  .lives-row .lh { width:20px; height:19px; display:inline-flex; }
+  .lives-row .lh svg { width:100%; height:100%; }
+  .lives-row .lh.on svg path { fill:#ff6b6b; }
+  .lives-row .lh.off svg path { fill:var(--ink-line); }
+  .lives-row.spill { animation:pshake .3s ease; }
+  @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,4px);} }
   .timer { font:800 clamp(32px,9vw,44px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; transition:color .15s linear; }
   .timer.pen { color:var(--error); }
 
@@ -87,12 +94,18 @@
   .cell .pipe { fill:none; stroke:var(--pipe); stroke-width:17; stroke-linecap:round; stroke-linejoin:round; transition:stroke .28s linear; }
   .cell .water { fill:none; stroke:var(--water); stroke-width:17; stroke-linecap:butt; stroke-linejoin:round; pointer-events:none; }   /* liquid overlay — flat caps so per-cell segments meet flush (no "beads" at seams); round joins keep elbows smooth */
   .cell.filled .pipe { stroke:var(--water); }
-  .cell.accel .pipe { stroke:#F2711C; }   /* Acelerador: the whole tile is orange until the water reaches it */
-  .cell.accel .acc { fill:none; stroke:#fff; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }   /* white »» fast-forward mark, visible over both the orange pipe and the blue water */
-  .cell.locked .pipe { stroke:var(--pipe-lock); }
+  /* special tiles — each a distinct colour you read in a second; white mark stays visible over the blue water */
+  .cell.accel  .pipe { stroke:#F2711C; }   /* Acelerador — faster */
+  .cell.gold   .pipe { stroke:#D9A520; }   /* Oro — time bonus */
+  .cell.resist .pipe { stroke:#2FA39A; }   /* Resistor — slower */
+  .cell.leak   .pipe { stroke:#8E63CE; }   /* Tubería rota — costs a life */
+  .cell.burst  .pipe { stroke:#D7263D; }   /* Sobrecarga — danger, route around */
+  .cell .mk-line { fill:none; stroke:#fff; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+  .cell .mk-fill { fill:#fff; stroke:none; pointer-events:none; }
+  .cell.locked .pipe { stroke:#64748b; }   /* fixed pipe = slate (gold is now the bonus tile) */
   .cell.locked { cursor:default; }
   .cell .rotor { transition:transform .16s cubic-bezier(.34,1.4,.5,1); }
-  .cell .lockdot { fill:var(--pipe-lock); }
+  .cell .lockdot { fill:#e2e8f0; }
   .src .bulb { fill:var(--water); }
   .snk .ring { fill:none; stroke:var(--pipe); stroke-width:11; transition:stroke .28s linear; }
   .snk.filled .ring { stroke:#157145; }
@@ -212,7 +225,7 @@
       <span class="rank-chev">▾</span>
     </div>
     <div class="meta">
-      <div class="side is-left"><div class="n" id="leaks">0</div><div class="l">Fugas</div></div>
+      <div class="side is-left"><div class="lives-row" id="lives-row" aria-label="Vidas"></div><div class="l">Vidas</div></div>
       <div class="timer" id="timer">0:00</div>
       <div class="side is-right"><div class="n" id="board-of">1/5</div><div class="l">Tablero</div></div>
     </div>
@@ -253,10 +266,14 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><circle cx="22" cy="50" r="11" fill="var(--accent-2)"/><path class="pp" d="M22 50 H78"/></svg></div><div class="txt"><b>Fuente</b> (punto rojo) → <b>desagüe</b>. Toca una tubería para <b>girarla 90°</b> y armar el camino.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--water)" d="M14 50 H50 V86"/></svg></div><div class="txt">El <b style="color:var(--water)">agua</b> avanza sola desde la fuente. Conéctala al desagüe y <b style="color:#157145">se completa el tablero</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--error)" d="M14 50 H58"/><path class="pp" style="stroke:var(--error)" d="M70 38 l14 12 l-14 12"/></svg></div><div class="txt"><b style="color:var(--error)">Fuga:</b> si el agua llega a un extremo abierto antes de conectar, se derrama: <b>+8 s</b> y vuelve al inicio.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--pipe-lock)" d="M30 50 H70"/><circle cx="50" cy="50" r="7" fill="var(--pipe-lock)"/></svg></div><div class="txt"><b style="color:var(--pipe-lock)">Tubería fija</b> (dorada): ya está puesta y <b>no gira</b>. Construye a su alrededor.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" d="M30 50 H70"/><path d="M40 38 L52 50 L40 62 M54 38 L66 50 L54 62" fill="none" stroke="#F2711C" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="txt"><b style="color:#F2711C">Acelerador (naranja).</b> Cuando el agua lo cruza, <b>fluye más rápido</b>. Aparece en los últimos tableros.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#64748b" d="M30 50 H70"/><circle cx="50" cy="50" r="7" fill="#e2e8f0"/></svg></div><div class="txt"><b style="color:#64748b">Tubería fija</b> (gris): ya está puesta y <b>no gira</b>. Construye a su alrededor.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#F2711C" d="M30 50 H70"/><path d="M40 38 L52 50 L40 62 M54 38 L66 50 L54 62" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="txt"><b style="color:#F2711C">Acelerador (naranja).</b> El agua <b>fluye más rápido</b> al cruzarlo. Bueno cerca del final, malo al principio.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#2FA39A" d="M30 50 H70"/><path d="M56 38 L46 50 L56 62 M68 38 L58 50 L68 62" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="txt"><b style="color:#2FA39A">Resistor (verde).</b> El agua <b>va más lento</b> — te da tiempo.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#D9A520" d="M30 50 H70"/><path d="M50 36 L55 47 L66 48 L57 55 L60 67 L50 60 L40 67 L43 55 L34 48 L45 47 Z" fill="#fff"/></svg></div><div class="txt"><b style="color:#D9A520">Oro.</b> Si el agua lo cruza, <b>te quita 4 s</b> del tiempo. A veces vale el rodeo.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#8E63CE" d="M30 50 H70"/><path d="M50 37 C58 49 57 59 50 64 C43 59 42 49 50 37 Z" fill="#fff"/></svg></div><div class="txt"><b style="color:#8E63CE">Tubería rota.</b> El agua pasa, pero <b>cuesta una vida</b> ❤. A veces conviene sacrificarla para terminar rápido.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#D7263D" d="M30 50 H70"/><path d="M41 41 L59 59 M59 41 L41 59" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg></div><div class="txt"><b style="color:#D7263D">Sobrecarga.</b> Si el agua entra, <b>pierdes una vida</b> y vuelve al inicio. <b>Rodéala</b>.</div></div>
     <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#0062E3">❄ Congelar.</b> Se llena solo; <b>detiene el agua 5 s</b> mientras giras — pero <b>el reloj sigue</b>.</div></div>
-    <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Tu <b>rango</b> es el <b>tiempo total</b> de los 5 tableros. Las fugas suman segundos.</p>
+    <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Tu <b>rango</b> es el <b>tiempo total</b> de los 5 tableros (las fugas suman segundos). Tienes <b>3 vidas</b> ❤ — si se acaban, termina la partida.</p>
   </div></div>
 
   <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
@@ -293,9 +310,18 @@
   const U=100, GC=6, GR=7, BOARDS=5;
   const SPEED=[0.55,0.8,1.05,1.4,1.8];     // cells/sec the water creeps, per board (board 1 is a gentle intro)
   const LEAD =[5,4.5,4,3.5,3];             // seconds of grace before water starts moving
-  const LOCKN=[0,0,1,2,3];                  // fixed (golden) pipes per board
-  const ACCELN=[0,0,1,1,2];                 // Acelerador tiles per board (boards 3–5): water speeds up through them
+  // ===== tile staging (each board introduces a new wrinkle) =====
+  const LOCKN =[0,1,1,1,1];                  // Tubería fija — can't rotate (board 2+)
+  const ACCELN=[0,0,1,1,2];                 // Acelerador — water faster (board 3+)
+  const GOLDN =[0,0,1,1,1];                 // Oro — bonus: shaves time when water passes (board 3+)
+  const RESISTN=[0,0,0,1,1];                // Resistor — water slower (board 4+)
+  const LEAKN =[0,0,0,1,1];                 // Tubería rota — water passes but costs a life (board 4+)
+  const BURSTN=[0,0,0,0,1];                 // Sobrecarga — if water enters, lose a life + reset (board 5)
   const ACCEL_BOOST=0.6;                    // each filled Acelerador adds this fraction to the flow speed
+  const RESIST_FACTOR=0.5;                  // each filled Resistor multiplies the flow speed by this
+  const GOLD_SECS=4;                        // seconds shaved off your time per gold tile the water reaches
+  const BURST_PEN=10;                       // time penalty when water hits a Sobrecarga
+  const LIVES_MAX=3;                        // hybrid: a few lives just for the hazard tiles
   const LEAK_BUFFER=1.1;                    // water must overrun the network by this many cells before it spills
   const LEAK_PEN=8, LEAK_GRACE=1.3;
   const FREEZE_FILL=16, FREEZE_DUR=5000;
@@ -312,7 +338,7 @@
 
   let grid=[], src={r:0,c:0}, snk={r:0,c:0}, bi=0;
   let running=false, over=false, won=false;
-  let startMs=0, penaltyMs=0, leaks=0, bestSecs=0, bestSecs0=0;
+  let startMs=0, penaltyMs=0, leaks=0, bestSecs=0, bestSecs0=0, lives=LIVES_MAX, failed=false;
   let flowDist=0, leadUntil=0, frozenUntil=0, freezeCharge=0, freezeReady=false;
   let lastTick=0, rafId=null, transitioning=false;
   const board=$('board'), inner=$('board-inner'); let svg=null;
@@ -344,7 +370,7 @@
   function genBoard(idx){
     const rng=mulberry32(fnv('flujo-'+ISO+'-'+idx));
     src={r:(rng()*GR)|0, c:0}; snk={r:(rng()*GR)|0, c:GC-1};
-    grid=Array.from({length:GR},(_,r)=>Array.from({length:GC},(_,c)=>({type:'I',rot:0,locked:false,onPath:false,solvedRot:0,kind:null,mask:0,accel:false,r,c})));
+    grid=Array.from({length:GR},(_,r)=>Array.from({length:GC},(_,c)=>({type:'I',rot:0,locked:false,onPath:false,solvedRot:0,kind:null,mask:0,accel:false,gold:false,resist:false,leak:false,burst:false,r,c})));
     const path=carve(rng);
     const onP=Array.from({length:GR},()=>Array(GC).fill(false));
     for(const p of path) onP[p.r][p.c]=true;
@@ -357,8 +383,14 @@
     const interior=path.slice(1,path.length-1);
     for(let i=interior.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=interior[i]; interior[i]=interior[j]; interior[j]=t; }
     for(let i=0;i<Math.min(LOCKN[idx],interior.length);i++){ const p=interior[i]; const cell=grid[p.r][p.c]; cell.rot=cell.solvedRot; cell.locked=true; }
-    const freeInt=interior.filter(p=>!grid[p.r][p.c].locked);   // Acelerador tiles on the path (not on locked ones)
-    for(let i=0;i<Math.min(ACCELN[idx],freeInt.length);i++){ grid[freeInt[i].r][freeInt[i].c].accel=true; }
+    // path-tile specials (accelerator / gold / resistor / leak), each on its own free path cell
+    let pool=interior.filter(p=>!grid[p.r][p.c].locked); let pi=0;
+    const tag=(n,flag)=>{ for(let i=0;i<n && pi<pool.length;i++,pi++){ grid[pool[pi].r][pool[pi].c][flag]=true; } };
+    tag(ACCELN[idx],'accel'); tag(GOLDN[idx],'gold'); tag(RESISTN[idx],'resist'); tag(LEAKN[idx],'leak');
+    // Sobrecarga (burst) lives OFF the solution path so a safe route always exists — water must be routed around it
+    if(BURSTN[idx]>0){ const offPath=[]; for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cl=grid[r][c]; if(!cl.onPath&&!cl.kind&&!cl.locked) offPath.push(cl); }
+      for(let i=offPath.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=offPath[i]; offPath[i]=offPath[j]; offPath[j]=t; }
+      for(let i=0;i<Math.min(BURSTN[idx],offPath.length);i++) offPath[i].burst=true; }
     for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(cell.locked||cell.kind) continue;
       let nr=(rng()*4)|0; if(cell.onPath&&cell.type!=='X'&&nr===cell.solvedRot) nr=(nr+1)%4; cell.rot=nr; }
     flowDist=0;
@@ -378,6 +410,8 @@
   // ===== render =====
   function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(GC*U)+' '+(GR*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg); }
   const armEnd={1:[50,0],2:[100,50],4:[50,100],8:[0,50]};
+  const MARK={ accel:'M44 38 L54 50 L44 62 M56 38 L66 50 L56 62', resist:'M56 38 L46 50 L56 62 M68 38 L58 50 L68 62', burst:'M41 41 L59 59 M59 41 L41 59',
+    gold:'M50 34 L55 46 L68 47 L58 56 L61 69 L50 61 L39 69 L42 56 L32 47 L45 46 Z', leak:'M50 36 C59 49 58 60 50 65 C42 60 41 49 50 36 Z' };
   function pipeD(mask){ let d=''; for(const b of [BU,BR,BD,BL]){ if(mask&b){ const e=armEnd[b]; d+='M50 50 L'+e[0]+' '+e[1]+' '; } } return d||'M50 50 L50 50'; }
   function cellEl(cell){
     const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','cell'+(cell.locked?' locked':'')+(cell.kind==='src'?' src':'')+(cell.kind==='snk'?' snk':''));
@@ -395,7 +429,8 @@
     }
     g.appendChild(rotor);
     const water=document.createElementNS(SVGNS,'path'); water.setAttribute('class','water'); water.setAttribute('d',''); water.setAttribute('stroke-dasharray','0 9999'); g.appendChild(water); cell._water=water; cell._wlen=0; cell._wdist=Infinity;
-    if(cell.accel){ g.classList.add('accel'); const acc=document.createElementNS(SVGNS,'path'); acc.setAttribute('class','acc'); acc.setAttribute('d','M44 38 L54 50 L44 62 M56 38 L66 50 L56 62'); g.appendChild(acc); }
+    const sp=cell.accel?'accel':cell.gold?'gold':cell.resist?'resist':cell.leak?'leak':cell.burst?'burst':null;
+    if(sp){ g.classList.add(sp); const fillMk=(sp==='gold'||sp==='leak'); const el=document.createElementNS(SVGNS,'path'); el.setAttribute('class', fillMk?'mk-fill':'mk-line'); el.setAttribute('d', MARK[sp]); g.appendChild(el); }
     if(!cell.locked) g.addEventListener('click',()=>rotateCell(cell.r,cell.c));
     return g;
   }
@@ -404,11 +439,12 @@
     if(inlet){ const e=armEnd[inlet]; d='M'+e[0]+' '+e[1]+' L50 50'; for(let i=0;i<outs.length;i++){ const o=armEnd[outs[i]]; d+=(i?' M50 50':'')+' L'+o[0]+' '+o[1]; } }
     else { for(let i=0;i<outs.length;i++){ const o=armEnd[outs[i]]; d+=(i?' ':'')+'M50 50 L'+o[0]+' '+o[1]; } }
     return d||'M50 50 L50 50'; }
-  let curNet=null, accelCells=[];
-  function recomputeNet(){ curNet=computeNet(); const kk=(r,c)=>r+','+c; accelCells=[];
+  let curNet=null, accelCells=[], resistCells=[], goldCells=[], leakCells=[], burstCells=[];
+  function recomputeNet(){ curNet=computeNet(); const kk=(r,c)=>r+','+c; accelCells=[]; resistCells=[]; goldCells=[]; leakCells=[]; burstCells=[];
     for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(!cell._water) continue; const d=curNet.dist.get(kk(r,c));
       if(d===undefined){ cell._water.setAttribute('d',''); cell._water.setAttribute('stroke-dasharray','0 9999'); cell._wlen=0; cell._wdist=Infinity; }
-      else { const inlet=curNet.parent.get(kk(r,c))||null; const mk=maskOf(cell); cell._water.setAttribute('d',waterD(mk,inlet)); cell._wlen=popcount(mk)*50; cell._wdist=d; if(cell.accel) accelCells.push(cell); } }
+      else { const inlet=curNet.parent.get(kk(r,c))||null; const mk=maskOf(cell); cell._water.setAttribute('d',waterD(mk,inlet)); cell._wlen=popcount(mk)*50; cell._wdist=d;
+        if(cell.accel) accelCells.push(cell); if(cell.resist) resistCells.push(cell); if(cell.gold) goldCells.push(cell); if(cell.leak) leakCells.push(cell); if(cell.burst) burstCells.push(cell); } }
     return curNet; }
   function updateWater(){ if(!curNet) return;
     for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(!cell._water||cell._wlen===0) continue;
@@ -436,8 +472,9 @@
     if(!transitioning && startMs && curNet){
       if(curNet.sinkIn){ winBoard(); }
       else {
-        if(!fz && now>=leadUntil){ let mult=1; for(const ac of accelCells){ if(flowDist>=ac._wdist) mult+=ACCEL_BOOST; } flowDist += SPEED[bi]*mult*(dt/1000); }
+        if(!fz && now>=leadUntil){ let mult=1; for(const ac of accelCells){ if(flowDist>=ac._wdist) mult+=ACCEL_BOOST; } for(const rc of resistCells){ if(flowDist>=rc._wdist) mult*=RESIST_FACTOR; } flowDist += SPEED[bi]*mult*(dt/1000); }
         updateWater();
+        checkTriggers(); if(over) return;
         if(flowDist > curNet.max + LEAK_BUFFER) leak();
         const fb=$('flow-bar'); if(fb){ const denom=Math.max(1,curNet.max); const p=Math.min(1, flowDist/denom); fb.style.width=(p*100)+'%'; fb.classList.toggle('warn', p>0.7); }
       }
@@ -450,11 +487,22 @@
   }
 
   function leak(){ leaks++; penaltyMs+=LEAK_PEN*1000; flowDist=0; leadUntil=Date.now()+LEAK_GRACE*1000;
-    $('leaks').textContent=leaks; $('s-leaks').textContent=leaks; const tl=$('t-leaks'); if(tl){ tl.classList.add('hot'); setTimeout(()=>{try{tl.classList.remove('hot');}catch(e){}},600); }
+    { const sl=$('s-leaks'); if(sl) sl.textContent=leaks; } const tl=$('t-leaks'); if(tl){ tl.classList.add('hot'); setTimeout(()=>{try{tl.classList.remove('hot');}catch(e){}},600); }
     board.classList.add('leakflash'); setTimeout(()=>{try{board.classList.remove('leakflash');}catch(e){}},520);
     showToast('¡Fuga! +'+LEAK_PEN+'s', true);
     const tm=$('timer'); tm.classList.add('pen'); setTimeout(()=>{try{tm.classList.remove('pen');}catch(e){}},500);
   }
+  const HEART='<svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C1 9 2.6 5.5 6 5.5c2 0 3.2 1.2 4 2.3 .8-1.1 2-2.3 4-2.3 3.4 0 5 3.5 3.5 6.5C19 16.5 12 21 12 21z"/></svg>';
+  function renderLives(){ const el=$('lives-row'); if(!el) return; let h=''; for(let i=0;i<LIVES_MAX;i++) h+='<span class="lh '+(i<lives?'on':'off')+'">'+HEART+'</span>'; el.innerHTML=h; }
+  function loseLife(label){ lives=Math.max(0,lives-1); renderLives(); const lr=$('lives-row'); if(lr){ lr.classList.add('spill'); setTimeout(()=>{try{lr.classList.remove('spill');}catch(e){}},320); }
+    showToast((label||'Vida')+' −1 ❤', true); if(lives<=0) endGame(true); }
+  function burstHit(){ flowDist=0; penaltyMs+=BURST_PEN*1000; leadUntil=Date.now()+LEAK_GRACE*1000;
+    board.classList.add('leakflash'); setTimeout(()=>{try{board.classList.remove('leakflash');}catch(e){}},520);
+    loseLife('¡Sobrecarga!'); }
+  function checkTriggers(){   // tile effects as the water reaches each one (during the build, before the sink is connected)
+    for(const gc of goldCells){ if(!gc._done && flowDist>=gc._wdist){ gc._done=true; penaltyMs-=GOLD_SECS*1000; showToast('★ Oro −'+GOLD_SECS+'s'); } }
+    for(const lc of leakCells){ if(!lc._done && flowDist>=lc._wdist){ lc._done=true; loseLife('Tubería rota'); if(over) return; } }
+    for(const bc of burstCells){ if(!bc._done && flowDist>=bc._wdist){ bc._done=true; burstHit(); if(over) return; } } }
 
   function winBoard(){ if(transitioning) return; transitioning=true; won=true; recomputeNet(); updateWater();
     board.classList.add('clearflash'); showToast(bi+1<BOARDS?('¡Tablero '+(bi+1)+'!'):'¡Completo!');
@@ -490,20 +538,24 @@
   function showToast(t,leak){ const el=$('toast'); if(!el) return; el.textContent=t; el.classList.toggle('leak',!!leak); el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>{ try{el.classList.remove('show');}catch(e){} },1200); }
 
   // ===== lifecycle =====
-  function startGame(){ bi=0; running=true; over=false; won=false; transitioning=false; leaks=0; penaltyMs=0; startMs=0; flowDist=0; bestSecs0=0;
+  function startGame(){ bi=0; running=true; over=false; won=false; failed=false; transitioning=false; leaks=0; penaltyMs=0; startMs=0; flowDist=0; bestSecs0=0; lives=LIVES_MAX;
     frozenUntil=0; freezeCharge=0; freezeReady=false; lastTick=0;
     bestSecs=+(lsGet('flujo-best-'+ISO)||0);
     genBoard(0); render(); startMs=Date.now(); leadUntil=startMs+LEAD[0]*1000;
-    $('leaks').textContent='0'; $('s-leaks').textContent='0'; $('timer').textContent='0:00'; $('timer').classList.remove('pen');
-    setStatus(); renderRank(); updateFreeze();
+    { const sl=$('s-leaks'); if(sl) sl.textContent='0'; } $('timer').textContent='0:00'; $('timer').classList.remove('pen');
+    renderLives(); setStatus(); renderRank(); updateFreeze();
     $('gate').classList.add('hidden'); rafId=requestAnimationFrame(loop);
   }
-  function endGame(){ if(over) return; over=true; running=false; if(rafId) cancelAnimationFrame(rafId); board.classList.remove('frozen');
+  function endGame(fail){ if(over) return; over=true; running=false; failed=!!fail; if(rafId) cancelAnimationFrame(rafId); board.classList.remove('frozen');
     const secs=Math.round(elapsedSecs()); bestSecs0=secs;
+    const g=$('gate'); g.classList.remove('hidden');
+    if(fail){ bestSecs=+(lsGet('flujo-best-'+ISO)||0); $('timer').textContent=fmt(secs);
+      g.innerHTML='<h2>¡Sin vidas!</h2><p>Una sobrecarga o demasiadas tuberías rotas acabaron la racha.<br>Llegaste al <b>tablero '+(bi+1)+'/'+BOARDS+'</b>.</p>'
+        +'<div class="go-row"><button class="btn" id="again-btn" type="button">Reintentar</button></div>';
+      $('again-btn').addEventListener('click', startGame); return; }
     const prev=+(lsGet('flujo-best-'+ISO)||0); const isBest=!prev||secs<prev; if(isBest){ bestSecs=secs; lsSet('flujo-best-'+ISO,String(secs)); } else bestSecs=prev;
     recordStats(secs);
     const idx=rankFromTime(secs); renderRank(); $('timer').textContent=fmt(secs);
-    const g=$('gate'); g.classList.remove('hidden');
     g.innerHTML='<h2>¡Completado!</h2><div class="v">'+fmt(secs)+'</div><div class="vlbl">'+RANK_NAMES[idx]+'</div>'
       +'<p>5 tableros · '+leaks+' fuga'+(leaks===1?'':'s')+'.<br>'+(isBest?'¡Mejor tiempo de hoy! 🎉':'Mejor de hoy: <b>'+fmt(bestSecs)+'</b>')+'</p>'
       +'<div class="go-row"><button class="btn" id="again-btn" type="button">Jugar de nuevo</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
@@ -551,13 +603,17 @@
 
   applyTheme((lsGet('flujo-theme')==='black')?'black':'light');
   bestSecs=+(lsGet('flujo-best-'+ISO)||0);
-  genBoard(0); render(); setStatus(); renderRank(); updateFreeze();
+  genBoard(0); render(); setStatus(); renderLives(); renderRank(); updateFreeze();
   document.body.classList.add('ready');
 
   try{ window.__flujo={ start:startGame, rotate:(r,c)=>rotateCell(r,c), step:(ms)=>loop(ms),
     solve:()=>{ for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(cell.kind||cell.locked) continue; if(cell.onPath){ cell.rot=cell.solvedRot; if(cell._rotor) cell._rotor.style.transform='rotate('+(cell.rot*90)+'deg)'; } } recomputeNet(); updateWater(); if(curNet.sinkIn) winBoard(); return curNet.sinkIn; },
     net:()=>computeNet(), board:()=>bi, leaks:()=>leaks, over:()=>over, won:()=>won, secs:()=>Math.round(elapsedSecs()), bestSecs:()=>bestSecs0,
     accelCount:()=>accelCells.length, flowDist:()=>flowDist, setFlow:(d)=>{ flowDist=d; updateWater(); }, waterFrac:(r,c)=>{ const cell=grid[r][c]; const da=cell._water&&cell._water.getAttribute("stroke-dasharray"); return da?parseFloat(da)/Math.max(1,cell._wlen):0; },
+    lives:()=>lives, failed:()=>failed, penaltyMs:()=>penaltyMs, recompute:()=>recomputeNet(), checkTriggers:()=>checkTriggers(),
+    setSolved:()=>{ for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(cell.kind||cell.locked) continue; if(cell.onPath){ cell.rot=cell.solvedRot; } } recomputeNet(); },
+    tileCounts:()=>{ const k={lock:0,accel:0,gold:0,resist:0,leak:0,burst:0,burstOnPath:0}; for(const row of grid)for(const cl of row){ if(cl.locked&&!cl.kind)k.lock++; if(cl.accel)k.accel++; if(cl.gold)k.gold++; if(cl.resist)k.resist++; if(cl.leak)k.leak++; if(cl.burst){k.burst++; if(cl.onPath)k.burstOnPath++;} } return k; },
+    hitLeak:()=>loseLife('test'),
     grid:()=>grid, src:()=>src, snk:()=>snk, advance:(d)=>{ flowDist+=d; updateWater(); }, doLeak:()=>leak() }; }catch(e){}
 })();
 </script>
