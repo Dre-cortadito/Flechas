@@ -87,7 +87,8 @@
 
   /* ===== Maze ===== */
   .maze-wrap { width:100%; display:flex; justify-content:center; }
-  .maze { position:relative; border-radius:18px; overflow:hidden; background:var(--board-bg); border:4px solid var(--accent-2); box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .maze { position:relative; border-radius:18px; overflow:hidden; background:var(--board-bg); border:5px solid var(--accent-2); box-shadow:0 3px 12px rgba(0,0,0,.1); }
+  .maze::before, .play::before { content:''; position:absolute; inset:0; border:2.5px solid var(--ink); border-radius:13px; pointer-events:none; z-index:6; }   /* Cascada double-frame: teal outer + dark inner */
   .cell { position:absolute; } .cell.wall { background:var(--wall); }
   .exit { position:absolute; display:flex; align-items:center; justify-content:center; } .exit svg { width:96%; height:96%; }
   .exit .p { fill:none; stroke:var(--success); stroke-width:4.3; stroke-linecap:round; stroke-linejoin:round; }
@@ -112,7 +113,7 @@
 
   /* ===== Play area: swaps between the arrow board (solve) and the big d-pad (move) ===== */
   .play-wrap { width:100%; display:flex; justify-content:center; }
-  .play { position:relative; width:var(--gw); margin:0 auto; background:var(--board-bg); border:4px solid var(--accent-2); border-radius:18px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .play { position:relative; width:var(--gw); margin:0 auto; background:var(--board-bg); border:5px solid var(--accent-2); border-radius:18px; overflow:hidden; box-shadow:0 3px 12px rgba(0,0,0,.1); }
   .play.blank { animation:bpulse .5s ease; }
   @keyframes bpulse { 50% { background:var(--accent-soft); } }
   .play.blank .panel, .play.blank .dpad { opacity:.18; pointer-events:none; }
@@ -126,12 +127,12 @@
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
   /* big d-pad with the move-timer in the centre */
   .dpad { position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:6px; padding:6px; }
-  .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:12px; background:var(--accent-soft); }
-  .dbtn:active, .dbtn.on { background:var(--accent); } .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
-  .dbtn svg { width:48%; height:48%; } .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+  .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:14px; background:transparent; transition:background .12s; }   /* compass feel: no peach box until pressed (full cell stays tappable) */
+  .dbtn:active, .dbtn.on { background:var(--accent-soft); } .dbtn:active .p, .dbtn.on .p { stroke:var(--accent); }
+  .dbtn svg { width:40%; height:40%; } .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
   .db-up { grid-area:1/2; } .db-left { grid-area:2/1; } .db-right { grid-area:2/3; } .db-down { grid-area:3/2; }
-  .mv-timer { grid-area:2/2; display:flex; align-items:center; justify-content:center; font:800 clamp(28px,12vw,56px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; color:var(--accent-2); line-height:1; }
-  .mv-timer.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
+  .mv-timer { grid-area:2/2; display:flex; align-items:center; justify-content:center; font:700 clamp(15px,4.6vw,22px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink-soft); line-height:1; }   /* small — the maze is the star, not this counter */
+  .mv-timer.low { color:var(--error); }
 
   /* ===== Gate / start + result ===== */
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:var(--board-bg); border-radius:12px; text-align:center; padding:24px; }
@@ -220,7 +221,7 @@
       <div class="maze" id="maze">
         <div class="gate" id="gate">
           <h2>Rumbo</h2>
-          <p>Recoge <b>3 de las 5 llaves</b> y llega a la salida (cerrada hasta tener 3). Algunas llaves están <b>tras una puerta</b>: ábrela despejando un tablero de flechas. Elige tu ruta. ¡Lo más rápido posible!</p>
+          <p>Recoge las <b>3 llaves</b> y llega a la salida (cerrada hasta tenerlas). Algunas están <b>tras una puerta</b>: ábrela despejando un tablero de flechas. Elige bien tu ruta. ¡Lo más rápido posible!</p>
           <button class="btn" id="start-btn" type="button">Empezar</button>
         </div>
       </div>
@@ -244,9 +245,9 @@
 
   <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
     <h2>Rumbo</h2>
-    <p>Un laberinto nuevo cada día. Lo <b>recorres libremente</b> con la cruz, recoges <b>3 de las 5 llaves</b> y sales — eligiendo bien tu ruta.</p>
+    <p>Un laberinto nuevo cada día. Lo <b>recorres libremente</b> con la cruz, recoges las <b>3 llaves</b> y sales — eligiendo bien tu ruta.</p>
     <h3>Cómo se juega</h3>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><circle cx="15" cy="15" r="7" fill="none" stroke="#C8860B" stroke-width="4.5"/><path d="M20 20 L31 31 M31 31 L31 26 M31 31 L26 31" stroke="#C8860B" stroke-width="4.5" stroke-linecap="round" fill="none"/></svg></div><div class="txt">Hay <strong style="color:#C8860B">5 llaves</strong>; necesitas <b>3 cualquiera</b>. <b>Cuáles</b> y en qué <b>orden</b> es el reto. La salida abre al tener 3.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><path d="M20 8 L32 20 L20 32 L8 20 Z" fill="#EA9A0C" stroke="#A8650A" stroke-width="2.2" stroke-linejoin="round"/></svg></div><div class="txt">Recoge las <strong style="color:#C8860B">3 llaves</strong> repartidas por el laberinto; el <b>orden</b> de tu ruta es el reto. La salida abre al tenerlas las 3.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/></svg></div><div class="txt">Algunas llaves están <strong style="color:var(--accent)">tras una puerta</strong>: ¿la abres (despejando su tablero) o buscas otra llave más lejos?</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/></svg></div><div class="txt"><strong style="color:var(--accent)">Puerta naranja:</strong> bloquea el <b>único camino</b>. No hay vuelta — hay que abrirla.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--accent-2)" stroke-width="5" stroke-linecap="round"/></svg></div><div class="txt"><strong style="color:var(--accent-2)">Puerta turquesa:</strong> un <b>atajo</b>. Ábrela para acortar… o rodéala por el camino largo. Tú decides.</div></div>
@@ -287,7 +288,7 @@
   const STEP_MS=150;   // free-roam drive speed (no clock — you move freely; doors gate progress)
   const oppDir={U:'D',D:'U',L:'R',R:'L'};
   const BU=100, BCOLS=13, BROWS=10, BCOVER=0.45, BMIN=2;   // wide-short board: fills the full width with small (Cascada-scale) cells
-  const KEYS_TOTAL=5, KEYS_NEED=3, KEYS_GATED=3;   // 5 keys on the map, collect any 3; up to 3 sit behind doors
+  const KEYS_TOTAL=3, KEYS_NEED=3, KEYS_GATED=2;   // exactly 3 keys, all required (route-order puzzle); up to 2 sit behind doors
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // time (seconds) edges; CUT[k] ascending. k=0 -> Maestro(rank 9, t=0), k=9 -> Debutante(rank 0). rank = 9 - band.
   const CUT=[0,30,42,56,72,90,110,134,162,195];
@@ -444,12 +445,13 @@
       if(cy<MR-1 && DG[2*cy+2][2*cx+1]==='#') d+='M'+cx+' '+(cy+1)+' H'+(cx+1)+' ';   // south wall
     }
     const p=document.createElementNS(NS,'path'); p.setAttribute('d',d); p.setAttribute('fill','none'); p.setAttribute('stroke','var(--wall)'); p.setAttribute('stroke-width','0.16'); p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round'); svg.appendChild(p);
-    let ddM='', ddO=''; lockedDoors.forEach(k=>{ const a=k.split(','), r=+a[0], c=+a[1], dir=a[2]; let seg='';   // mandatory = orange gate; optional shortcut = teal gate
-      if(dir==='R') seg='M'+(c+1)+' '+(r+0.06)+' V'+(r+0.94)+' '; else if(dir==='L') seg='M'+c+' '+(r+0.06)+' V'+(r+0.94)+' ';
-      else if(dir==='D') seg='M'+(c+0.06)+' '+(r+1)+' H'+(c+0.94)+' '; else seg='M'+(c+0.06)+' '+r+' H'+(c+0.94)+' ';
-      if(doorType[k]==='opt') ddO+=seg; else ddM+=seg; });
-    const doorPath=(dstr,col)=>{ if(!dstr) return; const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dstr); dp.setAttribute('fill','none'); dp.setAttribute('stroke',col); dp.setAttribute('stroke-width','0.46'); dp.setAttribute('stroke-linecap','butt'); svg.appendChild(dp); };
-    doorPath(ddM,'var(--accent)'); doorPath(ddO,'var(--accent-2)');
+    let bar='', dia='', seen2=new Set(); lockedDoors.forEach(k=>{ const a=k.split(','), r=+a[0], c=+a[1], dir=a[2]; let seg='', mx, my;
+      if(dir==='R'){ seg='M'+(c+1)+' '+(r+0.05)+' V'+(r+0.95)+' '; mx=c+1; my=r+0.5; } else if(dir==='L'){ seg='M'+c+' '+(r+0.05)+' V'+(r+0.95)+' '; mx=c; my=r+0.5; }
+      else if(dir==='D'){ seg='M'+(c+0.05)+' '+(r+1)+' H'+(c+0.95)+' '; mx=c+0.5; my=r+1; } else { seg='M'+(c+0.05)+' '+r+' H'+(c+0.95)+' '; mx=c+0.5; my=r; }
+      const mk=mx+','+my; if(seen2.has(mk)) return; seen2.add(mk);   // each gate once
+      bar+=seg; const s=0.17; dia+='M'+mx+' '+(my-s)+' L'+(mx+s)+' '+my+' L'+mx+' '+(my+s)+' L'+(mx-s)+' '+my+'Z '; });
+    if(bar){ const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',bar); dp.setAttribute('fill','none'); dp.setAttribute('stroke','var(--accent)'); dp.setAttribute('stroke-width','0.34'); dp.setAttribute('stroke-linecap','butt'); svg.appendChild(dp);
+      const dm=document.createElementNS(NS,'path'); dm.setAttribute('d',dia); dm.setAttribute('fill','var(--accent)'); dm.setAttribute('stroke','var(--board-bg)'); dm.setAttribute('stroke-width','0.06'); svg.appendChild(dm); }   // gate + center lock-diamond
     board.appendChild(svg);
     const locked = keysGot < KEYS_NEED, exCol = locked ? 'var(--ink-soft)' : 'var(--success)';
     const ex=document.createElement('div'); ex.className='exit'+(locked?'':' open'); ex.style.cssText='left:'+(exit.c*mc)+'px;top:'+(exit.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;';
