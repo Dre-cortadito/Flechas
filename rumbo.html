@@ -19,13 +19,13 @@
   * { touch-action:manipulation; box-sizing:border-box; }
   :root {
     --bg:#ffffff; --paper:#f5f4f2; --ink:#1c1c1c; --ink-soft:#8a8a8a; --ink-line:#e4e3e1; --box-edge:#5e5e5e;
-    --accent:#1c1c1c; --accent-deep:#000000; --accent-soft:#e6e6e4; --accent-2:#5e5e5e; --success:#1c1c1c; --error:#b03434;
+    --accent:#1c1c1c; --accent-deep:#000000; --accent-soft:#d5d5d2; --accent-2:#5e5e5e; --success:#1c1c1c; --error:#b03434;
     --board-bg:#f0efed; --arrow:#1c1c1c; --wall:#2b2b2b; --door:#8c8c8c; --gw:min(94vw,400px);
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
     --bg:#0d0d0d; --paper:#191919; --ink:#eee; --ink-soft:#8f8f8f; --ink-line:#2a2a2a; --box-edge:#9a9a9a;
-    --accent:#eee; --accent-deep:#fff; --accent-soft:#2e2e2e; --accent-2:#9a9a9a; --success:#eee; --board-bg:#1c1c1c; --arrow:#e6e6e6; --wall:#cfcfcf; --door:#888;
+    --accent:#eee; --accent-deep:#fff; --accent-soft:#3a3a3a; --accent-2:#9a9a9a; --success:#eee; --board-bg:#1c1c1c; --arrow:#e6e6e6; --wall:#cfcfcf; --door:#888;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { overscroll-behavior:none; }
@@ -446,7 +446,7 @@
       if(dir==='R') seg='M'+(c+1)+' '+r+' V'+(r+1)+' '; else if(dir==='L') seg='M'+c+' '+r+' V'+(r+1)+' ';
       else if(dir==='D') seg='M'+c+' '+(r+1)+' H'+(c+1)+' '; else seg='M'+c+' '+r+' H'+(c+1)+' ';
       if(seen2.has(seg)) return; seen2.add(seg); dseg+=seg; });
-    if(dseg){ const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dseg); dp.setAttribute('fill','none'); dp.setAttribute('stroke','var(--door)'); dp.setAttribute('stroke-width','0.16'); dp.setAttribute('stroke-linecap','round'); dp.setAttribute('stroke-linejoin','round'); svg.appendChild(dp); }
+    if(dseg){ const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dseg); dp.setAttribute('fill','none'); dp.setAttribute('stroke','var(--door)'); dp.setAttribute('stroke-width','0.16'); dp.setAttribute('stroke-linecap','butt'); dp.setAttribute('stroke-linejoin','round'); svg.insertBefore(dp, svg.firstChild); }   // door under walls + butt caps → dark wall owns the corner, no grey overflow
     board.appendChild(svg);
     const locked = keysGot < KEYS_NEED, exCol = locked ? 'var(--ink-soft)' : 'var(--success)';
     const ex=document.createElement('div'); ex.className='exit'+(locked?'':' open'); ex.style.cssText='left:'+(exit.c*mc)+'px;top:'+(exit.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;';
