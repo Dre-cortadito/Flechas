@@ -296,7 +296,7 @@
   let phase='move';   // 'move' = roam freely with the d-pad; 'solve' = at a locked door, clear the board to open it
   let lockedDoors=new Set(), doorType={}, totalDoors=0, doorsOpened=0, currentDoor=null;
   let distExit=[], maxDist=1;   // distance-to-exit map (for the progress bar)
-  let dotEl=null, mc=0, cw=0, ch=0, rafId=null;
+  let dotEl=null, mc=0, mzc=0, cw=0, ch=0, rafId=null;   // mc = bottom-board cell, mzc = maze cell (denser)
   let rankBuilt=false, dotsEls=[], fillEl=null, bubbleEl=null, markerEl=null;
   const board=$('maze');
 
@@ -306,7 +306,7 @@
     return '<svg viewBox="0 0 40 40"><path class="p" d="M '+tlx+' '+tly+' L '+(tx-dx*4)+' '+(ty-dy*4)+'"/><path class="p" d="M '+(bx+px*W)+' '+(by+py*W)+' L '+tx+' '+ty+' L '+(bx-px*W)+' '+(by-py*W)+'"/></svg>'; }
 
   // ===== maze generation (deterministic recursive backtracker, thin walls) =====
-  const LW=13, LH=9;   // logical cols/rows — denser, more complex maze (more junctions + dead ends)
+  const LW=23, LH=17;   // logical cols/rows — high-resolution serious maze (many cells, long winding paths)
   function genMaze(){ const rnd=mulberry32(fnv('rumbo-maze-'+ISO)); const Vh=2*LH+1, Vw=2*LW+1;
     const vis=Array.from({length:LH},()=>Array(LW).fill(0));
     const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
@@ -335,7 +335,7 @@
       while(h<q.length){ const [r,c]=q[h++]; for(const k of KEYS){ if(!passable(r,c,k))continue; const [dr,dc]=DIR[k],nr=r+dr,nc=c+dc; if(d[nr][nc]<0){ d[nr][nc]=d[r][c]+1; q.push([nr,nc]); } } } return d; }
     function addDoor(r,c,k,t){ const [dr,dc]=DIR[k], k1=r+','+c+','+k, k2=(r+dr)+','+(c+dc)+','+oppDir[k]; if(lockedDoors.has(k1)) return; lockedDoors.add(k1); lockedDoors.add(k2); doorType[k1]=t; doorType[k2]=t; totalDoors++; }
     for(let pass=0; pass<3; pass++){ const dS=dists(0,0), dE=dists(exit.r,exit.c); const cur=dS[exit.r][exit.c]; if(cur<0) break;
-      let best=null, bestSave=5;                                       // shortcut must save ≥5 cells to be tempting
+      let best=null, bestSave=Math.max(6, Math.round((MC+MR)/5));      // shortcut must save enough cells to be tempting (scales with maze size)
       for(let r=0;r<MR;r++)for(let c=0;c<MC;c++)for(const k of ['R','D']){ const [dr,dc]=DIR[k],nr=r+dr,nc=c+dc; if(nr>=MR||nc>=MC) continue;
         if(DG[2*r+1+dr][2*c+1+dc]!=='#') continue;                     // a currently-closed wall
         if(dS[r][c]<0||dE[nr][nc]<0||dS[nr][nc]<0||dE[r][c]<0) continue;
@@ -427,17 +427,22 @@
   function sizeAll(){ const vw=window.innerWidth||390, vh=window.innerHeight||780;
     const W=Math.min(vw*0.94, 400);                  // target full width
     const B=10;                                       // 5px frame each side (border-box) — add it so the grid fits INSIDE the frame
+    const GAP=12;                                      // gap between the two framed boards
     const availH=Math.max(150, vh - 238);            // room for BOTH boards (header+rank+meta+gauge+pads)
-    // ONE square cell size shared by maze (MC×MR) and board (BCOLS×BROWS). MC===BCOLS, so both end up the SAME width.
-    mc=Math.min((W-B)/MC, (availH-2*B)/(MR+BROWS));
-    const gw=mc*MC+B;
+    // Maze (MC×MR) and board (BCOLS×BROWS) have INDEPENDENT cells but share ONE inner width → frames stay equal width.
+    let IW=W-B;                                        // shared inner grid width
+    const needH=(IW/MC)*MR + (IW/BCOLS)*BROWS + 4*B + GAP;   // height of both grids at full width
+    if(needH>availH) IW*=availH/needH;                 // scale both down together (widths stay equal)
+    mzc=IW/MC;                                         // maze cell (small, dense)
+    mc=IW/BCOLS;                                       // bottom-board cell
+    const gw=IW+B;
     document.documentElement.style.setProperty('--gw', gw+'px'); // rank/meta/gauge match the boards' outer width
-    board.style.width=(mc*MC+B)+'px'; board.style.height=(mc*MR+B)+'px';
-    const play=$('play'); if(play){ play.style.width=(mc*BCOLS+B)+'px'; play.style.height=(mc*BROWS+B)+'px'; }
+    board.style.width=(IW+B)+'px'; board.style.height=(mzc*MR+B)+'px';
+    const play=$('play'); if(play){ play.style.width=(IW+B)+'px'; play.style.height=(mc*BROWS+B)+'px'; }
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit,.keyc').forEach(n=>n.remove());
-    const w=mc*MC, h=mc*MR, NS='http://www.w3.org/2000/svg';
+    const w=mzc*MC, h=mzc*MR, NS='http://www.w3.org/2000/svg';
     const svg=document.createElementNS(NS,'svg'); svg.setAttribute('class','mz-svg'); svg.setAttribute('viewBox','0 0 '+MC+' '+MR); svg.setAttribute('preserveAspectRatio','none');
     svg.style.cssText='position:absolute;left:0;top:0;width:'+w+'px;height:'+h+'px;z-index:1;';
     let d='M0 0 H'+MC+' V'+MR+' H0 Z ';   // outer border
@@ -453,11 +458,11 @@
     const mkDoor=(dstr,dash)=>{ if(!dstr) return; const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dstr); dp.setAttribute('fill','none'); dp.setAttribute('stroke','var(--door)'); dp.setAttribute('stroke-width','0.16'); dp.setAttribute('stroke-linecap','butt'); dp.setAttribute('stroke-linejoin','round'); if(dash) dp.setAttribute('stroke-dasharray','0.2 0.16'); svg.insertBefore(dp, svg.firstChild); };
     mkDoor(mSeg,false); mkDoor(oSeg,true);
     board.appendChild(svg);
-    const ex=document.createElement('div'); ex.className='exit open'; ex.style.cssText='left:'+(exit.c*mc)+'px;top:'+(exit.r*mc)+'px;width:'+mc+'px;height:'+mc+'px;z-index:2;';
+    const ex=document.createElement('div'); ex.className='exit open'; ex.style.cssText='left:'+(exit.c*mzc)+'px;top:'+(exit.r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;z-index:2;';
     ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="13" style="stroke:var(--success)"/><circle class="p" cx="20" cy="20" r="4" style="stroke:var(--success)"/></svg>'; board.appendChild(ex);
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
-    const pad=mc*0.2; dotEl.style.width=(mc-2*pad)+'px'; dotEl.style.height=(mc-2*pad)+'px'; placeDot(); }
-  function placeDot(){ if(!dotEl)return; const pad=mc*0.2; dotEl.style.left=(dot.c*mc+pad)+'px'; dotEl.style.top=(dot.r*mc+pad)+'px'; dotEl.classList.toggle('froze',running&&phase!=='move'); }
+    const pad=mzc*0.2; dotEl.style.width=(mzc-2*pad)+'px'; dotEl.style.height=(mzc-2*pad)+'px'; placeDot(); }
+  function placeDot(){ if(!dotEl)return; const pad=mzc*0.2; dotEl.style.left=(dot.c*mzc+pad)+'px'; dotEl.style.top=(dot.r*mzc+pad)+'px'; dotEl.classList.toggle('froze',running&&phase!=='move'); }
   // ===== phase transitions =====
   function showSolve(){ $('dpad').classList.add('hidden'); $('panel').classList.remove('hidden'); renderPieces(); }
   function showMove(){ $('panel').classList.add('hidden'); $('dpad').classList.remove('hidden'); }
