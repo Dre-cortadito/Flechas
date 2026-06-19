@@ -88,7 +88,7 @@
   .timer.pen { color:var(--error); }
 
   .board-wrap { width:min(94vw,400px); margin:0 auto 0; }
-  .board { position:relative; width:100%; aspect-ratio:6/7; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
+  .board { position:relative; width:100%; aspect-ratio:7/8; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:visible; }
   .cell { cursor:pointer; }
@@ -319,11 +319,11 @@
   const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
 
   // ===== config =====
-  const U=100, GC=6, GR=7, BOARDS=5;
+  const U=100, GC=7, GR=8, BOARDS=5;
   const SPEED=[0.3,0.42,0.55,0.72,0.92];   // cells/sec the water creeps — slow enough to plan around (BioShock-style), ramps to pressure
   const LEAD =[5.5,5,4.5,4,3.5];           // seconds of grace before water starts moving
   // ===== board composition (DENSITY ramps; every board already has terrain + hazards) =====
-  const WALLN =[4,5,6,7,8];                  // immovable wall/machinery blocks (the terrain — shapes the route)
+  const FILLER=[14,11,9,7,6];                // spare movable cells left open; everything else off-route becomes WALL → the route is forced to wind
   const FIXEDN=[1,2,2,3,3];                  // fixed pipes on the path: correct, immovable anchors
   const ACCELN=[1,1,2,2,3];                 // Acelerador — water faster
   const GOLDN =[1,1,1,1,2];                 // Oro — bonus: shaves time when water passes
@@ -331,7 +331,7 @@
   const LEAKN =[1,1,2,2,2];                 // Tubería rota — water passes but costs a life
   const BURSTN=[0,0,1,1,2];                 // Sobrecarga — if water enters, lose a life + reset
   const ALARMN=[0,1,1,1,2];                 // Alarma — route around; if water enters it trips → flow speeds up for the rest of the board
-  const SWAPS =[6,7,8,9,10];                // how many swaps the board is scrambled from solved (≈ swaps to solve)
+  const SCR  =[0.8,1.1,1.5,1.9,2.3];        // scramble depth = this × movable-tile count (heavier each board)
   const ACCEL_BOOST=0.6;                    // each filled Acelerador adds this fraction to the flow speed
   const ALARM_BOOST=0.5;                    // each tripped Alarma multiplies the flow speed by (1+this), permanently for the board
   const RESIST_FACTOR=0.5;                  // each filled Resistor multiplies the flow speed by this
@@ -366,18 +366,22 @@
 
   // ===== generation =====
   function carve(rng){
-    // shortest-ish path (BFS, randomised neighbour order) → a compact solved route, leaving lots of board for walls + hazards
-    const kk=(r,c)=>r+','+c; const prev=new Map(); const seen=new Set([kk(src.r,src.c)]); const q=[{r:src.r,c:src.c}]; let h=0;
-    while(h<q.length){ const cur=q[h++]; if(cur.r===snk.r&&cur.c===snk.c) break;
+    // DFS that wanders DEEP before reaching the sink → a long, winding solution corridor (walls fill the rest, so it's forced)
+    const seen=Array.from({length:GR},()=>Array(GC).fill(false)); const parent=new Map(); const kk=(r,c)=>r+','+c;
+    const stack=[{r:src.r,c:src.c}]; seen[src.r][src.c]=true;
+    while(stack.length){ const cur=stack[stack.length-1]; if(cur.r===snk.r&&cur.c===snk.c) break;
       const dirs=[BU,BR,BD,BL]; for(let i=dirs.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=dirs[i]; dirs[i]=dirs[j]; dirs[j]=t; }
-      for(const b of dirs){ const n=neigh(cur.r,cur.c,b); if(inb(n.r,n.c)&&!seen.has(kk(n.r,n.c))){ seen.add(kk(n.r,n.c)); prev.set(kk(n.r,n.c),cur); q.push(n); } } }
+      let moved=false;
+      for(const b of dirs){ const n=neigh(cur.r,cur.c,b); if(inb(n.r,n.c)&&!seen[n.r][n.c]){ seen[n.r][n.c]=true; parent.set(kk(n.r,n.c),cur); stack.push(n); moved=true; break; } }
+      if(!moved) stack.pop();
+    }
     const path=[]; let cur={r:snk.r,c:snk.c};
-    while(cur){ path.push(cur); cur=prev.get(kk(cur.r,cur.c)); }
+    while(cur){ path.push(cur); cur=parent.get(kk(cur.r,cur.c)); }
     path.reverse(); return path;   // path[0]=src ... last=snk
   }
   function solvedRotFor(mask){ for(let r=0;r<4;r++){ if(rotMask(BASE.I,r)===mask) return {type:'I',rot:r}; }
     for(let r=0;r<4;r++){ if(rotMask(BASE.L,r)===mask) return {type:'L',rot:r}; } return {type:'I',rot:0}; }
-  const FT=['I','I','I','L','L','L','T'];   // no 4-way cross — it connects everything and kills the routing puzzle (BioShock omits it too)
+  const FT=['I','I','I','L','L','L'];   // only straights + elbows (no T or cross) — matches BioShock's piece set
   function snapCell(cl){ return {type:cl.type,rot:cl.rot,accel:cl.accel,gold:cl.gold,resist:cl.resist,leak:cl.leak,burst:cl.burst,alarm:cl.alarm}; }
   function setCell(cl,s){ cl.type=s.type; cl.rot=s.rot; cl.accel=s.accel; cl.gold=s.gold; cl.resist=s.resist; cl.leak=s.leak; cl.burst=s.burst; cl.alarm=s.alarm; }
   function swapData(a,b){ const t=snapCell(a); setCell(a,snapCell(b)); setCell(b,t); a._done=false; b._done=false; }
@@ -385,7 +389,7 @@
     const rng=mulberry32(fnv('flujo-'+ISO+'-'+idx));
     src={r:(rng()*GR)|0, c:0}; snk={r:(rng()*GR)|0, c:GC-1};
     grid=Array.from({length:GR},(_,r)=>Array.from({length:GC},(_,c)=>({type:'I',rot:0,wall:false,fixed:false,onPath:false,kind:null,mask:0,accel:false,gold:false,resist:false,leak:false,burst:false,alarm:false,r,c})));
-    const path=carve(rng);
+    let path=carve(rng); for(let a=0;a<4;a++){ const p2=carve(rng); if(p2.length>path.length) path=p2; }   // keep the longest of several carves → a meatier, windier corridor
     const onP=Array.from({length:GR},()=>Array(GC).fill(false)); for(const p of path) onP[p.r][p.c]=true;
     const g0=grid[src.r][src.c]; g0.kind='src'; g0.mask=dirBit(src, path[1]);
     const gN=grid[snk.r][snk.c]; gN.kind='snk'; gN.mask=dirBit(snk, path[path.length-2]);
@@ -395,20 +399,21 @@
     // fixed-pipe anchors: a few path cells become immovable (correct orientation)
     const interior=shuffle(path.slice(1,path.length-1).slice());
     for(let i=0;i<Math.min(FIXEDN[idx],interior.length);i++){ const p=interior[i]; grid[p.r][p.c].fixed=true; }
-    // off-path cells → walls, then specials, then filler pipes
-    const off=[]; for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ if(!onP[r][c]&&!grid[r][c].kind) off.push(grid[r][c]); }
-    shuffle(off); let oi=0;
-    const give=(n,flag)=>{ for(let i=0;i<n&&oi<off.length;i++,oi++){ const cl=off[oi]; cl.type=FT[(rng()*FT.length)|0]; cl.rot=(rng()*4)|0; cl[flag]=true; } };
-    // hazards FIRST so every board reliably has them, then walls fill the remaining terrain
-    give(LEAKN[idx],'leak'); give(ACCELN[idx],'accel'); give(RESISTN[idx],'resist'); give(BURSTN[idx],'burst'); give(ALARMN[idx],'alarm');
-    for(let n=0;n<WALLN[idx]&&oi<off.length;n++,oi++){ const cl=off[oi]; cl.wall=true; cl.type='W'; }
-    for(;oi<off.length;oi++){ const cl=off[oi]; cl.type=FT[(rng()*FT.length)|0]; cl.rot=(rng()*4)|0; }
+    // EVERY off-corridor cell becomes a WALL → the winding corridor is the only through-route (forces long, hard routes)
+    for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cl=grid[r][c]; if(!onP[r][c]&&!cl.kind){ cl.wall=true; cl.type='W'; } }
+    // then re-open a few DEAD-END pockets (cells touching the corridor at exactly one spot → never a shortcut) for hazards + spare tiles
+    const openN=(r,c)=>{ let n=0; for(const b of [BU,BR,BD,BL]){ const m=neigh(r,c,b); if(inb(m.r,m.c)&&!grid[m.r][m.c].wall) n++; } return n; };
+    const need=[]; const push=(n,f)=>{ for(let i=0;i<n;i++) need.push(f); };
+    push(LEAKN[idx],'leak'); push(ACCELN[idx],'accel'); push(RESISTN[idx],'resist'); push(BURSTN[idx],'burst'); push(ALARMN[idx],'alarm'); push(FILLER[idx],'filler');
+    for(const item of need){ const cand=[]; for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cl=grid[r][c]; if(cl.wall && openN(r,c)===1) cand.push(cl); }
+      if(!cand.length) break; shuffle(cand); const cl=cand[0]; cl.wall=false; cl.type=FT[(rng()*FT.length)|0]; cl.rot=(rng()*4)|0; if(item!=='filler') cl[item]=true; }
     // snapshot the SOLVED arrangement (used by the solve()/reset hooks)
     solvedCells={}; for(let r=0;r<GR;r++)for(let c=0;c<GC;c++) solvedCells[r+','+c]=snapCell(grid[r][c]);
     // SCRAMBLE from solved: swap movable tiles, always pulling a path tile out of place → guaranteed solvable, bounded swaps
     const mov=[], movPath=[]; for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cl=grid[r][c]; if(!cl.kind&&!cl.wall&&!cl.fixed){ mov.push(cl); if(cl.onPath) movPath.push(cl); } }
     const doSwap=()=>{ const a=movPath[(rng()*movPath.length)|0]; let b=mov[(rng()*mov.length)|0]; let g=0; while(b===a&&g++<6) b=mov[(rng()*mov.length)|0]; if(b!==a) swapData(a,b); };
-    for(let s=0;s<SWAPS[idx] && movPath.length && mov.length>1; s++) doSwap();
+    const nSwaps=Math.round(mov.length*SCR[idx]);
+    for(let s=0;s<nSwaps && movPath.length && mov.length>1; s++) doSwap();
     // make sure it doesn't start already connected (a scramble can coincidentally still solve)
     let guard=0; while(movPath.length && mov.length>1 && computeNet().sinkIn && guard++<40) doSwap();
     flowDist=0; selCell=null; alarmMult=1;
