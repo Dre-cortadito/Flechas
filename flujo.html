@@ -387,7 +387,14 @@
   function swapData(a,b){ const t=snapCell(a); setCell(a,snapCell(b)); setCell(b,t); a._done=false; b._done=false; }
   function genBoard(idx){
     const rng=mulberry32(fnv('flujo-'+ISO+'-'+idx));
-    src={r:(rng()*GR)|0, c:0}; snk={r:(rng()*GR)|0, c:GC-1};
+    /* Put the inlet and the sink in OPPOSITE vertical halves (and on
+       opposite columns) so the solution has to cross the whole board —
+       start and end never end up on practically the same row. Randomly
+       flip which half each lands in so some days start high→low, others
+       low→high. */
+    { const half=(GR/2)|0, topFlip=rng()<0.5;
+      const rTop=(rng()*half)|0, rBot=half+((rng()*(GR-half))|0);
+      src={r: topFlip?rTop:rBot, c:0}; snk={r: topFlip?rBot:rTop, c:GC-1}; }
     grid=Array.from({length:GR},(_,r)=>Array.from({length:GC},(_,c)=>({type:'I',rot:0,wall:false,fixed:false,onPath:false,kind:null,mask:0,accel:false,gold:false,resist:false,leak:false,burst:false,alarm:false,r,c})));
     let path=carve(rng); for(let a=0;a<4;a++){ const p2=carve(rng); if(p2.length>path.length) path=p2; }   // keep the longest of several carves → a meatier, windier corridor
     const onP=Array.from({length:GR},()=>Array(GC).fill(false)); for(const p of path) onP[p.r][p.c]=true;
