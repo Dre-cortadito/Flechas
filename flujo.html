@@ -104,6 +104,7 @@
   .cell.resist .pipe { stroke:#5B7C99; }   /* Resistor — cold steel-blue */
   .cell.leak   .pipe { stroke:#7E6E86; }   /* Tubería rota — muted slate-plum */
   .cell.burst  .pipe { stroke:#B23A2E; }   /* Sobrecarga — the one warning colour (danger) */
+  .cell.alarm  .pipe { stroke:#D9A520; }   /* Alarma — amber caution */
   .cell .mk-line { fill:none; stroke:#fff; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
   .cell .mk-fill { fill:#fff; stroke:none; pointer-events:none; }
   .cell.fixed .pipe { stroke:var(--steel); }   /* fixed pipe = steel, bolted-down anchor */
@@ -280,9 +281,9 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--steel)" d="M30 50 H70"/><circle cx="50" cy="50" r="7" fill="var(--steel-dark)"/></svg></div><div class="txt"><b style="color:var(--steel)">Tubería fija</b> (acero): ya está puesta y <b>no se mueve</b>. Un ancla útil — construye a su alrededor.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#C0892E" d="M30 50 H70"/><path d="M40 38 L52 50 L40 62 M54 38 L66 50 L54 62" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="txt"><b style="color:#C0892E">Acelerador.</b> El agua <b>fluye más rápido</b> al cruzarlo. Bueno cerca del final, malo al principio.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#5B7C99" d="M30 50 H70"/><path d="M55 42 L48 50 L55 58 M62 42 L55 50 L62 58" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="txt"><b style="color:#5B7C99">Resistor.</b> El agua <b>va más lento</b> — te da tiempo.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#D9A520" d="M30 50 H70"/><path d="M50 40 L60 50 L50 60 L40 50 Z" fill="#fff"/></svg></div><div class="txt"><b style="color:#D9A520">Oro.</b> Si el agua lo cruza, <b>te quita 4 s</b> del tiempo. A veces vale el rodeo.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#7E6E86" d="M30 50 H70"/><path d="M50 37 C58 49 57 59 50 64 C43 59 42 49 50 37 Z" fill="#fff"/></svg></div><div class="txt"><b style="color:#7E6E86">Tubería rota.</b> El agua pasa, pero <b>cuesta una vida</b> ❤. A veces conviene sacrificarla para terminar rápido.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#B23A2E" d="M30 50 H70"/><path d="M41 41 L59 59 M59 41 L41 59" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg></div><div class="txt"><b style="color:#B23A2E">Sobrecarga.</b> Si el agua entra, <b>pierdes una vida</b> y vuelve al inicio. <b>Rodéala</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:#D9A520" d="M30 50 H70"/><path d="M50 39 L50 55 M50 61 L50 61" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg></div><div class="txt"><b style="color:#D9A520">Alarma.</b> Si el agua entra, <b>el flujo se acelera</b> el resto del tablero (no quita vida, pero te mete prisa). <b>Rodéala</b>.</div></div>
     <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#0062E3">❄ Congelar.</b> Se llena solo; <b>detiene el agua 5 s</b> mientras giras — pero <b>el reloj sigue</b>.</div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Tu <b>rango</b> es el <b>tiempo total</b> de los 5 tableros (las fugas suman segundos). Tienes <b>3 vidas</b> ❤ — si se acaban, termina la partida.</p>
   </div></div>
@@ -329,8 +330,10 @@
   const RESISTN=[0,1,1,2,2];                // Resistor — water slower
   const LEAKN =[1,1,2,2,2];                 // Tubería rota — water passes but costs a life
   const BURSTN=[0,0,1,1,2];                 // Sobrecarga — if water enters, lose a life + reset
+  const ALARMN=[0,1,1,1,2];                 // Alarma — route around; if water enters it trips → flow speeds up for the rest of the board
   const SWAPS =[6,7,8,9,10];                // how many swaps the board is scrambled from solved (≈ swaps to solve)
   const ACCEL_BOOST=0.6;                    // each filled Acelerador adds this fraction to the flow speed
+  const ALARM_BOOST=0.5;                    // each tripped Alarma multiplies the flow speed by (1+this), permanently for the board
   const RESIST_FACTOR=0.5;                  // each filled Resistor multiplies the flow speed by this
   const GOLD_SECS=4;                        // seconds shaved off your time per gold tile the water reaches
   const BURST_PEN=10;                       // time penalty when water hits a Sobrecarga
@@ -352,7 +355,7 @@
   let grid=[], src={r:0,c:0}, snk={r:0,c:0}, bi=0, selCell=null, solvedCells={};
   let running=false, over=false, won=false;
   let startMs=0, penaltyMs=0, leaks=0, bestSecs=0, bestSecs0=0, lives=LIVES_MAX, failed=false;
-  let flowDist=0, leadUntil=0, frozenUntil=0, freezeCharge=0, freezeReady=false;
+  let flowDist=0, leadUntil=0, frozenUntil=0, freezeCharge=0, freezeReady=false, alarmMult=1;
   let lastTick=0, rafId=null, transitioning=false;
   const board=$('board'), inner=$('board-inner'); let svg=null;
 
@@ -375,13 +378,13 @@
   function solvedRotFor(mask){ for(let r=0;r<4;r++){ if(rotMask(BASE.I,r)===mask) return {type:'I',rot:r}; }
     for(let r=0;r<4;r++){ if(rotMask(BASE.L,r)===mask) return {type:'L',rot:r}; } return {type:'I',rot:0}; }
   const FT=['I','I','I','L','L','L','T'];   // no 4-way cross — it connects everything and kills the routing puzzle (BioShock omits it too)
-  function snapCell(cl){ return {type:cl.type,rot:cl.rot,accel:cl.accel,gold:cl.gold,resist:cl.resist,leak:cl.leak,burst:cl.burst}; }
-  function setCell(cl,s){ cl.type=s.type; cl.rot=s.rot; cl.accel=s.accel; cl.gold=s.gold; cl.resist=s.resist; cl.leak=s.leak; cl.burst=s.burst; }
+  function snapCell(cl){ return {type:cl.type,rot:cl.rot,accel:cl.accel,gold:cl.gold,resist:cl.resist,leak:cl.leak,burst:cl.burst,alarm:cl.alarm}; }
+  function setCell(cl,s){ cl.type=s.type; cl.rot=s.rot; cl.accel=s.accel; cl.gold=s.gold; cl.resist=s.resist; cl.leak=s.leak; cl.burst=s.burst; cl.alarm=s.alarm; }
   function swapData(a,b){ const t=snapCell(a); setCell(a,snapCell(b)); setCell(b,t); a._done=false; b._done=false; }
   function genBoard(idx){
     const rng=mulberry32(fnv('flujo-'+ISO+'-'+idx));
     src={r:(rng()*GR)|0, c:0}; snk={r:(rng()*GR)|0, c:GC-1};
-    grid=Array.from({length:GR},(_,r)=>Array.from({length:GC},(_,c)=>({type:'I',rot:0,wall:false,fixed:false,onPath:false,kind:null,mask:0,accel:false,gold:false,resist:false,leak:false,burst:false,r,c})));
+    grid=Array.from({length:GR},(_,r)=>Array.from({length:GC},(_,c)=>({type:'I',rot:0,wall:false,fixed:false,onPath:false,kind:null,mask:0,accel:false,gold:false,resist:false,leak:false,burst:false,alarm:false,r,c})));
     const path=carve(rng);
     const onP=Array.from({length:GR},()=>Array(GC).fill(false)); for(const p of path) onP[p.r][p.c]=true;
     const g0=grid[src.r][src.c]; g0.kind='src'; g0.mask=dirBit(src, path[1]);
@@ -397,7 +400,7 @@
     shuffle(off); let oi=0;
     const give=(n,flag)=>{ for(let i=0;i<n&&oi<off.length;i++,oi++){ const cl=off[oi]; cl.type=FT[(rng()*FT.length)|0]; cl.rot=(rng()*4)|0; cl[flag]=true; } };
     // hazards FIRST so every board reliably has them, then walls fill the remaining terrain
-    give(LEAKN[idx],'leak'); give(ACCELN[idx],'accel'); give(GOLDN[idx],'gold'); give(RESISTN[idx],'resist'); give(BURSTN[idx],'burst');
+    give(LEAKN[idx],'leak'); give(ACCELN[idx],'accel'); give(RESISTN[idx],'resist'); give(BURSTN[idx],'burst'); give(ALARMN[idx],'alarm');
     for(let n=0;n<WALLN[idx]&&oi<off.length;n++,oi++){ const cl=off[oi]; cl.wall=true; cl.type='W'; }
     for(;oi<off.length;oi++){ const cl=off[oi]; cl.type=FT[(rng()*FT.length)|0]; cl.rot=(rng()*4)|0; }
     // snapshot the SOLVED arrangement (used by the solve()/reset hooks)
@@ -408,7 +411,7 @@
     for(let s=0;s<SWAPS[idx] && movPath.length && mov.length>1; s++) doSwap();
     // make sure it doesn't start already connected (a scramble can coincidentally still solve)
     let guard=0; while(movPath.length && mov.length>1 && computeNet().sinkIn && guard++<40) doSwap();
-    flowDist=0; selCell=null;
+    flowDist=0; selCell=null; alarmMult=1;
   }
 
   // ===== connectivity / flow =====
@@ -430,7 +433,7 @@
   function armPt(r,c,b){ return connArm(r,c,b)?armEnd[b]:armStub[b]; }   // a pipe only "passes" its tile once it connects
   // compact marks (≈18px) centred so they sit INSIDE the ~23px pipe rather than spilling over it
   const MARK={ accel:'M45 42 L52 50 L45 58 M53 42 L60 50 L53 58', resist:'M55 42 L48 50 L55 58 M62 42 L55 50 L62 58', burst:'M44 44 L56 56 M56 44 L44 56',
-    gold:'M50 40 L60 50 L50 60 L40 50 Z', leak:'M50 41 C56 49 55 57 50 61 C45 57 44 49 50 41 Z' };
+    gold:'M50 40 L60 50 L50 60 L40 50 Z', leak:'M50 41 C56 49 55 57 50 61 C45 57 44 49 50 41 Z', alarm:'M50 39 L50 55 M50 61 L50 61' };   // "!" warning
   function pipeD(mask,r,c){ const arms=[BU,BR,BD,BL].filter(b=>mask&b); if(!arms.length) return 'M50 50 L50 50';
     const pt=b=>armPt(r,c,b);
     if(arms.length===1){ const e=pt(arms[0]); return 'M50 50 L'+e[0]+' '+e[1]; }
@@ -460,7 +463,7 @@
     }
     g.appendChild(rotor);
     const water=document.createElementNS(SVGNS,'path'); water.setAttribute('class','water'); water.setAttribute('d',''); water.setAttribute('stroke-dasharray','0 9999'); g.appendChild(water); cell._water=water; cell._wlen=0; cell._wdist=Infinity;
-    const sp=cell.accel?'accel':cell.gold?'gold':cell.resist?'resist':cell.leak?'leak':cell.burst?'burst':null;
+    const sp=cell.accel?'accel':cell.resist?'resist':cell.leak?'leak':cell.burst?'burst':cell.alarm?'alarm':null;
     if(sp){ g.classList.add(sp); const fillMk=(sp==='gold'||sp==='leak'); const el=document.createElementNS(SVGNS,'path'); el.setAttribute('class', fillMk?'mk-fill':'mk-line'); el.setAttribute('d', MARK[sp]); g.appendChild(el); }
     if(selCell&&selCell.r===cell.r&&selCell.c===cell.c) g.classList.add('sel');
     if(!cell.kind && !cell.fixed) g.addEventListener('click',()=>onCellClick(cell.r,cell.c));   // movable pipes only
@@ -471,12 +474,12 @@
     if(inlet){ const e=pt(inlet); d='M'+e[0]+' '+e[1]+' L50 50'; for(let i=0;i<outs.length;i++){ const o=pt(outs[i]); d+=(i?' M50 50':'')+' L'+o[0]+' '+o[1]; } }
     else { for(let i=0;i<outs.length;i++){ const o=pt(outs[i]); d+=(i?' ':'')+'M50 50 L'+o[0]+' '+o[1]; } }
     return d||'M50 50 L50 50'; }
-  let curNet=null, accelCells=[], resistCells=[], goldCells=[], leakCells=[], burstCells=[];
-  function recomputeNet(){ curNet=computeNet(); const kk=(r,c)=>r+','+c; accelCells=[]; resistCells=[]; goldCells=[]; leakCells=[]; burstCells=[];
+  let curNet=null, accelCells=[], resistCells=[], goldCells=[], leakCells=[], burstCells=[], alarmCells=[];
+  function recomputeNet(){ curNet=computeNet(); const kk=(r,c)=>r+','+c; accelCells=[]; resistCells=[]; goldCells=[]; leakCells=[]; burstCells=[]; alarmCells=[];
     for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(!cell._water) continue; const d=curNet.dist.get(kk(r,c));
       if(d===undefined){ cell._water.setAttribute('d',''); cell._water.setAttribute('stroke-dasharray','0 9999'); cell._wlen=0; cell._wdist=Infinity; }
       else { const inlet=curNet.parent.get(kk(r,c))||null; const mk=maskOf(cell); cell._water.setAttribute('d',waterD(mk,inlet,r,c)); cell._wlen=popcount(mk)*50; cell._wdist=d;
-        if(cell.accel) accelCells.push(cell); if(cell.resist) resistCells.push(cell); if(cell.gold) goldCells.push(cell); if(cell.leak) leakCells.push(cell); if(cell.burst) burstCells.push(cell); } }
+        if(cell.accel) accelCells.push(cell); if(cell.resist) resistCells.push(cell); if(cell.gold) goldCells.push(cell); if(cell.leak) leakCells.push(cell); if(cell.burst) burstCells.push(cell); if(cell.alarm) alarmCells.push(cell); } }
     return curNet; }
   function updateWater(){ if(!curNet) return;
     for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(!cell._water){ continue; } if(cell._wlen===0){ cell._filled=false; continue; }
@@ -508,7 +511,7 @@
     if(!transitioning && startMs && curNet){
       if(curNet.sinkIn){ winBoard(); }
       else {
-        if(!fz && now>=leadUntil){ let mult=1; for(const ac of accelCells){ if(flowDist>=ac._wdist) mult+=ACCEL_BOOST; } for(const rc of resistCells){ if(flowDist>=rc._wdist) mult*=RESIST_FACTOR; } flowDist += SPEED[bi]*mult*(dt/1000); }
+        if(!fz && now>=leadUntil){ let mult=alarmMult; for(const ac of accelCells){ if(flowDist>=ac._wdist) mult+=ACCEL_BOOST; } for(const rc of resistCells){ if(flowDist>=rc._wdist) mult*=RESIST_FACTOR; } flowDist += SPEED[bi]*mult*(dt/1000); }
         updateWater();
         checkTriggers(); if(over) return;
         if(flowDist > curNet.max + LEAK_BUFFER) leak();
@@ -537,9 +540,9 @@
     board.classList.add('leakflash'); setTimeout(()=>{try{board.classList.remove('leakflash');}catch(e){}},520);
     loseLife('¡Sobrecarga!'); }
   function checkTriggers(){   // tile effects as the water reaches each one (during the build, before the sink is connected)
-    for(const gc of goldCells){ if(!gc._done && flowDist>=gc._wdist){ gc._done=true; penaltyMs-=GOLD_SECS*1000; showToast('★ Oro −'+GOLD_SECS+'s'); } }
     for(const lc of leakCells){ if(!lc._done && flowDist>=lc._wdist){ lc._done=true; loseLife('Tubería rota'); if(over) return; } }
-    for(const bc of burstCells){ if(!bc._done && flowDist>=bc._wdist){ bc._done=true; burstHit(); if(over) return; } } }
+    for(const bc of burstCells){ if(!bc._done && flowDist>=bc._wdist){ bc._done=true; burstHit(); if(over) return; } }
+    for(const ac of alarmCells){ if(!ac._done && flowDist>=ac._wdist){ ac._done=true; alarmMult*=(1+ALARM_BOOST); showToast('¡Alarma! el flujo se acelera', true); } } }
 
   function winBoard(){ if(transitioning) return; transitioning=true; won=true; recomputeNet(); updateWater();
     board.classList.add('clearflash'); showToast(bi+1<BOARDS?('¡Tablero '+(bi+1)+'!'):'¡Completo!');
@@ -651,7 +654,7 @@
     net:()=>computeNet(), board:()=>bi, leaks:()=>leaks, over:()=>over, won:()=>won, secs:()=>Math.round(elapsedSecs()), bestSecs:()=>bestSecs0,
     flowDist:()=>flowDist, setFlow:(d)=>{ flowDist=d; updateWater(); }, waterFrac:(r,c)=>{ const cell=grid[r][c]; const da=cell._water&&cell._water.getAttribute("stroke-dasharray"); return da?parseFloat(da)/Math.max(1,cell._wlen):0; },
     lives:()=>lives, failed:()=>failed, penaltyMs:()=>penaltyMs, recompute:()=>recomputeNet(), checkTriggers:()=>checkTriggers(),
-    tileCounts:()=>{ const k={wall:0,fixed:0,accel:0,gold:0,resist:0,leak:0,burst:0}; for(const row of grid)for(const cl of row){ if(cl.wall)k.wall++; if(cl.fixed)k.fixed++; if(cl.accel)k.accel++; if(cl.gold)k.gold++; if(cl.resist)k.resist++; if(cl.leak)k.leak++; if(cl.burst)k.burst++; } return k; },
+    tileCounts:()=>{ const k={wall:0,fixed:0,accel:0,gold:0,resist:0,leak:0,burst:0,alarm:0}; for(const row of grid)for(const cl of row){ if(cl.wall)k.wall++; if(cl.fixed)k.fixed++; if(cl.accel)k.accel++; if(cl.gold)k.gold++; if(cl.resist)k.resist++; if(cl.leak)k.leak++; if(cl.burst)k.burst++; if(cl.alarm)k.alarm++; } return k; },
     scrambledSinkIn:()=>computeNet().sinkIn, hitLeak:()=>loseLife('test'),
     grid:()=>grid, src:()=>src, snk:()=>snk, advance:(d)=>{ flowDist+=d; updateWater(); }, doLeak:()=>leak() }; }catch(e){}
 })();
