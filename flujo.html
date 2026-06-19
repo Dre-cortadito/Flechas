@@ -319,8 +319,8 @@
 
   // ===== config =====
   const U=100, GC=6, GR=7, BOARDS=5;
-  const SPEED=[0.55,0.8,1.05,1.4,1.8];     // cells/sec the water creeps, per board (board 1 is a gentle intro)
-  const LEAD =[5,4.5,4,3.5,3];             // seconds of grace before water starts moving
+  const SPEED=[0.3,0.42,0.55,0.72,0.92];   // cells/sec the water creeps — slow enough to plan around (BioShock-style), ramps to pressure
+  const LEAD =[5.5,5,4.5,4,3.5];           // seconds of grace before water starts moving
   // ===== board composition (DENSITY ramps; every board already has terrain + hazards) =====
   const WALLN =[4,5,6,7,8];                  // immovable wall/machinery blocks (the terrain — shapes the route)
   const FIXEDN=[1,2,2,3,3];                  // fixed pipes on the path: correct, immovable anchors
@@ -424,16 +424,20 @@
 
   // ===== render =====
   function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(GC*U)+' '+(GR*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg); }
-  const armEnd={1:[50,0],2:[100,50],4:[50,100],8:[0,50]};
+  const armEnd={1:[50,0],2:[100,50],4:[50,100],8:[0,50]};        // full reach — crosses the grout to the neighbour when CONNECTED
+  const armStub={1:[50,7],2:[93,50],4:[50,93],8:[7,50]};         // stops inside its own tile when NOT connected
+  function connArm(r,c,b){ const n=neigh(r,c,b); return inb(n.r,n.c) && (maskOf(grid[n.r][n.c]) & opp(b))!==0; }
+  function armPt(r,c,b){ return connArm(r,c,b)?armEnd[b]:armStub[b]; }   // a pipe only "passes" its tile once it connects
   // compact marks (≈18px) centred so they sit INSIDE the ~23px pipe rather than spilling over it
   const MARK={ accel:'M45 42 L52 50 L45 58 M53 42 L60 50 L53 58', resist:'M55 42 L48 50 L55 58 M62 42 L55 50 L62 58', burst:'M44 44 L56 56 M56 44 L44 56',
     gold:'M50 40 L60 50 L50 60 L40 50 Z', leak:'M50 41 C56 49 55 57 50 61 C45 57 44 49 50 41 Z' };
-  function pipeD(mask){ const arms=[BU,BR,BD,BL].filter(b=>mask&b); if(!arms.length) return 'M50 50 L50 50';
-    if(arms.length===1){ const e=armEnd[arms[0]]; return 'M50 50 L'+e[0]+' '+e[1]; }
-    if(arms.length===2){ const a=armEnd[arms[0]], b=armEnd[arms[1]]; return 'M'+a[0]+' '+a[1]+' L50 50 L'+b[0]+' '+b[1]; }   // one continuous line → round join smooths the elbow
-    let thr=null; for(let i=0;i<arms.length&&!thr;i++) for(let j=i+1;j<arms.length;j++){ if(arms[j]===opp(arms[i])){ thr=[arms[i],arms[j]]; break; } }   // T: pick the straight-through pair, add the stub
-    let d; if(thr){ const a=armEnd[thr[0]],b=armEnd[thr[1]]; d='M'+a[0]+' '+a[1]+' L50 50 L'+b[0]+' '+b[1]; } else { const a=armEnd[arms[0]]; d='M50 50 L'+a[0]+' '+a[1]; }
-    for(const r of arms){ if(thr&&(r===thr[0]||r===thr[1])) continue; const e=armEnd[r]; d+=' M50 50 L'+e[0]+' '+e[1]; }
+  function pipeD(mask,r,c){ const arms=[BU,BR,BD,BL].filter(b=>mask&b); if(!arms.length) return 'M50 50 L50 50';
+    const pt=b=>armPt(r,c,b);
+    if(arms.length===1){ const e=pt(arms[0]); return 'M50 50 L'+e[0]+' '+e[1]; }
+    if(arms.length===2){ const a=pt(arms[0]), b=pt(arms[1]); return 'M'+a[0]+' '+a[1]+' L50 50 L'+b[0]+' '+b[1]; }   // one continuous line → round join smooths the elbow
+    let thr=null; for(let i=0;i<arms.length&&!thr;i++) for(let j=i+1;j<arms.length;j++){ if(arms[j]===opp(arms[i])){ thr=[arms[i],arms[j]]; break; } }   // T: straight-through pair + stub
+    let d; if(thr){ const a=pt(thr[0]),b=pt(thr[1]); d='M'+a[0]+' '+a[1]+' L50 50 L'+b[0]+' '+b[1]; } else { const a=pt(arms[0]); d='M50 50 L'+a[0]+' '+a[1]; }
+    for(const bb of arms){ if(thr&&(bb===thr[0]||bb===thr[1])) continue; const e=pt(bb); d+=' M50 50 L'+e[0]+' '+e[1]; }
     return d; }
   function rectEl(cls,x,y,w,h,rx){ const r=document.createElementNS(SVGNS,'rect'); r.setAttribute('class',cls); r.setAttribute('x',x); r.setAttribute('y',y); r.setAttribute('width',w); r.setAttribute('height',h); if(rx!=null) r.setAttribute('rx',rx); return r; }
   function circEl(cls,cx,cy,r){ const c=document.createElementNS(SVGNS,'circle'); c.setAttribute('class',cls); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',r); return c; }
@@ -447,12 +451,11 @@
     const hit=rectEl('hit',0,0,U,U,0); g.appendChild(hit);
     const rotor=document.createElementNS(SVGNS,'g'); rotor.setAttribute('class','rotor'); rotor.style.transformOrigin='50px 50px'; cell._rotor=rotor;
     if(cell.kind==='src'||cell.kind==='snk'){
-      const pp=document.createElementNS(SVGNS,'path'); pp.setAttribute('class','pipe'); pp.setAttribute('d',pipeD(cell.mask)); rotor.appendChild(pp);
+      const pp=document.createElementNS(SVGNS,'path'); pp.setAttribute('class','pipe'); pp.setAttribute('d',pipeD(cell.mask,cell.r,cell.c)); rotor.appendChild(pp);
       if(cell.kind==='src'){ rotor.appendChild(circEl('node-out',50,50,21)); rotor.appendChild(circEl('node-core',50,50,12)); }   // mechanical inlet feeding water
       else { rotor.appendChild(circEl('node-ring',50,50,20)); rotor.appendChild(circEl('node-ring',50,50,11)); }   // drain grate
     } else {
-      const pp=document.createElementNS(SVGNS,'path'); pp.setAttribute('class','pipe'); pp.setAttribute('d',pipeD(BASE[cell.type])); rotor.appendChild(pp);
-      rotor.style.transform='rotate('+(cell.rot*90)+'deg)';
+      const pp=document.createElementNS(SVGNS,'path'); pp.setAttribute('class','pipe'); pp.setAttribute('d',pipeD(maskOf(cell),cell.r,cell.c)); rotor.appendChild(pp);   // draw the actual (fixed) orientation; connectivity decides reach
       if(cell.fixed){ rotor.appendChild(circEl('lockdot',50,50,7)); }
     }
     g.appendChild(rotor);
@@ -464,15 +467,15 @@
     return g;
   }
   function popcount(m){ let n=0; for(const b of [BU,BR,BD,BL]) if(m&b) n++; return n; }
-  function waterD(mask, inlet){ const arms=[BU,BR,BD,BL].filter(b=>mask&b); const outs=arms.filter(b=>b!==inlet); let d='';
-    if(inlet){ const e=armEnd[inlet]; d='M'+e[0]+' '+e[1]+' L50 50'; for(let i=0;i<outs.length;i++){ const o=armEnd[outs[i]]; d+=(i?' M50 50':'')+' L'+o[0]+' '+o[1]; } }
-    else { for(let i=0;i<outs.length;i++){ const o=armEnd[outs[i]]; d+=(i?' ':'')+'M50 50 L'+o[0]+' '+o[1]; } }
+  function waterD(mask, inlet, r, c){ const arms=[BU,BR,BD,BL].filter(b=>mask&b); const outs=arms.filter(b=>b!==inlet); const pt=b=>armPt(r,c,b); let d='';
+    if(inlet){ const e=pt(inlet); d='M'+e[0]+' '+e[1]+' L50 50'; for(let i=0;i<outs.length;i++){ const o=pt(outs[i]); d+=(i?' M50 50':'')+' L'+o[0]+' '+o[1]; } }
+    else { for(let i=0;i<outs.length;i++){ const o=pt(outs[i]); d+=(i?' ':'')+'M50 50 L'+o[0]+' '+o[1]; } }
     return d||'M50 50 L50 50'; }
   let curNet=null, accelCells=[], resistCells=[], goldCells=[], leakCells=[], burstCells=[];
   function recomputeNet(){ curNet=computeNet(); const kk=(r,c)=>r+','+c; accelCells=[]; resistCells=[]; goldCells=[]; leakCells=[]; burstCells=[];
     for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){ const cell=grid[r][c]; if(!cell._water) continue; const d=curNet.dist.get(kk(r,c));
       if(d===undefined){ cell._water.setAttribute('d',''); cell._water.setAttribute('stroke-dasharray','0 9999'); cell._wlen=0; cell._wdist=Infinity; }
-      else { const inlet=curNet.parent.get(kk(r,c))||null; const mk=maskOf(cell); cell._water.setAttribute('d',waterD(mk,inlet)); cell._wlen=popcount(mk)*50; cell._wdist=d;
+      else { const inlet=curNet.parent.get(kk(r,c))||null; const mk=maskOf(cell); cell._water.setAttribute('d',waterD(mk,inlet,r,c)); cell._wlen=popcount(mk)*50; cell._wdist=d;
         if(cell.accel) accelCells.push(cell); if(cell.resist) resistCells.push(cell); if(cell.gold) goldCells.push(cell); if(cell.leak) leakCells.push(cell); if(cell.burst) burstCells.push(cell); } }
     return curNet; }
   function updateWater(){ if(!curNet) return;
