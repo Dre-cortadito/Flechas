@@ -97,6 +97,15 @@
   .dot { position:absolute; border-radius:50%; background:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.3); transition:top .1s linear,left .1s linear; z-index:3; }
   .dot.froze { filter:grayscale(.75); opacity:.5; }
   .dot.frz { box-shadow:0 0 0 3px var(--freeze-fill), 0 1px 4px rgba(0,0,0,.3); }
+  /* ---- stealth: guard + line of sight ---- */
+  .guard { position:absolute; border-radius:50%; background:var(--error); box-shadow:0 1px 5px rgba(0,0,0,.4); z-index:4; display:flex; align-items:center; justify-content:center; transition:top .1s linear,left .1s linear; }
+  .guard svg{ width:78%; height:78%; } .guard .p{ fill:none; stroke:#fff; stroke-width:3.6; stroke-linecap:round; stroke-linejoin:round; }
+  .los-layer{ position:absolute; inset:0; z-index:1; pointer-events:none; }
+  .los-layer i{ position:absolute; display:block; background:rgba(176,52,52,.20); }
+  .maze.detect{ animation:detectflash .5s ease; }
+  @keyframes detectflash { 0%,100%{ box-shadow:none; } 40%{ box-shadow:inset 0 0 0 6px var(--error); } }
+  .rumbo-toast{ position:absolute; top:8px; left:50%; transform:translateX(-50%) translateY(-6px); background:var(--error); color:#fff; font:800 12px/1 system-ui,sans-serif; letter-spacing:.02em; padding:7px 13px; border-radius:999px; opacity:0; transition:opacity .18s ease, transform .18s ease; z-index:6; pointer-events:none; white-space:nowrap; }
+  .rumbo-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   /* freeze button (family standard) */
   .freeze { width:var(--gw); margin:9px auto 0; }
   .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:9px 12px; border-radius:14px; cursor:pointer; color:var(--freeze); background:rgba(0,98,227,.05); border:2px solid var(--freeze); }
@@ -242,11 +251,11 @@
 
   <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
     <h2>Rumbo</h2>
-    <p>Un laberinto nuevo cada día. Lo <b>recorres libremente</b> con la cruz hasta la <b>salida</b>. El reto es tu <b>ruta</b>: los atajos cuestan un tablero de flechas.</p>
+    <p>Un laberinto nuevo cada día. Avanzas con la cruz hasta la <b>salida</b>, pero un <b>vigilante</b> patrulla tu ruta. Es <b>por turnos</b>: <b>cada paso tuyo mueve al vigilante un paso</b>. Cruza cuando <b>no esté mirando</b>.</p>
     <h3>Cómo se juega</h3>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="11" fill="none" stroke="var(--success)" stroke-width="3.5"/><circle cx="20" cy="20" r="3.5" fill="var(--success)"/></svg></div><div class="txt">Llega a la <strong>salida</strong>. Te cronometra: más rápido, mejor rango.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--door)" stroke-width="4" stroke-linecap="round"/></svg></div><div class="txt"><b>Puerta sólida:</b> bloquea el único paso. <b>Despeja su tablero</b> para abrirla.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><line x1="20" y1="6" x2="20" y2="34" stroke="var(--door)" stroke-width="4" stroke-linecap="round" stroke-dasharray="5 4"/></svg></div><div class="txt"><b>Puerta punteada:</b> un <b>atajo</b>. Despeja su tablero para cortar camino… o <b>da la vuelta</b>. Según lo rápido que resuelvas.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 40 40"><rect x="9" y="9" width="22" height="22" rx="11" fill="var(--error)"/></svg></div><div class="txt"><b>Vigilante:</b> patrulla en línea recta y <b>ve hacia donde mira</b> hasta la primera pared (zona roja). Si te ve, <b>+10 s</b> de castigo. Detrás de una pared estás a salvo. <b>Tócate contra una pared</b> para esperar un turno y dejarlo pasar.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M14 20 L92 20"/><path style="stroke:var(--arrow);fill:none;stroke-width:8.5;stroke-linecap:round;stroke-linejoin:round" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Despejar = toca una flecha con el <b>carril libre</b> hasta vaciar el tablero.</div></div>
     <p class="muted">Tu <strong style="color:var(--accent)">rango</strong> es tu <b>tiempo total</b> hasta la salida: empiezas en <strong style="color:var(--accent)">Maestro/a</strong> y bajas cuanto más tardas. Baja del <strong style="color:var(--accent)">Reto del día</strong> (el tiempo objetivo) y suena <strong style="color:var(--accent)">¡Buen sorbo!</strong></p>
   </div></div>
@@ -298,6 +307,9 @@
   let distExit=[], maxDist=1;   // distance-to-exit map (for the progress bar)
   let dotEl=null, mc=0, mzc=0, cw=0, ch=0, rafId=null;   // mc = bottom-board cell, mzc = maze cell (denser)
   let rankBuilt=false, dotsEls=[], fillEl=null, bubbleEl=null, markerEl=null;
+  // ---- stealth state ----
+  let guard=null, patrol=[], guardIdx=0, guardStep=1, guardFacing='R', watched=new Set(), wasSeen=false, guardEl=null, losLayer=null, seenCount=0;
+  const DETECT_PEN=10;   // seconds added to the run each time a guard spots you (no respawn — penalty only)
   const board=$('maze');
 
   // ---- arrow svg ----
@@ -321,7 +333,7 @@
     }
     DG=g; MR=LH; MC=LW; dot={r:0,c:0}; exit={r:LH-1,c:LW-1};
     const sol=solvePath(); solSteps=sol?sol.length:20; retoSecs=55+(fnv('rumbo-reto-'+ISO)%9)*5;   // 55–95s, date-seeded so the family landing shows the same target
-    placeDoors(); computeDist();
+    placeDoors(); computeDist(); buildPatrol();
   }
   // movement is on LOGICAL cells; a move is allowed only if the wall segment between cells is open (doors don't affect pathing)
   function canMove(r,c,dr,dc){ const nr=r+dr,nc=c+dc; if(nr<0||nr>=MR||nc<0||nc>=MC) return false; return DG[2*r+1+dr][2*c+1+dc]==='.'; }
@@ -329,14 +341,15 @@
       for(const k of KEYS){ const [dr,dc]=DIR[k]; if(canMove(r,c,dr,dc)){ const key2=(r+dr)+','+(c+dc); if(!seen.has(key2)){ seen.add(key2); q.push([r+dr,c+dc,pa.concat(k)]); } } } } return null; }
   // ROUTE doors — the whole puzzle. MANDATORY = bridges (must solve to pass). OPTIONAL = engineered shortcuts
   // (a closed wall opened into a short route + a door on it): solve its board to cut through, or walk the long way.
-  const FREE_ROAM=true;   // TEMP: doors off so you can navigate the maze freely. Set false to bring the solve-doors back.
+  const FREE_ROAM=false;   // doors on
+  const STEALTH=true;      // stealth slice: exactly ONE mandatory Cascada door on the route, no optional shortcuts
   function placeDoors(){ lockedDoors=new Set(); doorType={}; doorsOpened=0; currentDoor=null; totalDoors=0;
     if(FREE_ROAM) return;
     const passable=(r,c,k)=>{ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; return !(nr<0||nr>=MR||nc<0||nc>=MC) && DG[2*r+1+dr][2*c+1+dc]==='.'; };
     function dists(sr,sc){ const d=Array.from({length:MR},()=>Array(MC).fill(-1)); d[sr][sc]=0; const q=[[sr,sc]]; let h=0;
       while(h<q.length){ const [r,c]=q[h++]; for(const k of KEYS){ if(!passable(r,c,k))continue; const [dr,dc]=DIR[k],nr=r+dr,nc=c+dc; if(d[nr][nc]<0){ d[nr][nc]=d[r][c]+1; q.push([nr,nc]); } } } return d; }
     function addDoor(r,c,k,t){ const [dr,dc]=DIR[k], k1=r+','+c+','+k, k2=(r+dr)+','+(c+dc)+','+oppDir[k]; if(lockedDoors.has(k1)) return; lockedDoors.add(k1); lockedDoors.add(k2); doorType[k1]=t; doorType[k2]=t; totalDoors++; }
-    for(let pass=0; pass<3; pass++){ const dS=dists(0,0), dE=dists(exit.r,exit.c); const cur=dS[exit.r][exit.c]; if(cur<0) break;
+    if(!STEALTH) for(let pass=0; pass<3; pass++){ const dS=dists(0,0), dE=dists(exit.r,exit.c); const cur=dS[exit.r][exit.c]; if(cur<0) break;
       let best=null, bestSave=Math.max(6, Math.round((MC+MR)/5));      // shortcut must save enough cells to be tempting (scales with maze size)
       for(let r=0;r<MR;r++)for(let c=0;c<MC;c++)for(const k of ['R','D']){ const [dr,dc]=DIR[k],nr=r+dr,nc=c+dc; if(nr>=MR||nc>=MC) continue;
         if(DG[2*r+1+dr][2*c+1+dc]!=='#') continue;                     // a currently-closed wall
@@ -349,12 +362,45 @@
     function bfsP(block){ const seen=new Set(['0,0']),prev=new Map(); const q=[[0,0]]; let h=0; while(h<q.length){ const [r,c]=q[h++]; if(r===exit.r&&c===exit.c) break; for(const k of KEYS){ if(!okEdge(r,c,k,block))continue; const [dr,dc]=DIR[k],nk=(r+dr)+','+(c+dc); if(!seen.has(nk)){seen.add(nk);prev.set(nk,[r,c,k]);q.push([r+dr,c+dc]);} } } return seen.has(exit.r+','+exit.c)?prev:null; }
     const prev=bfsP(null); if(!prev) return; const sp=[]; { let cur=exit.r+','+exit.c; while(cur!=='0,0'){ const p=prev.get(cur); if(!p)break; sp.push({r:p[0],c:p[1],d:p[2]}); cur=p[0]+','+p[1]; } sp.reverse(); }
     const mand=[]; for(const e of sp){ const key=e.r+','+e.c+','+e.d; if(lockedDoors.has(key)) continue; if(!bfsP(key)) mand.push(e); }
+    if(STEALTH){ if(mand.length){ const e=mand[(mand.length/2)|0]; addDoor(e.r,e.c,e.d,'mand'); } return; }   // one door on the route
     const stepm=Math.max(1,Math.ceil(mand.length/2)); for(let i=0,n=0;i<mand.length&&n<2;i+=stepm,n++) addDoor(mand[i].r,mand[i].c,mand[i].d,'mand');
   }
   function computeDist(){ distExit=Array.from({length:MR},()=>Array(MC).fill(-1)); distExit[exit.r][exit.c]=0; const q=[[exit.r,exit.c]]; let h=0;
     const pass=(r,c,k)=>{ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; return !(nr<0||nr>=MR||nc<0||nc>=MC) && DG[2*r+1+dr][2*c+1+dc]==='.'; };
     while(h<q.length){ const [r,c]=q[h++]; for(const k of KEYS){ if(!pass(r,c,k))continue; const [dr,dc]=DIR[k],nr=r+dr,nc=c+dc; if(distExit[nr][nc]<0){ distExit[nr][nc]=distExit[r][c]+1; q.push([nr,nc]); } } }
     maxDist=Math.max(1, distExit[0][0]); }
+
+  // ===== stealth: one deterministic patrolling guard with line of sight =====
+  function dirBetween(a,b){ if(b.r<a.r) return 'U'; if(b.r>a.r) return 'D'; if(b.c<a.c) return 'L'; if(b.c>a.c) return 'R'; return null; }
+  // patrol = a contiguous slice of the solution route, so the guard actually threatens your path. It paces it forever.
+  function buildPatrol(){ guard=null; patrol=[]; watched=new Set(); wasSeen=false; seenCount=0; guardIdx=0; guardStep=1; guardFacing='R';
+    const sol=solvePath(); if(!sol||sol.length<8) return;
+    const cells=[{r:0,c:0}]; let r=0,c=0; for(const k of sol){ const [dr,dc]=DIR[k]; r+=dr; c+=dc; cells.push({r,c}); }
+    const L=Math.max(5, Math.min(9, (cells.length/4)|0));
+    let s=Math.floor(cells.length*0.3); s=Math.max(1, Math.min(s, cells.length-L-1));
+    patrol=cells.slice(s, s+L); if(patrol.length<2){ patrol=[]; return; }
+    guard={r:patrol[0].r, c:patrol[0].c}; guardFacing=dirBetween(patrol[0],patrol[1])||'R'; computeWatched(); }
+  // sight casts straight ahead in the facing direction until a wall stops it — you're safe behind a wall
+  function computeWatched(){ watched=new Set(); if(!guard) return; const [dr,dc]=DIR[guardFacing]; let r=guard.r, c=guard.c;
+    for(let i=0;i<MR+MC;i++){ if(DG[2*r+1+dr][2*c+1+dc]==='#') break; r+=dr; c+=dc; if(r<0||r>=MR||c<0||c>=MC) break; watched.add(r+','+c); } }
+  // one guard step per player tick; ping-pong along the patrol; detection = time penalty (no respawn)
+  function tickGuard(){ if(!guard||patrol.length<2) return;
+    let next=guardIdx+guardStep; if(next>patrol.length-1||next<0){ guardStep=-guardStep; next=guardIdx+guardStep; }
+    const a=patrol[guardIdx], b=patrol[next]; guardIdx=next;
+    guard={r:b.r, c:b.c}; const f=dirBetween(a,b); if(f) guardFacing=f; computeWatched();
+    const seen=watched.has(dot.r+','+dot.c);
+    if(seen && !wasSeen){ seenCount++; runMs+=DETECT_PEN*1000; flashDetect(); }
+    wasSeen=seen; renderGuard(); }
+  function flashDetect(){ board.classList.remove('detect'); void board.offsetWidth; board.classList.add('detect'); setTimeout(()=>{ try{ board.classList.remove('detect'); }catch(e){} },520);
+    let t=document.getElementById('rumbo-toast'); if(!t){ t=document.createElement('div'); t.id='rumbo-toast'; t.className='rumbo-toast'; board.appendChild(t); }
+    t.textContent='¡Te vieron! +'+DETECT_PEN+'s'; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>{ try{ t.classList.remove('show'); }catch(e){} },1200); }
+  function renderGuard(){ if(!losLayer){ losLayer=document.createElement('div'); losLayer.className='los-layer'; board.appendChild(losLayer); }
+    if(!guardEl){ guardEl=document.createElement('div'); guardEl.className='guard'; board.appendChild(guardEl); }
+    if(!guard){ guardEl.style.display='none'; losLayer.innerHTML=''; return; }
+    guardEl.style.display='';
+    const pad=mzc*0.2; guardEl.style.left=(guard.c*mzc+pad)+'px'; guardEl.style.top=(guard.r*mzc+pad)+'px'; guardEl.style.width=(mzc-2*pad)+'px'; guardEl.style.height=(mzc-2*pad)+'px';
+    guardEl.innerHTML=chevSVG(guardFacing);
+    let h=''; watched.forEach(k=>{ const a=k.split(','), r=+a[0], c=+a[1]; h+='<i style="left:'+(c*mzc)+'px;top:'+(r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;"></i>'; }); losLayer.innerHTML=h; }
 
   // ===== mini board (deterministic clearable stream) =====
   const Dx=[0,1,0,-1], Dy=[-1,0,1,0];   // up,right,down,left (engine dirs)
@@ -463,7 +509,7 @@
     const ex=document.createElement('div'); ex.className='exit open'; ex.style.cssText='left:'+(exit.c*mzc)+'px;top:'+(exit.r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;z-index:2;';
     ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="13" style="stroke:var(--success)"/><circle class="p" cx="20" cy="20" r="4" style="stroke:var(--success)"/></svg>'; board.appendChild(ex);
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
-    const pad=mzc*0.2; dotEl.style.width=(mzc-2*pad)+'px'; dotEl.style.height=(mzc-2*pad)+'px'; placeDot(); }
+    const pad=mzc*0.2; dotEl.style.width=(mzc-2*pad)+'px'; dotEl.style.height=(mzc-2*pad)+'px'; placeDot(); renderGuard(); }
   function placeDot(){ if(!dotEl)return; const pad=mzc*0.2; dotEl.style.left=(dot.c*mzc+pad)+'px'; dotEl.style.top=(dot.r*mzc+pad)+'px'; dotEl.classList.toggle('froze',running&&phase!=='move'); }
   // ===== phase transitions =====
   function showSolve(){ $('dpad').classList.add('hidden'); $('panel').classList.remove('hidden'); renderPieces(); }
@@ -475,10 +521,10 @@
 
   // ===== movement (free roam; a locked door triggers the solve) =====
   function step(d){ if(won||!running||phase!=='move') return false; startRun(); const [dr,dc]=DIR[d], nr=dot.r+dr, nc=dot.c+dc;
-    if(nr<0||nr>=MR||nc<0||nc>=MC) return false;
-    if(DG[2*dot.r+1+dr][2*dot.c+1+dc]==='#') return false;                  // wall → bump
+    if(nr<0||nr>=MR||nc<0||nc>=MC){ tickGuard(); return false; }            // edge bump = wait a tick (let the guard pass)
+    if(DG[2*dot.r+1+dr][2*dot.c+1+dc]==='#'){ tickGuard(); return false; }  // wall bump = wait a tick
     if(lockedDoors.has(dot.r+','+dot.c+','+d)){ enterSolve(d); return false; }   // locked door → solve to open
-    dot.r=nr; dot.c=nc; placeDot();
+    dot.r=nr; dot.c=nc; placeDot(); tickGuard();                            // each player move advances the guard one cell
     if(dot.r===exit.r&&dot.c===exit.c) winGame();   // reach the exit, however you routed
     return true; }
   function chevSVG(d){ const p={U:'M9 26 L20 14 L31 26', D:'M9 14 L20 26 L31 14', L:'M26 9 L14 20 L26 31', R:'M14 9 L26 20 L14 31'}[d];
@@ -613,6 +659,7 @@
     sizeAll(); buildBigPad(); placeDot(); buildRankTrack(); showMove(); drawHUD();
     window.__rumbo={ start:startGame, step, tapPiece, solve:()=>solvePath(), phase:()=>phase, pieces:()=>Object.keys(pcs).length, doorsLeft:()=>totalDoors-doorsOpened, totalDoors:()=>totalDoors,
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
+      guardDbg:()=>({ guard:guard?{...guard}:null, facing:guardFacing, patrol:patrol.map(p=>({...p})), idx:guardIdx, watched:[...watched], seenCount, wasSeen, runMs }),
       solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<120){ const before=Object.keys(pcs).length; for(const id of Object.keys(pcs).map(Number)){ if(pcs[id]&&bLaneClear(pcs[id])) tapPiece(id); } if(Object.keys(pcs).length===before) break; g++; } },
       state:()=>({dot:{...dot},exit:{...exit},boards,won,running,elapsedSecs:elapsedSecs(),rank:won?finalRank:rankFromTime(elapsedSecs()),reto:retoSecs,sol:solSteps,cols:MC,rows:MR,doorsLeft:totalDoors-doorsOpened,totalDoors}) };
   }catch(e){ try{ console.error(e); }catch(_){} }
