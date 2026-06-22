@@ -319,7 +319,7 @@
   let dotEl=null, mc=0, mzc=0, cw=0, ch=0, rafId=null;   // mc = bottom-board cell, mzc = maze cell (denser)
   let rankBuilt=false, dotsEls=[], fillEl=null, bubbleEl=null, markerEl=null;
   // ---- stealth state ----
-  let enemies=[], watchedSet=new Set(), enemyLayer=null, seenCount=0;   // real-time stealth enemies
+  let enemies=[], watchedSet=new Set(), enemyLayer=null, zoneLayer=null, spriteEls=[], spritesDirty=true, seenCount=0;   // real-time stealth enemies
   const board=$('maze');
 
   // ---- arrow svg ----
@@ -328,7 +328,7 @@
     return '<svg viewBox="0 0 40 40"><path class="p" d="M '+tlx+' '+tly+' L '+(tx-dx*4)+' '+(ty-dy*4)+'"/><path class="p" d="M '+(bx+px*W)+' '+(by+py*W)+' L '+tx+' '+ty+' L '+(bx-px*W)+' '+(by-py*W)+'"/></svg>'; }
 
   // ===== maze generation (deterministic recursive backtracker, thin walls) =====
-  const LW=23, LH=17;   // logical cols/rows — high-resolution serious maze (many cells, long winding paths)
+  const LW=17, LH=12;   // logical cols/rows — fewer, bigger cells so vision cones & enemies read clearly (stealth needs legibility)
   function genMaze(){ const rnd=mulberry32(fnv('rumbo-maze-'+ISO)); const Vh=2*LH+1, Vw=2*LW+1;
     const vis=Array.from({length:LH},()=>Array(LW).fill(0));
     const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
@@ -392,7 +392,7 @@
   // ===== stealth: real-time enemies — patrolling guards, sweeping cameras, laser tripwires, searchlights =====
   function dirBetween(a,b){ if(b.r<a.r) return 'U'; if(b.r>a.r) return 'D'; if(b.c<a.c) return 'L'; if(b.c>a.c) return 'R'; return null; }
   const PEN={guard:10,camera:5,laser:8,light:8};   // seconds added when each kind of enemy spots you (no respawn)
-  const SIGHT=5;                                    // vision range in cells (rays stop at walls)
+  const SIGHT=4;                                    // vision range in cells (rays stop at walls) — short enough to read & dodge
   const openDirs=(r,c)=>KEYS.filter(k=>{ const [dr,dc]=DIR[k]; return DG[2*r+1+dr] && DG[2*r+1+dr][2*c+1+dc]==='.'; });
   function rayCells(r,c,facing,range){ const out=[]; const [dr,dc]=DIR[facing]; let rr=r,cc=c;
     for(let i=0;i<range;i++){ if(!DG[2*rr+1+dr] || DG[2*rr+1+dr][2*cc+1+dc]==='#') break; rr+=dr; cc+=dc; if(rr<0||rr>=MR||cc<0||cc>=MC) break; out.push(rr+','+cc); } return out; }
@@ -400,19 +400,27 @@
   function routeFrom(start,len,rng){ const cells=[{r:start.r,c:start.c}]; let cur={r:start.r,c:start.c}, prev=null;
     for(let i=0;i<len;i++){ let opts=openDirs(cur.r,cur.c); if(opts.length>1 && prev) opts=opts.filter(k=>k!==oppDir[prev]); if(!opts.length) break;
       const k=opts[(rng()*opts.length)|0]; const [dr,dc]=DIR[k]; cur={r:cur.r+dr,c:cur.c+dc}; cells.push({r:cur.r,c:cur.c}); prev=k; } return cells; }
-  function buildEnemies(){ enemies=[]; watchedSet=new Set(); seenCount=0;
+  function buildEnemies(){ enemies=[]; watchedSet=new Set(); seenCount=0; spritesDirty=true;
     const rng=mulberry32(fnv('rumbo-enemy-'+ISO));
-    const far=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined&&ds>4 && !(r<=2&&c<=2) && !(r>=exit.r-2&&c>=exit.c-2); };
-    const pick=()=>{ for(let t=0;t<300;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(far(r,c)) return {r,c}; } return {r:(MR/2)|0,c:(MC/2)|0}; };
-    for(let i=0;i<2;i++){ const path=routeFrom(pick(), 7+((rng()*4)|0), rng); if(path.length<2) continue;
-      enemies.push({type:'guard', path, idx:0, dir:1, facing:dirBetween(path[0],path[1])||'R', r:path[0].r, c:path[0].c, acc:0, ms:360+((rng()*120)|0), sawYou:false}); }
-    for(let i=0;i<2;i++){ const s=pick(); let seq=openDirs(s.r,s.c); if(seq.length<2) seq=['L','R'];
-      enemies.push({type:'camera', r:s.r, c:s.c, seq, si:0, facing:seq[0], acc:0, ms:820, sawYou:false}); }
-    { const s=pick(); const od=openDirs(s.r,s.c); const horiz=od.includes('L')||od.includes('R'); const axis=horiz?['U','D']:['L','R'];
-      let beam=[s.r+','+s.c]; for(const k of axis) for(const cc of rayCells(s.r,s.c,k,SIGHT)) beam.push(cc);
-      enemies.push({type:'laser', r:s.r, c:s.c, beam:[...new Set(beam)], on:true, acc:0, onMs:1500, offMs:1400, sawYou:false}); }
-    { const s=pick(); const path=routeFrom(s, 5+((rng()*3)|0), rng);
-      enemies.push({type:'light', path:path.length>1?path:[s,{r:s.r,c:s.c}], idx:0, dir:1, r:s.r, c:s.c, acc:0, ms:430, sawYou:false}); }
+    const placed=[];
+    const startD=distExit[0]&&distExit[0][0]||1;
+    const farOk=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>5 && (startD-ds)>4 && !(r<=2&&c<=2) && !(r>=exit.r-3&&c>=exit.c-3); };  // away from BOTH start and exit
+    const spaced=(r,c)=>placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=4);   // never stack hazards on the same little corridor
+    const isStraight=(r,c)=>{ const o=openDirs(r,c); return o.length===2 && ((o.includes('L')&&o.includes('R'))||(o.includes('U')&&o.includes('D'))); };   // chokepoint
+    const isJunction=(r,c)=>openDirs(r,c).length>=3;   // corner/intersection / open
+    const pick=(test)=>{ for(let t=0;t<600;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&spaced(r,c)&&test(r,c)) return {r,c}; }
+      for(let t=0;t<600;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&test(r,c)) return {r,c}; } return null; };
+    // GUARD — patrols a loop/corridor (braiding gives a way around it)
+    { const s=pick((r,c)=>openDirs(r,c).length>=2); if(s){ const path=routeFrom(s, 9+((rng()*4)|0), rng);
+      if(path.length>=2){ enemies.push({type:'guard', path, idx:0, dir:1, facing:dirBetween(path[0],path[1])||'R', r:path[0].r, c:path[0].c, acc:0, ms:760, sawYou:false}); placed.push({r:path[0].r,c:path[0].c}); } } }
+    // CAMERA — guards a corner/intersection, sweeps its open directions
+    { const s=pick(isJunction)||pick((r,c)=>openDirs(r,c).length>=2); if(s){ let seq=openDirs(s.r,s.c); if(seq.length<2) seq=['L','R'];
+      enemies.push({type:'camera', r:s.r, c:s.c, seq, si:0, facing:seq[0], acc:0, ms:1600, sawYou:false}); placed.push(s); } }
+    // LASER — a tripwire on a straight corridor; pure timing chokepoint
+    { const s=pick(isStraight); if(s){ enemies.push({type:'laser', r:s.r, c:s.c, beam:[s.r+','+s.c], on:true, acc:0, onMs:1900, offMs:1500, sawYou:false}); placed.push(s); } }
+    // REFLECTOR — roams an open area, lights a 3×3 blob; stay in shadow
+    { const s=pick(isJunction)||pick((r,c)=>openDirs(r,c).length>=2); if(s){ const path=routeFrom(s, 6+((rng()*3)|0), rng);
+      enemies.push({type:'light', path:path.length>1?path:[s,{r:s.r,c:s.c}], idx:0, dir:1, r:s.r, c:s.c, acc:0, ms:680, sawYou:false}); placed.push(s); } }
     computeWatch(); }
   function computeWatch(){ watchedSet=new Set();
     for(const e of enemies){ let z=[];
@@ -437,16 +445,20 @@
     let t=document.getElementById('rumbo-toast'); if(!t){ t=document.createElement('div'); t.id='rumbo-toast'; t.className='rumbo-toast'; board.appendChild(t); }
     const nm={guard:'¡Guardia!',camera:'¡Cámara!',laser:'¡Láser!',light:'¡Reflector!'}[type]||'¡Te vieron!';
     t.textContent=nm+' +'+pen+'s'; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>{ try{ t.classList.remove('show'); }catch(e){} },1200); }
-  function renderEnemies(){ if(!enemyLayer){ enemyLayer=document.createElement('div'); enemyLayer.className='enemy-layer'; enemyLayer.style.cssText='position:absolute;inset:0;z-index:3;pointer-events:none;'; board.appendChild(enemyLayer); }
-    if(!enemies.length){ enemyLayer.innerHTML=''; return; }
-    let h='';
-    for(const e of enemies){ if(!e.zone) continue; for(const k of e.zone){ const a=k.split(','),r=+a[0],c=+a[1]; h+='<i class="zone z-'+e.type+'" style="left:'+(c*mzc)+'px;top:'+(r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;"></i>'; } }
-    for(const e of enemies){ const x=e.c*mzc, y=e.r*mzc, m=mzc;
-      if(e.type==='guard'){ h+='<div class="en en-guard" style="left:'+(x+m*0.16)+'px;top:'+(y+m*0.16)+'px;width:'+(m*0.68)+'px;height:'+(m*0.68)+'px;">'+chevSVG(e.facing)+'</div>'; }
-      else if(e.type==='camera'){ h+='<div class="en en-cam" style="left:'+(x+m*0.14)+'px;top:'+(y+m*0.14)+'px;width:'+(m*0.72)+'px;height:'+(m*0.72)+'px;">'+chevSVG(e.facing)+'</div>'; }
-      else if(e.type==='laser'){ h+='<div class="en en-laser'+(e.on?' on':'')+'" style="left:'+(x+m*0.24)+'px;top:'+(y+m*0.24)+'px;width:'+(m*0.52)+'px;height:'+(m*0.52)+'px;"></div>'; }
-      else if(e.type==='light'){ h+='<div class="en en-light" style="left:'+(x+m*0.08)+'px;top:'+(y+m*0.08)+'px;width:'+(m*0.84)+'px;height:'+(m*0.84)+'px;"></div>'; } }
-    enemyLayer.innerHTML=h; }
+  function renderEnemies(){ if(!enemyLayer){ enemyLayer=document.createElement('div'); enemyLayer.className='enemy-layer'; enemyLayer.style.cssText='position:absolute;inset:0;z-index:3;pointer-events:none;'; board.appendChild(enemyLayer);
+      zoneLayer=document.createElement('div'); zoneLayer.className='zone-layer'; zoneLayer.style.cssText='position:absolute;inset:0;'; enemyLayer.appendChild(zoneLayer); }
+    if(spritesDirty){ for(const el of spriteEls){ try{ el.remove(); }catch(e){} } spriteEls=[];   // rebuild persistent sprites after a fresh maze
+      for(const e of enemies){ const el=document.createElement('div'); el.className='en en-'+(e.type==='camera'?'cam':e.type); if(e.type==='guard'||e.type==='light') el.style.transition='left .28s ease, top .28s ease'; el._f=null; enemyLayer.appendChild(el); e.el=el; spriteEls.push(el); }
+      spritesDirty=false; }
+    let h=''; for(const e of enemies){ for(const k of (e.zone||[])){ const a=k.split(','),r=+a[0],c=+a[1]; h+='<i class="zone z-'+e.type+'" style="left:'+(c*mzc)+'px;top:'+(r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;"></i>'; } }
+    if(zoneLayer) zoneLayer.innerHTML=h;
+    const m=mzc;
+    for(const e of enemies){ const el=e.el; if(!el) continue; const set=(pad,sz)=>{ el.style.left=(e.c*m+m*pad)+'px'; el.style.top=(e.r*m+m*pad)+'px'; el.style.width=(m*sz)+'px'; el.style.height=(m*sz)+'px'; };
+      if(e.type==='guard'){ set(0.16,0.68); if(el._f!==e.facing){ el.innerHTML=chevSVG(e.facing); el._f=e.facing; } }
+      else if(e.type==='camera'){ set(0.14,0.72); if(el._f!==e.facing){ el.innerHTML=chevSVG(e.facing); el._f=e.facing; } }
+      else if(e.type==='laser'){ set(0.24,0.52); el.classList.toggle('on', !!e.on); }
+      else if(e.type==='light'){ set(0.08,0.84); } }
+  }
 
   // ===== mini board (deterministic clearable stream) =====
   const Dx=[0,1,0,-1], Dy=[-1,0,1,0];   // up,right,down,left (engine dirs)
