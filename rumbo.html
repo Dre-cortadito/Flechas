@@ -164,8 +164,8 @@
   .piece .phit { fill:none; stroke:transparent; stroke-width:60; stroke-linecap:round; stroke-linejoin:round; }
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
-  /* compact, connected D-pad cross — centred square, not four floating pills */
-  .dpad { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); height:92%; aspect-ratio:1/1; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:4px; padding:6px; background:var(--accent-soft); border-radius:22px; box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 22%, transparent); }
+  /* connected D-pad cross — fills the compact housing (#play hugs it), not a widget in a blank box */
+  .dpad { position:absolute; inset:11px; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:7px; }
   .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:13px; background:var(--paper); box-shadow:0 1px 0 color-mix(in srgb, var(--accent) 16%, transparent); transition:background .1s, transform .06s; min-width:0; min-height:0; }   /* min:0 so the bottom (↓) row can't be clipped */
   .dbtn:active, .dbtn.on { background:var(--accent); transform:scale(.95); } .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
   .dbtn svg { width:60%; height:60%; } .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:4.4; stroke-linecap:round; stroke-linejoin:round; }
@@ -438,9 +438,17 @@
     const prev=bfsP(null); if(!prev) return; const sp=[]; { let cur=exit.r+','+exit.c; while(cur!=='0,0'){ const p=prev.get(cur); if(!p)break; sp.push({r:p[0],c:p[1],d:p[2]}); cur=p[0]+','+p[1]; } sp.reverse(); }
     const mand=[]; for(const e of sp){ const key=e.r+','+e.c+','+e.d; if(lockedDoors.has(key)) continue; if(!bfsP(key)) mand.push(e); }
     if(STEALTH){
-      const types=['cascada','flujo']; let placed=0; const stepm=Math.max(1,Math.ceil(mand.length/2));
-      for(let i=0;i<mand.length&&placed<2;i+=stepm){ addDoor(mand[i].r,mand[i].c,mand[i].d,types[placed%2]); placed++; }   // puzzle-locked doors on chokepoints, alternating game type
-      if(placed<1){ const od=KEYS.filter(k=>passable(exit.r,exit.c,k));   // guarantee a door: force one at the exit approach
+      // Breathing room: a locked door must never sit on/near the home tile. The player should move first,
+      // meet an objective/enemy naturally, THEN reach a route gate. Since mandatory doors are unavoidable
+      // chokepoints (no alternate path by construction), we simply require the door to be >= MINSTART steps
+      // from home — guaranteeing free early movement before the first Flujo/Cascada lock.
+      const dS=dists(0,0);
+      const MINSTART=Math.max(4, Math.round((MR+MC)/8));   // ~5 steps on the current board
+      const farMand=mand.filter(e=>{ const [dr,dc]=DIR[e.d]; const a=dS[e.r][e.c], b=dS[e.r+dr][e.c+dc];
+        const near=Math.min(a<0?1e9:a, b<0?1e9:b); return near>=MINSTART; });   // door encountered only after real movement
+      const types=['cascada','flujo']; let placed=0; const stepm=Math.max(1,Math.ceil(farMand.length/2));
+      for(let i=0;i<farMand.length&&placed<2;i+=stepm){ addDoor(farMand[i].r,farMand[i].c,farMand[i].d,types[placed%2]); placed++; }   // gates on far chokepoints, alternating game type
+      if(placed<1){ const od=KEYS.filter(k=>passable(exit.r,exit.c,k));   // guarantee a door at the exit approach (always far from home)
         if(od.length){ for(let i=1;i<od.length;i++){ const [dr,dc]=DIR[od[i]]; DG[2*exit.r+1+dr][2*exit.c+1+dc]='#'; } addDoor(exit.r,exit.c,od[0],'cascada'); } }
       return;
     }
@@ -606,11 +614,12 @@
     const availH = Math.max(220, vh - top - GAUGE - GAP - 14);   // vertical room shared by maze + d-pad
     let IW=W-B;
     mzc=IW/MC; let mazeH=mzc*MR;                        // maze at FULL width (cells stay small/dense)
-    let dpadH=Math.max(135, Math.min(180, Math.round(availH*0.24)));   // SHORT d-pad — just the arrow cross
+    let dpadH=Math.max(138, Math.min(168, Math.round(availH*0.22)));   // SHORT d-pad — just the arrow cross
     if(mazeH + GAP + dpadH > availH){ mzc=(availH - GAP - dpadH)/MR; if(mzc<6) mzc=6; mazeH=mzc*MR; }   // the big maze fills the rest; shrink only if it would overflow
     mc=IW/BCOLS;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
-    const play=$('play'); if(play){ play.style.width=(W)+'px'; play.style.height=(dpadH+B)+'px'; }
+    // compact SQUARE controller that hugs the cross (centred by .play-wrap) — no big empty box, board stays the focus
+    const playSize=dpadH+B; const play=$('play'); if(play){ play.style.width=playSize+'px'; play.style.height=playSize+'px'; }
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit,.keyc,.base').forEach(n=>n.remove());
