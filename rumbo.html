@@ -333,7 +333,7 @@
     return '<svg viewBox="0 0 40 40"><path class="p" d="M '+tlx+' '+tly+' L '+(tx-dx*4)+' '+(ty-dy*4)+'"/><path class="p" d="M '+(bx+px*W)+' '+(by+py*W)+' L '+tx+' '+ty+' L '+(bx-px*W)+' '+(by-py*W)+'"/></svg>'; }
 
   // ===== maze generation (deterministic recursive backtracker, thin walls) =====
-  const LW=23, LH=17;   // dense maze (small cells, lots of paths — the density that felt good); full-width board, short/landscape so the d-pad keeps its room
+  const LW=23, LH=26;   // dense maze (~same small cells) but MANY rows → fills a big, tall board; the d-pad stays short below it
   function genMaze(){ const rnd=mulberry32(fnv('rumbo-maze-'+ISO)); const Vh=2*LH+1, Vw=2*LW+1;
     const vis=Array.from({length:LH},()=>Array(LW).fill(0));
     const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
@@ -587,11 +587,9 @@
     let top=200; try{ const t=wrap.getBoundingClientRect().top; if(t>60) top=t; }catch(e){}
     const availH = Math.max(220, vh - top - GAUGE - GAP - 14);   // vertical room shared by maze + d-pad
     let IW=W-B;
-    mzc=IW/MC; let mazeH=mzc*MR;                        // maze at FULL width
-    let dpadH=availH - mazeH - GAP;
-    const DMIN=150, DMAX=Math.min(IW*0.95, 320);   // dense maze is short → let the d-pad fill the space below it (so the ↓ always shows)
-    if(dpadH>DMAX) dpadH=DMAX;                          // tall screen: cap the pad (maze stays full width)
-    if(dpadH<DMIN){ mzc=(availH - DMIN - GAP)/MR; if(mzc<6) mzc=6; mazeH=mzc*MR; dpadH=DMIN; }   // short screen only: shrink maze so the pad (incl. ↓) always fits
+    mzc=IW/MC; let mazeH=mzc*MR;                        // maze at FULL width (cells stay small/dense)
+    let dpadH=Math.max(135, Math.min(180, Math.round(availH*0.24)));   // SHORT d-pad — just the arrow cross
+    if(mazeH + GAP + dpadH > availH){ mzc=(availH - GAP - dpadH)/MR; if(mzc<6) mzc=6; mazeH=mzc*MR; }   // the big maze fills the rest; shrink only if it would overflow
     mc=IW/BCOLS;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
     const play=$('play'); if(play){ play.style.width=(W)+'px'; play.style.height=(dpadH+B)+'px'; }
