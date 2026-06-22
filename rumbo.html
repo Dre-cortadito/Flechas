@@ -87,9 +87,13 @@
   .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--ink); transition:color .15s linear; }
   .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
   @keyframes cpulse { 50%{ opacity:.45; } }
-  .gauge { width:var(--gw); margin:7px auto; padding:5px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; }   /* encased, like Cascada's bar */
-  .gauge .gtrack { height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
-  .gauge .gfill { display:block; height:100%; width:0%; background:var(--accent-2); transition:width .09s linear; }
+  /* thin mission/status strip between maze and d-pad — same width, polished, not decorative */
+  .status-strip { width:var(--gw); box-sizing:border-box; margin:7px auto; padding:7px 12px; display:flex; align-items:center; justify-content:center; gap:7px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; font:800 clamp(11px,3.3vw,13px) var(--font-ui); letter-spacing:.04em; line-height:1; white-space:nowrap; }
+  .status-strip .ss-dot { font-size:1.05em; color:var(--accent); transition:color .15s; }
+  .status-strip .ss-nodos { color:var(--ink); font-variant-numeric:tabular-nums; }
+  .status-strip .ss-sep { color:var(--ink-soft, #9a938c); font-weight:600; }
+  .status-strip .ss-exit { color:var(--error); transition:color .15s; }
+  .status-strip.open .ss-dot, .status-strip.open .ss-exit { color:#157145; }
 
   /* ===== Maze ===== */
   .maze-wrap { width:100%; display:flex; justify-content:center; }
@@ -160,14 +164,15 @@
   .piece .phit { fill:none; stroke:transparent; stroke-width:60; stroke-linecap:round; stroke-linejoin:round; }
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
-  /* big d-pad with the move-timer in the centre */
-  .dpad { position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:6px; padding:6px; }
-  .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:14px; background:var(--accent-soft); transition:background .12s; min-width:0; min-height:0; }   /* min:0 so the bottom (↓) row can't be clipped */
-  .dbtn:active, .dbtn.on { background:var(--accent); } .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
-  .dbtn svg { width:52%; height:52%; } .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; }
+  /* compact, connected D-pad cross — centred square, not four floating pills */
+  .dpad { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); height:92%; aspect-ratio:1/1; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:4px; padding:6px; background:var(--accent-soft); border-radius:22px; box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:13px; background:var(--paper); box-shadow:0 1px 0 color-mix(in srgb, var(--accent) 16%, transparent); transition:background .1s, transform .06s; min-width:0; min-height:0; }   /* min:0 so the bottom (↓) row can't be clipped */
+  .dbtn:active, .dbtn.on { background:var(--accent); transform:scale(.95); } .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
+  .dbtn svg { width:60%; height:60%; } .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:4.4; stroke-linecap:round; stroke-linejoin:round; }
   .db-up { grid-area:1/2; } .db-left { grid-area:2/1; } .db-right { grid-area:2/3; } .db-down { grid-area:3/2; }
-  .mv-timer { grid-area:2/2; display:flex; align-items:center; justify-content:center; font:700 clamp(15px,4.6vw,22px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink); line-height:1; }   /* small — the maze is the star, not this counter */
-  .mv-timer.low { color:var(--error); }
+  /* centre hub — visually ties the four arrows together into one pad */
+  .mv-timer { grid-area:2/2; display:flex; align-items:center; justify-content:center; }
+  .mv-timer::after { content:""; width:34%; height:34%; border-radius:50%; background:color-mix(in srgb, var(--accent) 28%, transparent); }
 
   /* ===== Gate / start + result ===== */
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:var(--board-bg); border-radius:12px; text-align:center; padding:24px; }
@@ -262,7 +267,7 @@
       </div>
     </div>
 
-    <div class="gauge"><div class="gtrack"><div class="gfill" id="gfill"></div></div></div>
+    <div class="status-strip" id="status-strip"><span class="ss-dot" id="ss-dot">◆</span><span class="ss-nodos" id="ss-nodos">0/3 NODOS</span><span class="ss-sep">·</span><span class="ss-exit" id="ss-exit">SALIDA CERRADA</span></div>
 
     <div class="play-wrap">
       <div class="play" id="play">
@@ -270,7 +275,7 @@
         <div class="dpad hidden" id="dpad">
           <div class="dbtn db-up" data-d="U"></div>
           <div class="dbtn db-left" data-d="L"></div>
-          <div class="mv-timer" id="mvtimer">0.0</div>
+          <div class="mv-timer" id="mvtimer"></div>
           <div class="dbtn db-right" data-d="R"></div>
           <div class="dbtn db-down" data-d="D"></div>
         </div>
@@ -351,7 +356,7 @@
     return '<svg viewBox="0 0 40 40"><path class="p" d="M '+tlx+' '+tly+' L '+(tx-dx*4)+' '+(ty-dy*4)+'"/><path class="p" d="M '+(bx+px*W)+' '+(by+py*W)+' L '+tx+' '+ty+' L '+(bx-px*W)+' '+(by-py*W)+'"/></svg>'; }
 
   // ===== maze generation (deterministic recursive backtracker, thin walls) =====
-  const LW=23, LH=26;   // dense maze (~same small cells) but MANY rows → fills a big, tall board; the d-pad stays short below it
+  const LW=18, LH=19;   // BIGGER, more readable cells: fewer rows/cols inside the SAME-width board → wide corridors, clear enemies/Nodos/doors
   function genMaze(){ const rnd=mulberry32(fnv('rumbo-maze-'+ISO)); const Vh=2*LH+1, Vw=2*LW+1;
     const vis=Array.from({length:LH},()=>Array(LW).fill(0));
     const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
@@ -747,8 +752,10 @@
     drawHUD(); rafId=requestAnimationFrame(loop); }
   function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
   function drawHUD(){ const cl=$('clock'); if(started&&!won) cl.textContent=fmt(Math.floor(runMs/1000));   // top = total time
-    const mv=$('mvtimer'); if(mv) mv.textContent='◆ '+keysGot+'/'+keys.length;                                // d-pad centre = Nodos activated
-    const gf=$('gfill'); if(gf){ const dd=(distExit[dot.r]&&distExit[dot.r][dot.c]>=0)?distExit[dot.r][dot.c]:maxDist; gf.style.width=Math.round((1-dd/maxDist)*100)+'%'; }   // bar = progress toward the exit
+    const open=keysGot>=keys.length;                                                                          // all Nodos active → exit opens
+    const sn=$('ss-nodos'); if(sn) sn.textContent=keysGot+'/'+keys.length+' NODOS';
+    const se=$('ss-exit'); if(se) se.textContent=open?'SALIDA ABIERTA':'SALIDA CERRADA';
+    const ss=$('status-strip'); if(ss) ss.classList.toggle('open', open);
     updateRank(); }
 
   // ===== game flow =====
@@ -844,7 +851,7 @@
     window.__rumbo={ start:startGame, step, tapPiece, solve:()=>solvePath(), phase:()=>phase, pieces:()=>Object.keys(pcs).length, doorsLeft:()=>totalDoors-doorsOpened, totalDoors:()=>totalDoors,
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
       enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),
-      tick:(ms)=>enemyStep(ms), setDot:(r,c)=>{ dot.r=r; dot.c=c; placeDot(); }, lives:()=>lives, lost:()=>lost,
+      tick:(ms)=>enemyStep(ms), render:()=>drawHUD(), setDot:(r,c)=>{ dot.r=r; dot.c=c; placeDot(); }, lives:()=>lives, lost:()=>lost,
       doorTypes:()=>Object.assign({},doorType), enterSolveAt:(r,c,d)=>{ dot.r=r; dot.c=c; enterSolve(d); }, miniOpen:()=>!!(miniEl&&miniEl.classList.contains('show')), miniArrows:()=>mArr.length, miniFlujoCorrectSolves:()=>{ if(!mCorrect)return null; const s=mPipes.slice(); mPipes=mCorrect.slice(); const ok=flujoSolved(); mPipes=s; return ok; }, forceMiniWin:()=>miniWin(),
       nodosDbg:()=>({ nodos:keys.map(k=>({...k})), on:keysGot, total:keys.length, locked:[...lockedDoors], exit:{...exit}, won, lost }), dgOpenCount:()=>{ let n=0; for(let r=0;r<MR;r++)for(let c=0;c<MC;c++){ if(c<MC-1&&DG[2*r+1][2*c+2]==='.')n++; if(r<MR-1&&DG[2*r+2][2*c+1]==='.')n++; } return n; },
       solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<120){ const before=Object.keys(pcs).length; for(const id of Object.keys(pcs).map(Number)){ if(pcs[id]&&bLaneClear(pcs[id])) tapPiece(id); } if(Object.keys(pcs).length===before) break; g++; } },
