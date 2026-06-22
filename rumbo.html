@@ -146,7 +146,7 @@
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
   /* big d-pad with the move-timer in the centre */
   .dpad { position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:6px; padding:6px; }
-  .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:14px; background:var(--accent-soft); transition:background .12s; }   /* visible buttons always */
+  .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:14px; background:var(--accent-soft); transition:background .12s; min-width:0; min-height:0; }   /* min:0 so the bottom (↓) row can't be clipped */
   .dbtn:active, .dbtn.on { background:var(--accent); } .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
   .dbtn svg { width:52%; height:52%; } .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; }
   .db-up { grid-area:1/2; } .db-left { grid-area:2/1; } .db-right { grid-area:2/3; } .db-down { grid-area:3/2; }
@@ -333,7 +333,7 @@
     return '<svg viewBox="0 0 40 40"><path class="p" d="M '+tlx+' '+tly+' L '+(tx-dx*4)+' '+(ty-dy*4)+'"/><path class="p" d="M '+(bx+px*W)+' '+(by+py*W)+' L '+tx+' '+ty+' L '+(bx-px*W)+' '+(by-py*W)+'"/></svg>'; }
 
   // ===== maze generation (deterministic recursive backtracker, thin walls) =====
-  const LW=14, LH=16;   // logical cols/rows — taller grid that FILLS the (now bigger) maze board; big readable cells
+  const LW=23, LH=17;   // dense maze (small cells, lots of paths — the density that felt good); full-width board, short/landscape so the d-pad keeps its room
   function genMaze(){ const rnd=mulberry32(fnv('rumbo-maze-'+ISO)); const Vh=2*LH+1, Vw=2*LW+1;
     const vis=Array.from({length:LH},()=>Array(LW).fill(0));
     const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
@@ -492,7 +492,8 @@
   function renderEnemies(){ if(!enemyLayer){ enemyLayer=document.createElement('div'); enemyLayer.className='enemy-layer'; enemyLayer.style.cssText='position:absolute;inset:0;z-index:3;pointer-events:none;'; board.appendChild(enemyLayer);
       zoneLayer=document.createElement('div'); zoneLayer.className='zone-layer'; zoneLayer.style.cssText='position:absolute;inset:0;'; enemyLayer.appendChild(zoneLayer); }
     if(spritesDirty){ for(const el of spriteEls){ try{ el.remove(); }catch(e){} } spriteEls=[];   // rebuild persistent sprites after a fresh maze
-      for(const e of enemies){ const el=document.createElement('div'); el.className='en en-'+(e.type==='camera'?'cam':e.type); el._f=null; enemyLayer.appendChild(el); e.el=el; spriteEls.push(el); }
+      for(const e of enemies){ if(e.type==='light'){ e.el=null; continue; }   // reflector = just the light pool (its zone), no ball/emitter sprite
+        const el=document.createElement('div'); el.className='en en-'+(e.type==='camera'?'cam':e.type); el._f=null; enemyLayer.appendChild(el); e.el=el; spriteEls.push(el); }
       spritesDirty=false; }
     let h=''; for(const e of enemies){ for(const k of (e.zone||[])){ const a=k.split(','),r=+a[0],c=+a[1]; h+='<i class="zone z-'+e.type+'" style="left:'+(c*mzc)+'px;top:'+(r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;"></i>'; } }
     if(zoneLayer) zoneLayer.innerHTML=h;
@@ -588,7 +589,7 @@
     let IW=W-B;
     mzc=IW/MC; let mazeH=mzc*MR;                        // maze at FULL width
     let dpadH=availH - mazeH - GAP;
-    const DMIN=132, DMAX=Math.min(IW*0.60, 230);   // keep the maze full-width on normal phones; pad still fits the ↓
+    const DMIN=150, DMAX=Math.min(IW*0.95, 320);   // dense maze is short → let the d-pad fill the space below it (so the ↓ always shows)
     if(dpadH>DMAX) dpadH=DMAX;                          // tall screen: cap the pad (maze stays full width)
     if(dpadH<DMIN){ mzc=(availH - DMIN - GAP)/MR; if(mzc<6) mzc=6; mazeH=mzc*MR; dpadH=DMIN; }   // short screen only: shrink maze so the pad (incl. ↓) always fits
     mc=IW/BCOLS;
