@@ -87,8 +87,9 @@
   .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--ink); transition:color .15s linear; }
   .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
   @keyframes cpulse { 50%{ opacity:.45; } }
-  /* control row: Nodos info · D-pad · Salida info — uses the side space, no separate strip */
-  .ctl-row { width:var(--gw); box-sizing:border-box; margin:8px auto 0; display:flex; align-items:center; justify-content:center; gap:8px; }
+  /* control tray: Nodos · D-pad · Salida grouped in one soft, light panel (not a heavy box) */
+  .ctl-row { width:var(--gw); box-sizing:border-box; margin:8px auto 0; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:6px;
+    background:color-mix(in srgb, var(--ink) 4%, var(--paper)); border:1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius:20px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
   .ctl-info { flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px; line-height:1; text-align:center; }
   .ci-dot { font-size:15px; color:var(--accent); transition:color .15s; }
   .ci-num { font:800 clamp(18px,5.6vw,26px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink); }
@@ -103,7 +104,9 @@
   .cell { position:absolute; } .cell.wall { background:var(--wall); }
   .exit { position:absolute; display:flex; align-items:center; justify-content:center; } .exit svg { width:96%; height:96%; }
   .exit .p { fill:none; stroke:var(--success); stroke-width:4.3; stroke-linecap:round; stroke-linejoin:round; }
-  .exit.open { filter:drop-shadow(0 0 4px rgba(0,0,0,.45)); animation:exitpulse 1.4s ease-in-out infinite; }
+  .exit.open { filter:drop-shadow(0 0 4px color-mix(in srgb, var(--success) 80%, transparent)); animation:exitpulse 1.4s ease-in-out infinite; }
+  .mz-svg .door-node { animation:doorpulse 1.7s ease-in-out infinite; }
+  @keyframes doorpulse { 50% { opacity:.5; } }
   @keyframes exitpulse { 50%{ transform:scale(1.08); } }
   .dot { position:absolute; border-radius:50%; background:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.3); transition:top .2s linear,left .2s linear; z-index:3; }   /* glide == step interval → continuous, no stutter */
   .dot.snap { transition:none; }   /* used when teleporting home after a catch */
@@ -518,27 +521,33 @@
     const placed=[];
     const startD=distExit[0]&&distExit[0][0]||1;
     const nodoSet=new Set(keys.map(k=>k.r+','+k.c));
-    const farOk=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>5 && (startD-ds)>4 && !(r<=2&&c<=2) && !(r>=exit.r-3&&c>=exit.c-3) && !nodoSet.has(r+','+c); };  // away from start, exit, and never ON a Nodo
-    const spaced=(r,c)=>placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=4);   // never stack hazards on the same little corridor
+    const farOk=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>4 && (startD-ds)>3 && !(r<=2&&c<=2) && !(r>=exit.r-2&&c>=exit.c-2) && !nodoSet.has(r+','+c); };  // away from start, exit, never ON a Nodo
+    const spaced=(r,c)=>placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=3);   // a little tighter so the board can hold more threats, still readable
     const isStraight=(r,c)=>{ const o=openDirs(r,c); return o.length===2 && ((o.includes('L')&&o.includes('R'))||(o.includes('U')&&o.includes('D'))); };   // chokepoint
     const isJunction=(r,c)=>openDirs(r,c).length>=3;   // corner/intersection / open
-    const pick=(test)=>{ for(let t=0;t<600;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&spaced(r,c)&&test(r,c)) return {r,c}; }
-      for(let t=0;t<600;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&test(r,c)) return {r,c}; } return null; };
-    // GUARD — patrols a loop/corridor (braiding gives a way around it)
-    { const s=pick((r,c)=>openDirs(r,c).length>=2); if(s){ const path=routeFrom(s, 9+((rng()*4)|0), rng);
-      if(path.length>=2){ enemies.push({type:'guard', path, idx:0, dir:1, facing:dirBetween(path[0],path[1])||'R', r:path[0].r, c:path[0].c, prevR:path[0].r, prevC:path[0].c, acc:0, ms:760, sawYou:false}); placed.push({r:path[0].r,c:path[0].c}); } } }
-    // CAMERA — guards a corner/intersection, sweeps its open directions
-    { const s=pick(isJunction)||pick((r,c)=>openDirs(r,c).length>=2); if(s){ let seq=openDirs(s.r,s.c); if(seq.length<2) seq=['L','R'];
-      enemies.push({type:'camera', r:s.r, c:s.c, seq, si:0, facing:seq[0], acc:0, ms:1600, sawYou:false}); placed.push(s); } }
-    // LASER — a tripwire on a straight corridor; pure timing chokepoint
-    { const s=pick(isStraight); if(s){ enemies.push({type:'laser', r:s.r, c:s.c, beam:[s.r+','+s.c], on:true, acc:0, onMs:1900, offMs:1500, sawYou:false}); placed.push(s); } }
-    // REFLECTOR — roams an open area, lights a 3×3 blob; stay in shadow
-    { const s=pick(isJunction)||pick((r,c)=>openDirs(r,c).length>=2); if(s){ const path=routeFrom(s, 6+((rng()*3)|0), rng);
-      enemies.push({type:'light', path:path.length>1?path:[s,{r:s.r,c:s.c}], idx:0, dir:1, r:s.r, c:s.c, prevR:s.r, prevC:s.c, acc:0, ms:680, sawYou:false}); placed.push(s); } }
+    const any2=(r,c)=>openDirs(r,c).length>=2;
+    const pick=(test)=>{ for(let t=0;t<700;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&spaced(r,c)&&test(r,c)) return {r,c}; }
+      for(let t=0;t<700;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&test(r,c)) return {r,c}; } return null; };
+    // a fair cell guarding a Nodo's approach (a few cells from some Nodo) → each Nodo feels watched
+    const pickNearNodo=(test)=>{ const ks=keys.slice(); for(let i=ks.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=ks[i]; ks[i]=ks[j]; ks[j]=t; }
+      for(const k of ks){ for(let t=0;t<300;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; const d=Math.abs(r-k.r)+Math.abs(c-k.c); if(d>=2&&d<=5 && farOk(r,c)&&spaced(r,c)&&test(r,c)) return {r,c}; } } return null; };
+    const addGuard=(s)=>{ if(!s) return; const path=routeFrom(s, 8+((rng()*5)|0), rng); if(path.length>=2){ enemies.push({type:'guard', path, idx:0, dir:1, facing:dirBetween(path[0],path[1])||'R', r:path[0].r, c:path[0].c, prevR:path[0].r, prevC:path[0].c, acc:0, ms:740, sawYou:false}); placed.push({r:path[0].r,c:path[0].c}); } };
+    const addCamera=(s)=>{ if(!s) return; let seq=openDirs(s.r,s.c); if(seq.length<2) seq=['L','R']; enemies.push({type:'camera', r:s.r, c:s.c, seq, si:0, facing:seq[0], acc:0, ms:1500, sawYou:false}); placed.push(s); };
+    const addLaser=(s)=>{ if(!s) return; enemies.push({type:'laser', r:s.r, c:s.c, beam:[s.r+','+s.c], on:true, acc:0, onMs:1800, offMs:1400, sawYou:false}); placed.push(s); };
+    const addLight=(s)=>{ if(!s) return; const path=routeFrom(s, 6+((rng()*3)|0), rng); enemies.push({type:'light', path:path.length>1?path:[s,{r:s.r,c:s.c}], idx:0, dir:1, r:s.r, c:s.c, prevR:s.r, prevC:s.c, acc:0, ms:680, sawYou:false}); placed.push(s); };
+    // 2 patrol guards (one biased to roam near a Nodo), a camera at an intersection, a laser tripwire,
+    // a reflector in the open, and a sentry camera guarding another Nodo → the board feels watched.
+    addGuard(pick(any2));
+    addGuard(pickNearNodo(any2) || pick(any2));
+    addCamera(pick(isJunction) || pick(any2));
+    addLaser(pick(isStraight) || pick((r,c)=>openDirs(r,c).length===2));
+    addLight(pick(isJunction) || pick(any2));
+    addCamera(pickNearNodo(isJunction) || pickNearNodo(any2) || pick(isJunction) || pick(any2));
     computeWatch(); }
   function computeWatch(){ watchedSet=new Set();
     for(const e of enemies){ let z=[];
-      if(e.type==='guard'||e.type==='camera'){ z=rayCells(e.r,e.c,e.facing,SIGHT); }
+      if(e.type==='guard'){ z=rayCells(e.r,e.c,e.facing,SIGHT); z.push(e.r+','+e.c); }   // a guard also notices you if you're standing ON its cell
+      else if(e.type==='camera'){ z=rayCells(e.r,e.c,e.facing,SIGHT); }                     // camera sees only its cone, not directly beneath
       else if(e.type==='laser'){ z = e.on ? e.beam.slice() : []; }
       else if(e.type==='light'){ for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){ const r=e.r+dr,c=e.c+dc; if(r>=0&&r<MR&&c>=0&&c<MC) z.push(r+','+c); } }
       e.zone=z; for(const k of z) watchedSet.add(k); } }
@@ -658,9 +667,10 @@
     const availH = Math.max(220, vh - top - GAP - 14);   // vertical room shared by maze + control row (strip removed → more room)
     let IW=W-B;
     mzc=IW/MC; let mazeH=mzc*MR;                        // maze at FULL width (cells stay the same)
-    // d-pad height = leftover room under the (untouched) maze — bigger now that the strip is gone
-    let dpadH=Math.max(150, Math.min(212, Math.round(availH - mazeH - GAP)));
-    if(mazeH + GAP + dpadH > availH){ const room=availH - GAP - mazeH; dpadH=Math.max(132, room); }   // last-resort clamp; keeps maze size intact
+    // d-pad height = leftover room under the (untouched) maze, minus the tray's own padding/margin (~30px)
+    const TRAY=30;
+    let dpadH=Math.max(148, Math.min(206, Math.round(availH - mazeH - GAP - TRAY)));
+    if(mazeH + GAP + TRAY + dpadH > availH){ const room=availH - GAP - TRAY - mazeH; dpadH=Math.max(130, room); }   // last-resort clamp; keeps maze size intact
     mc=IW/BCOLS;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
     // Connected cross D-pad: a symmetric square plus, centred in the control row with Nodos/Salida on its sides.
@@ -679,12 +689,22 @@
       if(cy<MR-1 && DG[2*cy+2][2*cx+1]==='#') d+='M'+cx+' '+(cy+1)+' H'+(cx+1)+' ';   // south wall
     }
     const p=document.createElementNS(NS,'path'); p.setAttribute('d',d); p.setAttribute('fill','none'); p.setAttribute('stroke','var(--wall)'); p.setAttribute('stroke-width','0.16'); p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round'); svg.appendChild(p);
-    let cSeg='', fSeg='', seen2=new Set(); lockedDoors.forEach(k=>{ const a=k.split(','), r=+a[0], c=+a[1], dir=a[2]; let seg='';   // puzzle-locked doors, coloured by which mini-game opens them
-      if(dir==='R') seg='M'+(c+1)+' '+r+' V'+(r+1)+' '; else if(dir==='L') seg='M'+c+' '+r+' V'+(r+1)+' ';
-      else if(dir==='D') seg='M'+c+' '+(r+1)+' H'+(c+1)+' '; else seg='M'+c+' '+r+' H'+(c+1)+' ';
-      if(seen2.has(seg)) return; seen2.add(seg); if(doorType[k]==='flujo') fSeg+=seg; else cSeg+=seg; });
-    const mkDoor=(dstr,col)=>{ if(!dstr) return; const dp=document.createElementNS(NS,'path'); dp.setAttribute('d',dstr); dp.setAttribute('fill','none'); dp.setAttribute('stroke',col); dp.setAttribute('stroke-width','0.4'); dp.setAttribute('stroke-linecap','butt'); dp.setAttribute('stroke-linejoin','round'); svg.insertBefore(dp, svg.firstChild); };
-    mkDoor(cSeg,'#0aa39a'); mkDoor(fSeg,'#2E8BC0');   // teal = Cascada door, blue = Flujo door
+    // puzzle-locked doors — slim "powered route-locks": a thin barrier across the corridor with a small
+    // control node + Flujo/Cascada glyph, not a chunky slab.
+    const ln=(x1,y1,x2,y2,w,col,op,cls)=>{ const e=document.createElementNS(NS,'line'); e.setAttribute('x1',x1);e.setAttribute('y1',y1);e.setAttribute('x2',x2);e.setAttribute('y2',y2); e.setAttribute('stroke',col);e.setAttribute('stroke-width',w);e.setAttribute('stroke-linecap','round'); if(op!=null)e.setAttribute('opacity',op); if(cls)e.setAttribute('class',cls); svg.appendChild(e); };
+    const seenD=new Set(); lockedDoors.forEach(k=>{ const a=k.split(','), r=+a[0], c=+a[1], dir=a[2];
+      let x1,y1,x2,y2; if(dir==='R'){ x1=x2=c+1; y1=r; y2=r+1; } else if(dir==='L'){ x1=x2=c; y1=r; y2=r+1; }
+      else if(dir==='D'){ y1=y2=r+1; x1=c; x2=c+1; } else { y1=y2=r; x1=c; x2=c+1; }
+      const ek=Math.min(x1,x2)+','+Math.min(y1,y2)+','+Math.max(x1,x2)+','+Math.max(y1,y2); if(seenD.has(ek)) return; seenD.add(ek);
+      const col=doorType[k]==='flujo'?'#2E8BC0':'#0aa39a'; const vert=(x1===x2); const mx=(x1+x2)/2, my=(y1+y2)/2; const t=0.16;
+      let bx1,by1,bx2,by2; if(vert){ bx1=bx2=mx; by1=Math.min(y1,y2)+t; by2=Math.max(y1,y2)-t; } else { by1=by2=my; bx1=Math.min(x1,x2)+t; bx2=Math.max(x1,x2)-t; }
+      ln(bx1,by1,bx2,by2,0.30,col,0.18);                         // soft "powered" glow
+      ln(bx1,by1,bx2,by2,0.11,col,0.95);                         // slim barrier bar
+      const nd=document.createElementNS(NS,'circle'); nd.setAttribute('cx',mx);nd.setAttribute('cy',my);nd.setAttribute('r',0.175); nd.setAttribute('fill',col); nd.setAttribute('class','door-node'); svg.appendChild(nd);   // control node
+      const ic=document.createElementNS(NS,'path'); ic.setAttribute('fill','none'); ic.setAttribute('stroke','#fff'); ic.setAttribute('stroke-width',0.055); ic.setAttribute('stroke-linecap','round'); ic.setAttribute('stroke-linejoin','round');
+      if(doorType[k]==='flujo') ic.setAttribute('d','M'+mx+' '+(my-0.085)+' V'+(my+0.085)+' M'+(mx-0.085)+' '+my+' H'+(mx+0.085));   // Flujo = pipe node (+)
+      else ic.setAttribute('d','M'+(mx-0.05)+' '+(my-0.08)+' L'+(mx+0.055)+' '+my+' L'+(mx-0.05)+' '+(my+0.08));                       // Cascada = flow chevron
+      svg.appendChild(ic); });
     board.appendChild(svg);
     // home base (start) — where you respawn after being caught
     const base=document.createElement('div'); base.className='base'; base.style.cssText='left:0;top:0;width:'+mzc+'px;height:'+mzc+'px;';
@@ -692,10 +712,13 @@
     // NODOS to activate (route nodes, not keys)
     for(const k of keys){ if(k.got) continue; const ke=document.createElement('div'); ke.className='keyc'; ke.style.cssText='left:'+(k.c*mzc)+'px;top:'+(k.r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;z-index:2;';
       ke.innerHTML='<svg viewBox="0 0 40 40"><path d="M20 7 L31 13 V27 L20 33 L9 27 V13 Z" fill="none" stroke="#0aa39a" stroke-width="3"/><circle cx="20" cy="20" r="4.5" fill="#0aa39a"/></svg>'; board.appendChild(ke); }
-    // exit — LOCKED (red) until all keys are found, then OPEN (green)
-    const allKeys = keysGot>=keys.length; const exCol = allKeys?'var(--success)':'var(--error)';
+    // exit — an escape GATE (arch portal), not a target. Closed = red & sealed; Open = teal, powered, passable.
+    const allKeys = keysGot>=keys.length;
     const ex=document.createElement('div'); ex.className='exit '+(allKeys?'open':'locked'); ex.style.cssText='left:'+(exit.c*mzc)+'px;top:'+(exit.r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;z-index:2;';
-    ex.innerHTML='<svg viewBox="0 0 40 40"><circle class="p" cx="20" cy="20" r="13" style="stroke:'+exCol+'"/><circle class="p" cx="20" cy="20" r="4" style="stroke:'+exCol+'"/></svg>'; board.appendChild(ex);
+    ex.innerHTML = allKeys
+      ? '<svg viewBox="0 0 40 40"><path d="M8.5 34 V20 a11.5 11.5 0 0 1 23 0 V34" fill="rgba(21,113,69,.16)" stroke="var(--success)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M20 31 V15 M13 21.5 L20 14.5 L27 21.5" fill="none" stroke="var(--success)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg viewBox="0 0 40 40"><path d="M8.5 34 V20 a11.5 11.5 0 0 1 23 0 V34" fill="rgba(214,48,48,.12)" stroke="var(--error)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><line x1="11" y1="26.5" x2="29" y2="26.5" stroke="var(--error)" stroke-width="3.2" stroke-linecap="round"/><rect x="17.6" y="23.4" width="4.8" height="6.4" rx="1.4" fill="var(--error)"/></svg>';
+    board.appendChild(ex);
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
     const pad=mzc*0.2; dotEl.style.width=(mzc-2*pad)+'px'; dotEl.style.height=(mzc-2*pad)+'px'; placeDot(); renderEnemies(); }
   function placeDot(snap){ if(!dotEl)return; const pad=mzc*0.2;
