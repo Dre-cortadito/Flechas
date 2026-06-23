@@ -119,7 +119,8 @@
   .cell { position:absolute; } .cell.wall { background:var(--wall); }
   .exit { position:absolute; display:flex; align-items:center; justify-content:center; } .exit svg { width:96%; height:96%; }
   .exit .p { fill:none; stroke:var(--success); stroke-width:4.3; stroke-linecap:round; stroke-linejoin:round; }
-  .exit.open { filter:drop-shadow(0 0 4px color-mix(in srgb, var(--success) 80%, transparent)); animation:exitpulse 1.4s ease-in-out infinite; }
+  .exit.locked { opacity:.7; }   /* target is "off" until all Nodos are active */
+  .exit.open { opacity:1; filter:drop-shadow(0 0 4px color-mix(in srgb, var(--success) 85%, transparent)); animation:exitpulse 1.4s ease-in-out infinite; }   /* "on": lit + pulsing */
   .mz-svg .door-node { animation:doorpulse 1.7s ease-in-out infinite; }
   @keyframes doorpulse { 50% { opacity:.5; } }
   @keyframes exitpulse { 50%{ transform:scale(1.08); } }
@@ -189,7 +190,7 @@
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
   /* ===== Gate / start + result ===== */
-  .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:color-mix(in srgb, var(--board-bg) 90%, transparent); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); border-radius:12px; text-align:center; padding:24px; }
+  .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:color-mix(in srgb, var(--board-bg) 72%, transparent); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); border-radius:12px; text-align:center; padding:24px; }
   .gate.hidden { display:none; }
   .gate h2 { font:800 27px var(--font-display); margin:0; }
   .gate h2.accent { color:var(--accent); }
@@ -712,6 +713,8 @@
     mzc=mzc2; const mazeH=mzc*MR;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
     document.documentElement.style.setProperty('--db', Math.round(db)+'px');
+    // bring the control tray DOWN into any leftover space (closer to the thumb), capped so it never goes off-screen
+    const con=$('ctl-row'); if(con){ const used=(mazeH+B)+(2*db+CONCHROME); const extra=Math.max(4, Math.min(80, Math.round(avail-used))); con.style.marginTop=extra+'px'; }
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
   if(window.visualViewport){ window.visualViewport.addEventListener('resize',sizeAll); window.visualViewport.addEventListener('scroll',sizeAll); }   // re-fit when the mobile browser bar appears/disappears
@@ -737,16 +740,18 @@
     board.appendChild(svg);
     // home base (start) — where you respawn after being caught
     const base=document.createElement('div'); base.className='base'; base.style.cssText='left:0;top:0;width:'+mzc+'px;height:'+mzc+'px;';
-    base.innerHTML='<svg viewBox="0 0 40 40"><path d="M8 19 L20 8 L32 19" fill="none" stroke="#9a9a9a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17 V31 H29 V17" fill="none" stroke="#9a9a9a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>'; board.appendChild(base);
+    base.innerHTML='<svg viewBox="0 0 40 40"><path d="M7 19 L20 7 L33 19" fill="none" stroke="#3a3a3a" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.5 16.5 V31.5 H29.5 V16.5" fill="none" stroke="#3a3a3a" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'; board.appendChild(base);
     // NODOS to activate (route nodes, not keys)
     for(const k of keys){ if(k.got) continue; const ke=document.createElement('div'); ke.className='keyc'; ke.style.cssText='left:'+(k.c*mzc)+'px;top:'+(k.r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;z-index:2;';
       ke.innerHTML='<svg viewBox="0 0 40 40"><path d="M20 7 L31 13 V27 L20 33 L9 27 V13 Z" fill="none" stroke="#0aa39a" stroke-width="3"/><circle cx="20" cy="20" r="4.5" fill="#0aa39a"/></svg>'; board.appendChild(ke); }
-    // exit — an escape GATE (arch portal), not a target. Closed = red & sealed; Open = teal, powered, passable.
-    const allKeys = keysGot>=keys.length;
+    // exit — an archery TARGET. OFF (locked, red & dim) until every Nodo is active, then ON (green, lit + pulsing).
+    const allKeys = keysGot>=keys.length; const exCol = allKeys?'var(--success)':'var(--error)';
     const ex=document.createElement('div'); ex.className='exit '+(allKeys?'open':'locked'); ex.style.cssText='left:'+(exit.c*mzc)+'px;top:'+(exit.r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;z-index:2;';
-    ex.innerHTML = allKeys
-      ? '<svg viewBox="0 0 40 40"><path d="M8.5 34 V20 a11.5 11.5 0 0 1 23 0 V34" fill="rgba(21,113,69,.16)" stroke="var(--success)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M20 31 V15 M13 21.5 L20 14.5 L27 21.5" fill="none" stroke="var(--success)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-      : '<svg viewBox="0 0 40 40"><path d="M8.5 34 V20 a11.5 11.5 0 0 1 23 0 V34" fill="rgba(214,48,48,.12)" stroke="var(--error)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><line x1="11" y1="26.5" x2="29" y2="26.5" stroke="var(--error)" stroke-width="3.2" stroke-linecap="round"/><rect x="17.6" y="23.4" width="4.8" height="6.4" rx="1.4" fill="var(--error)"/></svg>';
+    ex.innerHTML='<svg viewBox="0 0 40 40">'
+      + '<circle cx="20" cy="20" r="15" fill="none" stroke="'+exCol+'" stroke-width="2.6"/>'
+      + '<circle cx="20" cy="20" r="9.5" fill="none" stroke="'+exCol+'" stroke-width="2.6"/>'
+      + '<circle cx="20" cy="20" r="3.4" fill="'+exCol+'"/>'
+      + '</svg>';
     board.appendChild(ex);
     if(!dotEl){ dotEl=document.createElement('div'); dotEl.className='dot'; board.appendChild(dotEl); }
     const pad=mzc*0.2; dotEl.style.width=(mzc-2*pad)+'px'; dotEl.style.height=(mzc-2*pad)+'px'; placeDot(); renderEnemies(); }
