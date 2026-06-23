@@ -164,15 +164,26 @@
   .piece .phit { fill:none; stroke:transparent; stroke-width:60; stroke-linecap:round; stroke-linejoin:round; }
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
-  /* connected D-pad cross — fills the compact housing (#play hugs it), not a widget in a blank box */
-  .dpad { position:absolute; inset:11px; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:7px; }
-  .dbtn { display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; border-radius:13px; background:var(--paper); box-shadow:0 1px 0 color-mix(in srgb, var(--accent) 16%, transparent); transition:background .1s, transform .06s; min-width:0; min-height:0; }   /* min:0 so the bottom (↓) row can't be clipped */
-  .dbtn:active, .dbtn.on { background:var(--accent); transform:scale(.95); } .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
-  .dbtn svg { width:60%; height:60%; } .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:4.4; stroke-linecap:round; stroke-linejoin:round; }
-  .db-up { grid-area:1/2; } .db-left { grid-area:2/1; } .db-right { grid-area:2/3; } .db-down { grid-area:3/2; }
-  /* centre hub — visually ties the four arrows together into one pad */
-  .mv-timer { grid-area:2/2; display:flex; align-items:center; justify-content:center; }
-  .mv-timer::after { content:""; width:34%; height:34%; border-radius:50%; background:color-mix(in srgb, var(--accent) 28%, transparent); }
+  /* ===== Joystick — slide your thumb anywhere on the pad; no tiny buttons to hit ===== */
+  .stick { position:absolute; inset:0; touch-action:none; -webkit-user-select:none; user-select:none; cursor:grab; }
+  .stick.dragging { cursor:grabbing; }
+  /* resting base, centred; it FLOATS to wherever your thumb lands while dragging */
+  .stick-base { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:clamp(128px,40vw,170px); height:clamp(128px,40vw,170px); border-radius:50%;
+    background:var(--accent-soft); box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--accent) 26%, transparent), inset 0 6px 16px rgba(0,0,0,.07);
+    transition:opacity .15s ease; }
+  .stick.dragging .stick-base { transition:none; }   /* no lag while floating to the thumb */
+  /* faint directional hints around the rim */
+  .stick-hint { position:absolute; width:0; height:0; opacity:.5; }
+  .stick-hint::before { content:""; position:absolute; width:9px; height:9px; border:2.6px solid var(--accent-deep); border-left:0; border-bottom:0; transform:translate(-50%,-50%) rotate(-45deg); }
+  .sh-u { left:50%; top:13%; } .sh-d { left:50%; top:87%; } .sh-d::before { transform:translate(-50%,-50%) rotate(135deg); }
+  .sh-l { left:13%; top:50%; } .sh-l::before { transform:translate(-50%,-50%) rotate(-135deg); }
+  .sh-r { left:87%; top:50%; } .sh-r::before { transform:translate(-50%,-50%) rotate(45deg); }
+  /* the knob the thumb pushes */
+  .stick-knob { position:absolute; left:50%; top:50%; width:44%; height:44%; border-radius:50%;
+    background:var(--accent); box-shadow:0 4px 12px rgba(0,0,0,.22), inset 0 2px 4px rgba(255,255,255,.25);
+    transform:translate(-50%,-50%); transition:transform .09s ease, background .1s; will-change:transform; }
+  .stick.dragging .stick-knob { transition:background .1s; background:var(--accent-deep); }
 
   /* ===== Gate / start + result ===== */
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:var(--board-bg); border-radius:12px; text-align:center; padding:24px; }
@@ -272,12 +283,12 @@
     <div class="play-wrap">
       <div class="play" id="play">
         <div class="panel" id="panel"></div>
-        <div class="dpad hidden" id="dpad">
-          <div class="dbtn db-up" data-d="U"></div>
-          <div class="dbtn db-left" data-d="L"></div>
-          <div class="mv-timer" id="mvtimer"></div>
-          <div class="dbtn db-right" data-d="R"></div>
-          <div class="dbtn db-down" data-d="D"></div>
+        <div class="stick hidden" id="dpad">
+          <div class="stick-base" id="stick-base">
+            <span class="stick-hint sh-u"></span><span class="stick-hint sh-d"></span>
+            <span class="stick-hint sh-l"></span><span class="stick-hint sh-r"></span>
+            <div class="stick-knob" id="stick-knob"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -645,9 +656,9 @@
     if(mazeH + GAP + dpadH > availH){ const room=availH - GAP - mazeH; dpadH=Math.max(132, room); }   // last-resort clamp; keeps maze size intact
     mc=IW/BCOLS;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
-    // LARGER but still compact controller: it grows into the FREE horizontal space (wider buttons = bigger tap area)
-    // instead of growing taller, so the maze keeps its full height and the pad sits right under the board.
-    const playH=dpadH+B; const playW=Math.min(W, Math.round(playH*1.7));
+    // Joystick pad: a roughly square thumb area (the whole pad is touch-active and the stick floats to
+    // your finger), kept compact under the board so the maze keeps its full height.
+    const playH=dpadH+B; const playW=Math.min(W, Math.round(playH*1.3));
     const play=$('play'); if(play){ play.style.width=playW+'px'; play.style.height=playH+'px'; }
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
@@ -684,7 +695,7 @@
   // ===== phase transitions =====
   function showSolve(){ $('dpad').classList.add('hidden'); $('panel').classList.remove('hidden'); renderPieces(); }
   function showMove(){ $('panel').classList.add('hidden'); $('dpad').classList.remove('hidden'); }
-  function enterMove(){ phase='move'; moveDir=null; document.querySelectorAll('.dbtn.on').forEach(b=>b.classList.remove('on')); showMove(); placeDot(); }
+  function enterMove(){ phase='move'; moveDir=null; stickReset(); showMove(); placeDot(); }
   function enterSolve(d){ startRun(); phase='solve'; currentDoor={r:dot.r,c:dot.c,d}; placeDot();
     const type=doorType[dot.r+','+dot.c+','+d]||'cascada';
     openMini(type, ()=>{ phase='move'; openCurrentDoor(); }); }
@@ -755,9 +766,35 @@
     return true; }
   function chevSVG(d){ const p={U:'M9 26 L20 14 L31 26', D:'M9 14 L20 26 L31 14', L:'M26 9 L14 20 L26 31', R:'M14 9 L26 20 L14 31'}[d];
     return '<svg viewBox="0 0 40 40"><path class="p" d="'+p+'"/></svg>'; }   // family chevron, not a full arrow
-  function buildBigPad(){ document.querySelectorAll('.dbtn').forEach(b=>{ const d=b.getAttribute('data-d'); b.innerHTML=chevSVG(d);
-      b.onpointerdown=ev=>{ ev.preventDefault(); if(phase!=='move') return; moveDir=d; acc=0; step(d); b.classList.add('on'); }; }); }
-  function releaseAll(){ moveDir=null; document.querySelectorAll('.dbtn.on').forEach(b=>b.classList.remove('on')); }
+  // ===== Joystick: slide a thumb anywhere on the pad; snaps to 4-way for the grid maze =====
+  let stickActive=false, stickPtr=null, stickCX=0, stickCY=0, stickR=46;
+  function stickReset(){ const kn=$('stick-knob'), bs=$('stick-base'), st=$('dpad');
+    if(kn) kn.style.transform='translate(-50%,-50%)';
+    if(bs){ bs.style.left=''; bs.style.top=''; }     // CSS recentres the base when idle
+    if(st) st.classList.remove('dragging'); }
+  function stickDir(dx,dy){ const dz=13; if(Math.hypot(dx,dy)<dz) return null;   // small deadzone = no movement
+    return Math.abs(dx)>=Math.abs(dy) ? (dx<0?'L':'R') : (dy<0?'U':'D'); }       // dominant axis (grid is 4-way)
+  function stickMove(clientX,clientY){ const dxR=clientX-stickCX, dyR=clientY-stickCY;
+    const m=Math.hypot(dxR,dyR)||1, cl=Math.min(m,stickR), kx=dxR/m*cl, ky=dyR/m*cl;
+    const kn=$('stick-knob'); if(kn) kn.style.transform='translate(calc(-50% + '+kx.toFixed(1)+'px), calc(-50% + '+ky.toFixed(1)+'px))';
+    const d=stickDir(dxR,dyR);
+    if(d){ if(moveDir!==d){ moveDir=d; acc=0; step(d); } } else { moveDir=null; } }
+  function buildBigPad(){ const st=$('dpad'); if(!st){ return; } if(st._wired){ stickReset(); return; } st._wired=true;
+    const base=$('stick-base');
+    st.addEventListener('pointerdown', ev=>{ if(phase!=='move') return; ev.preventDefault();
+      stickActive=true; stickPtr=ev.pointerId; st.classList.add('dragging');
+      const pr=st.getBoundingClientRect(); const bw=base.offsetWidth||150, half=bw/2;
+      let lx=ev.clientX-pr.left, ly=ev.clientY-pr.top;                          // float the base to where the thumb lands
+      lx=Math.max(half,Math.min(pr.width-half||lx,lx)); ly=Math.max(half,Math.min(pr.height-half||ly,ly));
+      base.style.left=lx+'px'; base.style.top=ly+'px';
+      stickCX=pr.left+lx; stickCY=pr.top+ly; stickR=Math.max(34, half*0.62);
+      try{ st.setPointerCapture(ev.pointerId); }catch(e){}
+      stickMove(ev.clientX,ev.clientY); });
+    st.addEventListener('pointermove', ev=>{ if(!stickActive||ev.pointerId!==stickPtr) return; ev.preventDefault(); stickMove(ev.clientX,ev.clientY); });
+    const end=ev=>{ if(ev&&ev.type!=='pointercancel'&&stickActive&&ev.pointerId!==stickPtr) return; stickActive=false; stickPtr=null; moveDir=null; stickReset(); };
+    st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end);
+    st.addEventListener('lostpointercapture', end); stickReset(); }
+  function releaseAll(){ stickActive=false; stickPtr=null; moveDir=null; stickReset(); }
   document.addEventListener('pointerup',releaseAll); document.addEventListener('pointercancel',releaseAll);
   document.addEventListener('keydown',e=>{ const m={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'}[e.key]; if(m&&phase==='move'){ e.preventDefault(); if(moveDir!==m){moveDir=m;acc=0;step(m);} } });
   document.addEventListener('keyup',e=>{ if(e.key.indexOf('Arrow')===0) moveDir=null; });
@@ -890,6 +927,7 @@
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
       enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),
       tick:(ms)=>enemyStep(ms), render:()=>drawHUD(), setDot:(r,c)=>{ dot.r=r; dot.c=c; placeDot(); }, lives:()=>lives, lost:()=>lost,
+      stickDrag:(dx,dy)=>{ stickActive=true; stickCX=0; stickCY=0; stickR=46; stickMove(dx,dy); return moveDir; }, stickEnd:()=>{ releaseAll(); return moveDir; },
       doorTypes:()=>Object.assign({},doorType), enterSolveAt:(r,c,d)=>{ dot.r=r; dot.c=c; enterSolve(d); }, miniOpen:()=>!!(miniEl&&miniEl.classList.contains('show')), miniArrows:()=>mArr.length, miniFlujoCorrectSolves:()=>{ if(!mCorrect)return null; const s=mPipes.slice(); mPipes=mCorrect.slice(); const ok=flujoSolved(); mPipes=s; return ok; }, forceMiniWin:()=>miniWin(),
       nodosDbg:()=>({ nodos:keys.map(k=>({...k})), on:keysGot, total:keys.length, locked:[...lockedDoors], exit:{...exit}, won, lost }), dgOpenCount:()=>{ let n=0; for(let r=0;r<MR;r++)for(let c=0;c<MC;c++){ if(c<MC-1&&DG[2*r+1][2*c+2]==='.')n++; if(r<MR-1&&DG[2*r+2][2*c+1]==='.')n++; } return n; },
       solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<120){ const before=Object.keys(pcs).length; for(const id of Object.keys(pcs).map(Number)){ if(pcs[id]&&bLaneClear(pcs[id])) tapPiece(id); } if(Object.keys(pcs).length===before) break; g++; } },
