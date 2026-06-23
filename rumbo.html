@@ -379,16 +379,26 @@
       g[2*cy+1][2*cx+2]='.'; g[2*cy+3][2*cx+2]='.'; g[2*cy+2][2*cx+1]='.'; g[2*cy+2][2*cx+3]='.'; }
     DG=g; MR=LH; MC=LW; dot={r:0,c:0}; exit={r:LH-1,c:LW-1};
     const sol=solvePath(); solSteps=sol?sol.length:20; retoSecs=55+(fnv('rumbo-reto-'+ISO)%9)*5;   // 55–95s, date-seeded so the family landing shows the same target
-    placeDoors(); computeDist(); buildEnemies(); buildNodos();
+    computeDist(); buildNodos();      // 1) place the collectibles first
+    placeDoors();                     // 2) gate each Nodo behind a puzzle door (may wall pocket edges)
+    computeDist();                    // 3) recompute distances after the new walls
+    buildEnemies();                   // 4) place enemies on the FINAL maze, avoiding Nodo tiles
   }
   // NODOS — route objectives spread through the maze; activate them all and the exit powers on.
   function buildNodos(){ keys=[]; keysGot=0;
-    const rng=mulberry32(fnv('rumbo-nodos-'+ISO)); const enemyCells=new Set(enemies.map(e=>e.r+','+e.c)); const placed=[];
-    const far=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>4 && !(r<=2&&c<=2) && !(r===exit.r&&c===exit.c) && !enemyCells.has(r+','+c); };
+    const rng=mulberry32(fnv('rumbo-nodos-'+ISO)); const placed=[];
+    // distance from the HOME tile — Nodos sit deep enough that the puzzle door guarding them isn't at the start
+    const dHome=(()=>{ const d=Array.from({length:MR},()=>Array(MC).fill(-1)); d[0][0]=0; const q=[[0,0]]; let h=0;
+      const pass=(r,c,k)=>{ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; return !(nr<0||nr>=MR||nc<0||nc>=MC) && DG[2*r+1+dr][2*c+1+dc]==='.'; };
+      while(h<q.length){ const [r,c]=q[h++]; for(const k of KEYS){ if(!pass(r,c,k))continue; const [dr,dc]=DIR[k],nr=r+dr,nc=c+dc; if(d[nr][nc]<0){ d[nr][nc]=d[r][c]+1; q.push([nr,nc]); } } } return d; })();
+    const MINSTART=Math.max(4, Math.round((MR+MC)/8));
+    const deep=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; const dh=dHome[r]&&dHome[r][c]; return ds!==undefined && ds>4 && dh!==undefined && dh>=MINSTART+1 && !(r<=2&&c<=2) && !(r===exit.r&&c===exit.c); };   // far from exit AND a real walk in from home
+    const reachable=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>0 && !(r<=1&&c<=1) && !(r===exit.r&&c===exit.c); };
     const N=3;
     for(let i=0;i<N;i++){ let cell=null;
-      for(let t=0;t<500;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; if(far(r,c) && placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=5)){ cell={r,c}; break; } }
-      if(!cell) for(let t=0;t<500;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; if(far(r,c)){ cell={r,c}; break; } }
+      for(let t=0;t<600;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; if(deep(r,c) && placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=5)){ cell={r,c}; break; } }   // strict: deep + spaced
+      if(!cell) for(let t=0;t<600;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; if(deep(r,c)){ cell={r,c}; break; } }                                                       // relax spacing
+      if(!cell) for(let t=0;t<600;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; if(reachable(r,c) && placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=2)){ cell={r,c}; break; } }  // last resort: any reachable cell
       if(cell){ keys.push({r:cell.r,c:cell.c,got:false}); placed.push(cell); } } }
   function rumboToast(msg){ let t=document.getElementById('rumbo-toast'); if(!t){ t=document.createElement('div'); t.id='rumbo-toast'; t.className='rumbo-toast'; board.appendChild(t); }
     t.textContent=msg; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>{ try{ t.classList.remove('show'); }catch(e){} },1200); }
@@ -438,17 +448,32 @@
     const prev=bfsP(null); if(!prev) return; const sp=[]; { let cur=exit.r+','+exit.c; while(cur!=='0,0'){ const p=prev.get(cur); if(!p)break; sp.push({r:p[0],c:p[1],d:p[2]}); cur=p[0]+','+p[1]; } sp.reverse(); }
     const mand=[]; for(const e of sp){ const key=e.r+','+e.c+','+e.d; if(lockedDoors.has(key)) continue; if(!bfsP(key)) mand.push(e); }
     if(STEALTH){
-      // Breathing room: a locked door must never sit on/near the home tile. The player should move first,
-      // meet an objective/enemy naturally, THEN reach a route gate. Since mandatory doors are unavoidable
-      // chokepoints (no alternate path by construction), we simply require the door to be >= MINSTART steps
-      // from home — guaranteeing free early movement before the first Flujo/Cascada lock.
-      const dS=dists(0,0);
-      const MINSTART=Math.max(4, Math.round((MR+MC)/8));   // ~5 steps on the current board
-      const farMand=mand.filter(e=>{ const [dr,dc]=DIR[e.d]; const a=dS[e.r][e.c], b=dS[e.r+dr][e.c+dc];
-        const near=Math.min(a<0?1e9:a, b<0?1e9:b); return near>=MINSTART; });   // door encountered only after real movement
-      const types=['cascada','flujo']; let placed=0; const stepm=Math.max(1,Math.ceil(farMand.length/2));
-      for(let i=0;i<farMand.length&&placed<2;i+=stepm){ addDoor(farMand[i].r,farMand[i].c,farMand[i].d,types[placed%2]); placed++; }   // gates on far chokepoints, alternating game type
-      if(placed<1){ const od=KEYS.filter(k=>passable(exit.r,exit.c,k));   // guarantee a door at the exit approach (always far from home)
+      // ===== Doors GUARD the collectibles =====
+      // The loop should read: puzzle door -> reach a Nodo -> repeat -> all Nodos collected -> exit opens.
+      // So we gate EACH Nodo behind one Flujo/Cascada door: we pick the Nodo's entrance toward home as the
+      // "gate" and wall off its other approaches (pocketing it), so the only way to the collectible is to
+      // solve the mini-puzzle. We never wall an edge that would cut the exit, another Nodo, or that branch
+      // off from home — connectivity is always preserved. Breathing room (MINSTART) is still respected.
+      const MINSTART=Math.max(4, Math.round((MR+MC)/8));
+      const bfsHome=()=>{ const d=Array.from({length:MR},()=>Array(MC).fill(-1)); d[0][0]=0; const q=[[0,0]]; let h=0;
+        while(h<q.length){ const [r,c]=q[h++]; for(const k of KEYS){ if(!passable(r,c,k))continue; const [dr,dc]=DIR[k],nr=r+dr,nc=c+dc; if(d[nr][nc]<0){ d[nr][nc]=d[r][c]+1; q.push([nr,nc]); } } } return d; };
+      const reachOK=(extra)=>{ const d=bfsHome(); if(d[exit.r][exit.c]<0) return false; for(const k of keys){ if(d[k.r][k.c]<0) return false; } if(extra && d[extra[0]][extra[1]]<0) return false; return true; };
+      const types=['cascada','flujo']; let placed=0;
+      // gate Nodos in near->far order so the run introduces them naturally
+      const order=keys.map(k=>({k, d:(bfsHome()[k.r][k.c])})).sort((a,b)=>(a.d<0?1e9:a.d)-(b.d<0?1e9:b.d));
+      for(const {k} of order){
+        const nr=k.r, nc=k.c; const opens=KEYS.filter(d=>passable(nr,nc,d)); if(!opens.length) continue;
+        const dH=bfsHome();
+        let gate=null, gd=Infinity;                                   // entrance = open edge whose neighbor is closest to home
+        for(const d of opens){ const [dr,dc]=DIR[d]; const er=nr+dr, ec=nc+dc; const dist=dH[er][ec]<0?1e9:dH[er][ec]; if(dist<gd){ gd=dist; gate=d; } }
+        if(!gate || gd<MINSTART) continue;                            // too close to home -> leave this Nodo open (no early lock)
+        for(const d of opens){ if(d===gate) continue;                 // pocket: wall the other approaches when it's safe
+          const [dr,dc]=DIR[d]; DG[2*nr+1+dr][2*nc+1+dc]='#';
+          if(!reachOK([nr+dr,nc+dc])) DG[2*nr+1+dr][2*nc+1+dc]='.';   // revert if it would orphan the exit / a Nodo / that branch
+        }
+        addDoor(nr,nc,gate,types[placed%2]); placed++;                // the puzzle lock that protects this Nodo
+      }
+      if(placed<1){ const od=KEYS.filter(k=>passable(exit.r,exit.c,k));   // safety net: no Nodo gateable -> one door at the exit approach
         if(od.length){ for(let i=1;i<od.length;i++){ const [dr,dc]=DIR[od[i]]; DG[2*exit.r+1+dr][2*exit.c+1+dc]='#'; } addDoor(exit.r,exit.c,od[0],'cascada'); } }
       return;
     }
@@ -474,7 +499,8 @@
     const rng=mulberry32(fnv('rumbo-enemy-'+ISO));
     const placed=[];
     const startD=distExit[0]&&distExit[0][0]||1;
-    const farOk=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>5 && (startD-ds)>4 && !(r<=2&&c<=2) && !(r>=exit.r-3&&c>=exit.c-3); };  // away from BOTH start and exit
+    const nodoSet=new Set(keys.map(k=>k.r+','+k.c));
+    const farOk=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>5 && (startD-ds)>4 && !(r<=2&&c<=2) && !(r>=exit.r-3&&c>=exit.c-3) && !nodoSet.has(r+','+c); };  // away from start, exit, and never ON a Nodo
     const spaced=(r,c)=>placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=4);   // never stack hazards on the same little corridor
     const isStraight=(r,c)=>{ const o=openDirs(r,c); return o.length===2 && ((o.includes('L')&&o.includes('R'))||(o.includes('U')&&o.includes('D'))); };   // chokepoint
     const isJunction=(r,c)=>openDirs(r,c).length>=3;   // corner/intersection / open
@@ -614,12 +640,15 @@
     const availH = Math.max(220, vh - top - GAUGE - GAP - 14);   // vertical room shared by maze + d-pad
     let IW=W-B;
     mzc=IW/MC; let mazeH=mzc*MR;                        // maze at FULL width (cells stay small/dense)
-    let dpadH=Math.max(138, Math.min(168, Math.round(availH*0.22)));   // SHORT d-pad — just the arrow cross
-    if(mazeH + GAP + dpadH > availH){ mzc=(availH - GAP - dpadH)/MR; if(mzc<6) mzc=6; mazeH=mzc*MR; }   // the big maze fills the rest; shrink only if it would overflow
+    // d-pad height is whatever vertical room is left AFTER the (untouched) maze — never steal the maze's cells
+    let dpadH=Math.max(150, Math.min(176, Math.round(availH - mazeH - GAP)));
+    if(mazeH + GAP + dpadH > availH){ const room=availH - GAP - mazeH; dpadH=Math.max(132, room); }   // last-resort clamp; keeps maze size intact
     mc=IW/BCOLS;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
-    // compact SQUARE controller that hugs the cross (centred by .play-wrap) — no big empty box, board stays the focus
-    const playSize=dpadH+B; const play=$('play'); if(play){ play.style.width=playSize+'px'; play.style.height=playSize+'px'; }
+    // LARGER but still compact controller: it grows into the FREE horizontal space (wider buttons = bigger tap area)
+    // instead of growing taller, so the maze keeps its full height and the pad sits right under the board.
+    const playH=dpadH+B; const playW=Math.min(W, Math.round(playH*1.7));
+    const play=$('play'); if(play){ play.style.width=playW+'px'; play.style.height=playH+'px'; }
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit,.keyc,.base').forEach(n=>n.remove());
