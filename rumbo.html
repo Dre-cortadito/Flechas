@@ -515,12 +515,14 @@
     const startD=distExit[0]&&distExit[0][0]||1;
     const nodoSet=new Set(keys.map(k=>k.r+','+k.c));
     const farOk=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>4 && (startD-ds)>3 && !(r<=2&&c<=2) && !(r>=exit.r-2&&c>=exit.c-2) && !nodoSet.has(r+','+c); };  // away from start, exit, never ON a Nodo
-    const spaced=(r,c)=>placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=2);   // dense board — many threats, but never stacked on the same cell
+    const spaced=(r,c,gap)=>placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=(gap||4));   // spread threats out so their cones/zones don't pile into one blob
     const isStraight=(r,c)=>{ const o=openDirs(r,c); return o.length===2 && ((o.includes('L')&&o.includes('R'))||(o.includes('U')&&o.includes('D'))); };   // chokepoint
     const isJunction=(r,c)=>openDirs(r,c).length>=3;   // corner/intersection / open
     const any2=(r,c)=>openDirs(r,c).length>=2;
-    const pick=(test)=>{ for(let t=0;t<700;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&spaced(r,c)&&test(r,c)) return {r,c}; }
-      for(let t=0;t<700;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&test(r,c)) return {r,c}; } return null; };
+    // place far apart; if that fails, relax to a minimum of 3 cells — never drop to adjacent clusters
+    const pick=(test)=>{ for(let t=0;t<600;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&spaced(r,c,4)&&test(r,c)) return {r,c}; }
+      for(let t=0;t<600;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&spaced(r,c,3)&&test(r,c)) return {r,c}; }
+      for(let t=0;t<600;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&test(r,c)) return {r,c}; } return null; };
     // a fair cell guarding a Nodo's approach (a few cells from some Nodo) → each Nodo feels watched
     const pickNearNodo=(test)=>{ const ks=keys.slice(); for(let i=ks.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=ks[i]; ks[i]=ks[j]; ks[j]=t; }
       for(const k of ks){ for(let t=0;t<300;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; const d=Math.abs(r-k.r)+Math.abs(c-k.c); if(d>=2&&d<=5 && farOk(r,c)&&spaced(r,c)&&test(r,c)) return {r,c}; } } return null; };
@@ -537,8 +539,9 @@
     addGuard(pick(any2), 9+((rng()*5)|0), true, 700);                        // Guard B — counter-patrol (opposite end/direction, a touch faster)
     addGuard(pickNearNodo(any2) || pick(any2), 11+((rng()*5)|0), false, 800);// Guard C — long route that roams between objectives
     addLight(pick(isJunction) || pick(any2));                              // roaming spotlight (3s detection meter), now sweeps the whole board
-    for(let i=0;i<4;i++) addCamera(pickNearNodo(isJunction) || pick(isJunction) || pick(any2));   // 4 sweeping cameras at intersections / guarding Nodos
-    for(let i=0;i<6;i++) addLaser(pick(isStraight) || pick(any2));          // 6 laser tripwires scattered on corridors
+    addCamera(pickNearNodo(isJunction) || pick(isJunction) || pick(any2)); // 1 camera guarding a Nodo
+    for(let i=0;i<3;i++) addCamera(pick(isJunction) || pick(any2));         // 3 more cameras, spread across intersections
+    for(let i=0;i<6;i++) addLaser(pick(isStraight) || pick(any2));          // 6 laser tripwires, spread across corridors
     computeWatch(); }
   function computeWatch(){ watchedSet=new Set();
     for(const e of enemies){ let z=[];
