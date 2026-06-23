@@ -519,10 +519,12 @@
     const isStraight=(r,c)=>{ const o=openDirs(r,c); return o.length===2 && ((o.includes('L')&&o.includes('R'))||(o.includes('U')&&o.includes('D'))); };   // chokepoint
     const isJunction=(r,c)=>openDirs(r,c).length>=3;   // corner/intersection / open
     const any2=(r,c)=>openDirs(r,c).length>=2;
-    // place far apart; if that fails, relax to a minimum of 3 cells — never drop to adjacent clusters
-    const pick=(test)=>{ for(let t=0;t<600;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&spaced(r,c,4)&&test(r,c)) return {r,c}; }
-      for(let t=0;t<600;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&spaced(r,c,3)&&test(r,c)) return {r,c}; }
-      for(let t=0;t<600;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(farOk(r,c)&&test(r,c)) return {r,c}; } return null; };
+    // best-candidate sampling: among many valid cells, take the one FARTHEST from everything already
+    // placed → threats spread evenly across the whole board (fills empty quadrants instead of clustering).
+    const nearestPlaced=(r,c)=>{ let m=999; for(const p of placed){ const d=Math.abs(p.r-r)+Math.abs(p.c-c); if(d<m) m=d; } return m; };
+    const pick=(test)=>{ let best=null, bestD=-1, any=null;
+      for(let t=0;t<900;t++){ const r=(rng()*MR)|0, c=(rng()*MC)|0; if(!farOk(r,c)||!test(r,c)) continue; any={r,c}; const d=nearestPlaced(r,c); if(d>bestD){ bestD=d; best={r,c}; } }
+      return best||any; };
     // a fair cell guarding a Nodo's approach (a few cells from some Nodo) → each Nodo feels watched
     const pickNearNodo=(test)=>{ const ks=keys.slice(); for(let i=ks.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=ks[i]; ks[i]=ks[j]; ks[j]=t; }
       for(const k of ks){ for(let t=0;t<300;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; const d=Math.abs(r-k.r)+Math.abs(c-k.c); if(d>=2&&d<=5 && farOk(r,c)&&spaced(r,c)&&test(r,c)) return {r,c}; } } return null; };
@@ -720,7 +722,9 @@
       if(dir==='R') seg='M'+(c+1)+' '+r+' V'+(r+1)+' '; else if(dir==='L') seg='M'+c+' '+r+' V'+(r+1)+' ';
       else if(dir==='D') seg='M'+c+' '+(r+1)+' H'+(c+1)+' '; else seg='M'+c+' '+r+' H'+(c+1)+' ';
       if(seenD.has(seg)) return; seenD.add(seg); if(doorType[k]==='flujo') fSeg+=seg; else cSeg+=seg; });
-    const mkWall=(dstr,col)=>{ if(!dstr) return; const e=document.createElementNS(NS,'path'); e.setAttribute('d',dstr); e.setAttribute('fill','none'); e.setAttribute('stroke',col); e.setAttribute('stroke-width','0.16'); e.setAttribute('stroke-linecap','round'); e.setAttribute('stroke-linejoin','round'); svg.appendChild(e); };   // identical to a wall, just coloured = seamless
+    // draw the coloured gate UNDER the black walls (insert before the wall path) and with butt caps, so it sits
+    // exactly on its own edge and the walls cleanly cap its ends — no bleeding into neighbouring walls.
+    const mkWall=(dstr,col)=>{ if(!dstr) return; const e=document.createElementNS(NS,'path'); e.setAttribute('d',dstr); e.setAttribute('fill','none'); e.setAttribute('stroke',col); e.setAttribute('stroke-width','0.16'); e.setAttribute('stroke-linecap','butt'); e.setAttribute('stroke-linejoin','miter'); svg.insertBefore(e, p); };
     mkWall(cSeg,'#0aa39a'); mkWall(fSeg,'#2E8BC0');
     board.appendChild(svg);
     // home base (start) — where you respawn after being caught
