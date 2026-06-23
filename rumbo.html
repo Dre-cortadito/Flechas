@@ -87,13 +87,14 @@
   .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--ink); transition:color .15s linear; }
   .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
   @keyframes cpulse { 50%{ opacity:.45; } }
-  /* thin mission/status strip between maze and d-pad — same width, polished, not decorative */
-  .status-strip { width:var(--gw); box-sizing:border-box; margin:7px auto; padding:7px 12px; display:flex; align-items:center; justify-content:center; gap:7px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; font:800 clamp(11px,3.3vw,13px) var(--font-ui); letter-spacing:.04em; line-height:1; white-space:nowrap; }
-  .status-strip .ss-dot { font-size:1.05em; color:var(--accent); transition:color .15s; }
-  .status-strip .ss-nodos { color:var(--ink); font-variant-numeric:tabular-nums; }
-  .status-strip .ss-sep { color:var(--ink-soft, #9a938c); font-weight:600; }
-  .status-strip .ss-exit { color:var(--error); transition:color .15s; }
-  .status-strip.open .ss-dot, .status-strip.open .ss-exit { color:#157145; }
+  /* control row: Nodos info · D-pad · Salida info — uses the side space, no separate strip */
+  .ctl-row { width:var(--gw); box-sizing:border-box; margin:8px auto 0; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .ctl-info { flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px; line-height:1; text-align:center; }
+  .ci-dot { font-size:15px; color:var(--accent); transition:color .15s; }
+  .ci-num { font:800 clamp(18px,5.6vw,26px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink); }
+  .ci-cap { font:700 9.5px var(--font-ui); letter-spacing:1.5px; text-transform:uppercase; color:var(--ink-soft); }
+  .ci-exit { font:800 clamp(12px,3.8vw,16px) var(--font-ui); letter-spacing:.03em; text-transform:uppercase; color:var(--error); transition:color .15s; }
+  .ctl-row.open .ci-dot, .ctl-row.open .ci-exit { color:#157145; }
 
   /* ===== Maze ===== */
   .maze-wrap { width:100%; display:flex; justify-content:center; }
@@ -104,7 +105,7 @@
   .exit .p { fill:none; stroke:var(--success); stroke-width:4.3; stroke-linecap:round; stroke-linejoin:round; }
   .exit.open { filter:drop-shadow(0 0 4px rgba(0,0,0,.45)); animation:exitpulse 1.4s ease-in-out infinite; }
   @keyframes exitpulse { 50%{ transform:scale(1.08); } }
-  .dot { position:absolute; border-radius:50%; background:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.3); transition:top .19s linear,left .19s linear; z-index:3; }   /* glide fills the step interval → smooth, not choppy */
+  .dot { position:absolute; border-radius:50%; background:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.3); transition:top .2s linear,left .2s linear; z-index:3; }   /* glide == step interval → continuous, no stutter */
   .dot.snap { transition:none; }   /* used when teleporting home after a catch */
   .dot.froze { filter:grayscale(.75); opacity:.5; }
   .dot.frz { box-shadow:0 0 0 3px var(--freeze-fill), 0 1px 4px rgba(0,0,0,.3); }
@@ -153,7 +154,7 @@
 
   /* ===== Control area: just a clean cross of buttons — NO box, NO circle, part of the UI ===== */
   .play-wrap { width:100%; display:flex; justify-content:center; }
-  .play { position:relative; margin:2px auto 0; background:none; border:none; box-shadow:none; }   /* invisible wrapper, sits right under the status strip */
+  .play { position:relative; flex:0 0 auto; margin:0; background:none; border:none; box-shadow:none; }   /* the D-pad; centred in the control row, info on each side */
   .panel { position:absolute; inset:0; }
   .panel.hidden, .dpad.hidden { display:none; }
   #panel svg { display:block; width:100%; height:100%; }
@@ -274,17 +275,26 @@
       </div>
     </div>
 
-    <div class="status-strip" id="status-strip"><span class="ss-dot" id="ss-dot">◆</span><span class="ss-nodos" id="ss-nodos">0/3 NODOS</span><span class="ss-sep">·</span><span class="ss-exit" id="ss-exit">SALIDA CERRADA</span></div>
-
     <div class="play-wrap">
-      <div class="play" id="play">
-        <div class="panel" id="panel"></div>
-        <div class="dpad-cross hidden" id="dpad">
-          <button class="dbtn db-up" data-d="U" type="button" aria-label="Arriba"></button>
-          <button class="dbtn db-left" data-d="L" type="button" aria-label="Izquierda"></button>
-          <span class="dpad-hub" aria-hidden="true"></span>
-          <button class="dbtn db-right" data-d="R" type="button" aria-label="Derecha"></button>
-          <button class="dbtn db-down" data-d="D" type="button" aria-label="Abajo"></button>
+      <div class="ctl-row" id="ctl-row">
+        <div class="ctl-info ctl-left">
+          <span class="ci-dot" id="ss-dot">◆</span>
+          <span class="ci-num" id="ss-nodos">0/3</span>
+          <span class="ci-cap">Nodos</span>
+        </div>
+        <div class="play" id="play">
+          <div class="panel" id="panel"></div>
+          <div class="dpad-cross hidden" id="dpad">
+            <button class="dbtn db-up" data-d="U" type="button" aria-label="Arriba"></button>
+            <button class="dbtn db-left" data-d="L" type="button" aria-label="Izquierda"></button>
+            <span class="dpad-hub" aria-hidden="true"></span>
+            <button class="dbtn db-right" data-d="R" type="button" aria-label="Derecha"></button>
+            <button class="dbtn db-down" data-d="D" type="button" aria-label="Abajo"></button>
+          </div>
+        </div>
+        <div class="ctl-info ctl-right">
+          <span class="ci-cap">Salida</span>
+          <span class="ci-exit" id="ss-exit">Cerrada</span>
         </div>
       </div>
     </div>
@@ -334,8 +344,8 @@
   const ISO=isoFromHash()||new Date().toISOString().slice(0,10);
 
   const DIR={U:[-1,0],D:[1,0],L:[0,-1],R:[0,1]}, KEYS=['U','D','L','R'];
-  const STEP_MS=205;   // hold-to-repeat speed (gentler glide; doors gate progress, no clock)
-  const HOLD_DELAY=300;   // a tap = exactly one step; only after holding this long does it start repeating
+  const STEP_MS=200;   // hold-to-repeat speed (steady, gentle glide; no clock)
+  const HOLD_DELAY=200;   // = STEP_MS, so holding flows continuously (no pause after the first step); a quick tap is still one cell
   const oppDir={U:'D',D:'U',L:'R',R:'L'};
   const BU=100, BCOLS=13, BROWS=10, BCOVER=0.62, BMIN=3;   // denser Cascada board — solving a board is the real cost of a shortcut
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
@@ -640,22 +650,21 @@
   // ===== sizing & layout =====
   function sizeAll(){ const vw=window.innerWidth||390, vh=window.innerHeight||780;
     const W=Math.min(vw*0.94, 400);                   // EXACT same width as Cascada: min(94vw,400)
-    const B=10, GAP=10, GAUGE=46;                       // gauge bar sits between the maze and the d-pad
-    document.documentElement.style.setProperty('--gw', W+'px');   // rank / meta / gauge / d-pad all match this width
+    const B=10, GAP=10;                                 // no more full-width strip — info now flanks the d-pad
+    document.documentElement.style.setProperty('--gw', W+'px');   // rank / meta / control row all match this width
     // measure the real chrome above the maze so the d-pad can't get pushed off-screen
     const wrap = (board.closest && board.closest('.maze-wrap')) || board.parentElement;
     let top=200; try{ const t=wrap.getBoundingClientRect().top; if(t>60) top=t; }catch(e){}
-    const availH = Math.max(220, vh - top - GAUGE - GAP - 14);   // vertical room shared by maze + d-pad
+    const availH = Math.max(220, vh - top - GAP - 14);   // vertical room shared by maze + control row (strip removed → more room)
     let IW=W-B;
-    mzc=IW/MC; let mazeH=mzc*MR;                        // maze at FULL width (cells stay small/dense)
-    // d-pad height is whatever vertical room is left AFTER the (untouched) maze — never steal the maze's cells
-    let dpadH=Math.max(150, Math.min(176, Math.round(availH - mazeH - GAP)));
+    mzc=IW/MC; let mazeH=mzc*MR;                        // maze at FULL width (cells stay the same)
+    // d-pad height = leftover room under the (untouched) maze — bigger now that the strip is gone
+    let dpadH=Math.max(150, Math.min(212, Math.round(availH - mazeH - GAP)));
     if(mazeH + GAP + dpadH > availH){ const room=availH - GAP - mazeH; dpadH=Math.max(132, room); }   // last-resort clamp; keeps maze size intact
     mc=IW/BCOLS;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
-    // Connected cross D-pad: a symmetric square plus (no box). Uses the full leftover height; the maze
-    // keeps its full height. Arms touch a shared hub so it reads as one intentional D-pad.
-    const crossH=dpadH+B; const crossW=crossH;
+    // Connected cross D-pad: a symmetric square plus, centred in the control row with Nodos/Salida on its sides.
+    const crossH=dpadH; const crossW=dpadH;
     const play=$('play'); if(play){ play.style.width=crossW+'px'; play.style.height=crossH+'px'; }
     const cross=$('dpad'); if(cross){ cross.style.width=crossW+'px'; cross.style.height=crossH+'px'; }
     layoutMaze(); }
@@ -823,9 +832,9 @@
   function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
   function drawHUD(){ const cl=$('clock'); if(started&&!won) cl.textContent=fmt(Math.floor(runMs/1000));   // top = total time
     const open=keysGot>=keys.length;                                                                          // all Nodos active → exit opens
-    const sn=$('ss-nodos'); if(sn) sn.textContent=keysGot+'/'+keys.length+' NODOS';
-    const se=$('ss-exit'); if(se) se.textContent=open?'SALIDA ABIERTA':'SALIDA CERRADA';
-    const ss=$('status-strip'); if(ss) ss.classList.toggle('open', open);
+    const sn=$('ss-nodos'); if(sn) sn.textContent=keysGot+'/'+keys.length;                                    // count sits beside the d-pad (label "NODOS" is static)
+    const se=$('ss-exit'); if(se) se.textContent=open?'Abierta':'Cerrada';                                    // "SALIDA" label is static; this is the state
+    const row=$('ctl-row'); if(row) row.classList.toggle('open', open);                                       // turns the dot + state green when open
     updateRank(); }
 
   // ===== game flow =====
