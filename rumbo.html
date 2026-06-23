@@ -87,15 +87,30 @@
   .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--ink); transition:color .15s linear; }
   .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
   @keyframes cpulse { 50%{ opacity:.45; } }
-  /* control tray: Nodos · D-pad · Salida grouped in one soft, light panel (not a heavy box) */
-  .ctl-row { width:var(--gw); box-sizing:border-box; margin:8px auto 0; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:6px;
+  /* bottom console: a clean control panel — status line on top, big D-pad below (one soft, light panel) */
+  .console { width:var(--gw); box-sizing:border-box; margin:8px auto 0; padding:9px 14px 12px; display:flex; flex-direction:column; gap:8px;
     background:color-mix(in srgb, var(--ink) 4%, var(--paper)); border:1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius:20px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
-  .ctl-info { flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px; line-height:1; text-align:center; }
-  .ci-dot { font-size:15px; color:var(--accent); transition:color .15s; }
-  .ci-num { font:800 clamp(18px,5.6vw,26px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink); }
-  .ci-cap { font:700 9.5px var(--font-ui); letter-spacing:1.5px; text-transform:uppercase; color:var(--ink-soft); }
-  .ci-exit { font:800 clamp(12px,3.8vw,16px) var(--font-ui); letter-spacing:.03em; text-transform:uppercase; color:var(--error); transition:color .15s; }
-  .ctl-row.open .ci-dot, .ctl-row.open .ci-exit { color:#157145; }
+  .con-status { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 2px; min-height:22px; }
+  .cs-cell { display:flex; align-items:center; gap:5px; line-height:1; }
+  .cs-hearts .lives-row { gap:3px; } .cs-hearts .heart { width:19px; height:18px; }
+  .cs-dot { color:var(--accent); font-size:14px; transition:color .15s; }
+  .cs-num { font:800 clamp(16px,4.6vw,21px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink); }
+  .cs-cap { font:700 9px var(--font-ui); letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-soft); }
+  .ci-exit { font:800 clamp(11px,3.4vw,15px) var(--font-ui); letter-spacing:.03em; text-transform:uppercase; color:var(--error); transition:color .15s; }
+  .console.open .cs-dot, .console.open .ci-exit { color:#157145; }
+  /* wide mobile D-pad:  ↑  on top,  ←  ↓  →  below (↓ slightly raised) */
+  .dpad2 { display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:var(--db,62px) var(--db,62px); gap:8px; }
+  .dpad2.hidden { display:none; }
+  .dbtn { display:flex; align-items:center; justify-content:center; padding:0; margin:0; cursor:pointer; border:none; border-radius:16px;
+    background:var(--paper); color:var(--accent-deep); box-shadow:0 1px 3px rgba(0,0,0,.13); -webkit-tap-highlight-color:transparent; touch-action:none; transition:background .08s, transform .06s; }
+  .dbtn:active, .dbtn.on { background:var(--accent); }
+  .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
+  .dbtn svg { width:48%; height:48%; display:block; }
+  .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:4.6; stroke-linecap:round; stroke-linejoin:round; }
+  .db-up { grid-area:1/2; } .db-left { grid-area:2/1; } .db-right { grid-area:2/3; }
+  .db-down { grid-area:2/2; transform:translateY(-13%); }
+  .db-up:active, .db-up.on, .db-left:active, .db-left.on, .db-right:active, .db-right.on { transform:scale(.95); }
+  .db-down:active, .db-down.on { transform:translateY(-13%) scale(.95); }
 
   /* ===== Maze ===== */
   .maze-wrap { width:100%; display:flex; justify-content:center; }
@@ -111,6 +126,13 @@
   .dot { position:absolute; border-radius:50%; background:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.3); transition:top .2s linear,left .2s linear; z-index:3; }   /* glide == step interval → continuous, no stutter */
   .dot.snap { transition:none; }   /* used when teleporting home after a catch */
   .dot.froze { filter:grayscale(.75); opacity:.5; }
+  /* spotlight detection meter: a red countdown ring around the player + alarmed maze/spotlight */
+  .alarm-ring { position:absolute; border-radius:50%; z-index:5; pointer-events:none; display:none;
+    -webkit-mask:radial-gradient(transparent 56%, #000 59%); mask:radial-gradient(transparent 56%, #000 59%); }
+  .maze.alarmed { animation:alarmflash .5s ease-in-out infinite; }
+  @keyframes alarmflash { 50% { box-shadow:inset 0 0 0 3px rgba(214,48,48,.45), 0 3px 12px rgba(0,0,0,.1); } }
+  .maze.alarmed .zone.z-light { background:rgba(214,48,48,.30); }
+  .maze.alarmed .en-light { background:radial-gradient(circle, rgba(255,120,120,.95), rgba(214,48,48,.55) 60%, rgba(214,48,48,0) 72%); }
   .dot.frz { box-shadow:0 0 0 3px var(--freeze-fill), 0 1px 4px rgba(0,0,0,.3); }
   /* ---- stealth: guard + line of sight ---- */
   /* ---- real-time stealth enemies ---- */
@@ -264,7 +286,7 @@
       <span class="rank-chev">▾</span>
     </div>
     <div class="meta">
-      <div class="side is-left"><div class="lives-row" id="lives-row" aria-label="Vidas"></div><div class="l">Vidas</div></div>
+      <div class="side is-left"></div>
       <div class="clock" id="clock">0:00</div>
       <div class="side is-right"><div class="n" id="reto">—</div><div class="l">Reto</div></div>
     </div>
@@ -279,25 +301,18 @@
     </div>
 
     <div class="play-wrap">
-      <div class="ctl-row" id="ctl-row">
-        <div class="ctl-info ctl-left">
-          <span class="ci-dot" id="ss-dot">◆</span>
-          <span class="ci-num" id="ss-nodos">0/3</span>
-          <span class="ci-cap">Nodos</span>
+      <div class="console" id="ctl-row">
+        <div class="con-status">
+          <div class="cs-cell cs-hearts"><div class="lives-row" id="lives-row" aria-label="Vidas"></div></div>
+          <div class="cs-cell cs-nodos"><span class="cs-dot" id="ss-dot">◆</span><span class="cs-num" id="ss-nodos">0/3</span><span class="cs-cap">Nodos</span></div>
+          <div class="cs-cell cs-exit"><span class="cs-cap">Salida</span><span class="ci-exit" id="ss-exit">Cerrada</span></div>
         </div>
-        <div class="play" id="play">
-          <div class="panel" id="panel"></div>
-          <div class="dpad-cross hidden" id="dpad">
-            <button class="dbtn db-up" data-d="U" type="button" aria-label="Arriba"></button>
-            <button class="dbtn db-left" data-d="L" type="button" aria-label="Izquierda"></button>
-            <span class="dpad-hub" aria-hidden="true"></span>
-            <button class="dbtn db-right" data-d="R" type="button" aria-label="Derecha"></button>
-            <button class="dbtn db-down" data-d="D" type="button" aria-label="Abajo"></button>
-          </div>
-        </div>
-        <div class="ctl-info ctl-right">
-          <span class="ci-cap">Salida</span>
-          <span class="ci-exit" id="ss-exit">Cerrada</span>
+        <div class="panel hidden" id="panel"></div>
+        <div class="dpad2 hidden" id="dpad">
+          <button class="dbtn db-up" data-d="U" type="button" aria-label="Arriba"></button>
+          <button class="dbtn db-left" data-d="L" type="button" aria-label="Izquierda"></button>
+          <button class="dbtn db-down" data-d="D" type="button" aria-label="Abajo"></button>
+          <button class="dbtn db-right" data-d="R" type="button" aria-label="Derecha"></button>
         </div>
       </div>
     </div>
@@ -428,13 +443,13 @@
     return '<svg viewBox="0 0 34 32" aria-hidden="true"><path class="'+L+'" transform="translate(-1.3 0)" d="'+_HALFHEART+'"/><path class="'+R+'" transform="translate(35.068 0) scale(-1 1)" d="'+_HALFHEART+'"/></svg>'; }
   function renderLives(){ const el=$('lives-row'); if(!el) return; let h=''; for(let i=0;i<LIVES_MAX;i++){ const st=lives>=i+1?2:lives>=i+0.5?1:0; h+='<span class="heart">'+heartSVG(st)+'</span>'; } el.innerHTML=h; }
   // caught by an enemy → lose half a heart and get sent back to base (the start). 0 hearts = match over.
-  function onCaught(type){ if(lost||won) return; seenCount++; lives=Math.max(0, lives-0.5); runMs += (PEN[type]||4)*1000; renderLives();
+  function onCaught(type){ if(lost||won) return; lightMeter=0; setAlarm(false,0); seenCount++; lives=Math.max(0, lives-0.5); runMs += (PEN[type]||4)*1000; renderLives();
     const lr=$('lives-row'); if(lr){ lr.classList.add('spill'); setTimeout(()=>{ try{ lr.classList.remove('spill'); }catch(e){} },320); }
     flashDetect(type);
     dot.r=0; dot.c=0; placeDot(true);                   // back to home base (snap, don't glide across the maze)
     for(const e of enemies) e.sawYou=false;             // don't re-trigger instantly on the way back
     if(lives<=0) loseGame(); }
-  function loseGame(){ if(lost||won) return; lost=true; running=false; if(rafId) cancelAnimationFrame(rafId);
+  function loseGame(){ if(lost||won) return; lost=true; running=false; lightMeter=0; setAlarm(false,0); if(rafId) cancelAnimationFrame(rafId);
     const brand='<svg class="brand" viewBox="0 0 120 120" aria-hidden="true"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--error)"/><path d="M44 44 L76 76 M76 44 L44 76" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/></svg>';
     const g=$('gate'); g.classList.remove('hidden');
     g.innerHTML=brand+'<h2>¡Te atraparon!</h2><div class="vlbl">Te quedaste sin vidas</div>'
@@ -556,15 +571,41 @@
       const a=e.path[e.idx], b=e.path[n]||a; e.idx=n; e.prevR=e.r; e.prevC=e.c; e.r=b.r; e.c=b.c; if(e.type==='guard'){ const f=dirBetween(a,b); if(f) e.facing=f; } }
     else if(e.type==='camera'){ e.si=(e.si+1)%e.seq.length; e.facing=e.seq[e.si]; }
     else if(e.type==='laser'){ e.on=!e.on; } }
-  function enemyStep(dt){ if(!enemies.length) return;
+  function enemyStep(dt){ if(!enemies.length){ setAlarm(false,0); return; }
     for(const e of enemies){ e.acc+=dt; const period=e.type==='laser'?(e.on?e.onMs:e.offMs):e.ms; if(e.acc>=period){ e.acc-=period; advanceEnemy(e); } }
     computeWatch();
     const here=dot.r+','+dot.c; let caught=null;
+    // guards / cameras / lasers = instant detection (as before)
     for(const e of enemies){ const seen=e.zone.indexOf(here)>=0;
-      if(seen && !e.sawYou && started && !won && !lost) caught=e.type;   // spotted → handle once below
+      if(e.type!=='light' && seen && !e.sawYou && started && !won && !lost) caught=e.type;
       e.sawYou=seen; }
-    if(caught) onCaught(caught);
+    if(caught){ lightMeter=0; setAlarm(false,0); onCaught(caught); }
+    else {
+      // SPOTLIGHT = a 3s detection meter (tension, not instant). Escape before it fills and it resets.
+      const inLight = enemies.some(e=>e.type==='light' && e.zone.indexOf(here)>=0);
+      if(inLight && started && !won && !lost && phase==='move'){
+        lightMeter += dt; const frac=Math.min(1, lightMeter/LIGHT_CATCH); setAlarm(true, frac);
+        if(lightMeter>=LIGHT_CATCH){ lightMeter=0; setAlarm(false,0); onCaught('light'); }
+      } else if(lightMeter>0 || alarmOn){ lightMeter=0; setAlarm(false,0); }
+    }
     renderEnemies(); }
+  // ---- spotlight detection meter: ring around the player + alarm beep + red spotlight ----
+  let lightMeter=0; const LIGHT_CATCH=3000; let alarmOn=false, alarmEl=null, alarmCtx=null, alarmOsc=null, alarmIv=null;
+  function setAlarm(on, frac){
+    if(on){ alarmOn=true; board.classList.add('alarmed');
+      if(!alarmEl){ alarmEl=document.createElement('div'); alarmEl.className='alarm-ring'; board.appendChild(alarmEl); }
+      const sz=mzc*2.1; alarmEl.style.width=sz+'px'; alarmEl.style.height=sz+'px';
+      alarmEl.style.left=((dot.c+0.5)*mzc - sz/2)+'px'; alarmEl.style.top=((dot.r+0.5)*mzc - sz/2)+'px';
+      const deg=Math.max(8, frac*360); alarmEl.style.background='conic-gradient(var(--error) '+deg+'deg, rgba(214,48,48,.12) '+deg+'deg)';
+      alarmEl.style.display='block'; startBeep(frac);
+    } else if(alarmOn || (alarmEl&&alarmEl.style.display!=='none')){ alarmOn=false; board.classList.remove('alarmed'); if(alarmEl) alarmEl.style.display='none'; stopBeep(); }
+  }
+  function startBeep(frac){ try{ if(!alarmCtx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; alarmCtx=new AC(); }
+    if(alarmIv) return; const fire=()=>{ try{ const t=alarmCtx.currentTime; const o=alarmCtx.createOscillator(), g=alarmCtx.createGain();
+      o.type='square'; o.frequency.value=560; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.07,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.11);
+      o.connect(g); g.connect(alarmCtx.destination); o.start(t); o.stop(t+0.13); }catch(e){} };
+    fire(); alarmIv=setInterval(fire, 300); }catch(e){} }
+  function stopBeep(){ try{ if(alarmIv){ clearInterval(alarmIv); alarmIv=null; } }catch(e){} }
   function flashDetect(type){ board.classList.remove('detect'); void board.offsetWidth; board.classList.add('detect'); setTimeout(()=>{ try{ board.classList.remove('detect'); }catch(e){} },520);
     const nm={guard:'¡Guardia!',camera:'¡Cámara!',laser:'¡Láser!',light:'¡Reflector!'}[type]||'¡Te vieron!';
     rumboToast(nm+' −½ ❤ · +'+(PEN[type]||4)+'s · a la base'); }
@@ -667,16 +708,14 @@
     const availH = Math.max(220, vh - top - GAP - 14);   // vertical room shared by maze + control row (strip removed → more room)
     let IW=W-B;
     mzc=IW/MC; let mazeH=mzc*MR;                        // maze at FULL width (cells stay the same)
-    // d-pad height = leftover room under the (untouched) maze, minus the tray's own padding/margin (~30px)
-    const TRAY=30;
-    let dpadH=Math.max(148, Math.min(206, Math.round(availH - mazeH - GAP - TRAY)));
-    if(mazeH + GAP + TRAY + dpadH > availH){ const room=availH - GAP - TRAY - mazeH; dpadH=Math.max(130, room); }   // last-resort clamp; keeps maze size intact
     mc=IW/BCOLS;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
-    // Connected cross D-pad: a symmetric square plus, centred in the control row with Nodos/Salida on its sides.
-    const crossH=dpadH; const crossW=dpadH;
-    const play=$('play'); if(play){ play.style.width=crossW+'px'; play.style.height=crossH+'px'; }
-    const cross=$('dpad'); if(cross){ cross.style.width=crossW+'px'; cross.style.height=crossH+'px'; }
+    // Bottom console = status line + a 2-row D-pad. Size the BUTTONS to whatever room is left under the
+    // (untouched) maze, so the console fits without scrolling and stays a comfortable tap size.
+    const CHROME=8/*margin*/+21/*pad*/+2/*border*/+24/*status*/+8/*gap*/;   // console chrome around the 2 button rows
+    let db=Math.floor((availH - mazeH - GAP - CHROME)/2);
+    db=Math.max(44, Math.min(82, db));
+    document.documentElement.style.setProperty('--db', db+'px');
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit,.keyc,.base').forEach(n=>n.remove());
@@ -867,7 +906,7 @@
     document.body.classList.add('game-active'); sizeAll(); buildBigPad(); placeDot(true); showMove(); drawHUD();
     $('gate').classList.add('hidden');
     if(rafId) cancelAnimationFrame(rafId); started=true; rafId=requestAnimationFrame(loop); }
-  function winGame(){ if(won||lost) return; won=true; running=false; elapsedMs=runMs; if(rafId) cancelAnimationFrame(rafId);
+  function winGame(){ if(won||lost) return; won=true; running=false; lightMeter=0; setAlarm(false,0); elapsedMs=runMs; if(rafId) cancelAnimationFrame(rafId);
     const secs=Math.floor(elapsedMs/1000); finalRank=rankFromTime(secs); const hit=secs<=retoSecs;
     recordStats(secs, finalRank, hit);
     const best=bestToday(); const isBest=(best===null||secs<best); if(isBest) lsSet('rumbo-best-'+ISO, String(secs));
@@ -955,6 +994,7 @@
       enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),
       tick:(ms)=>enemyStep(ms), render:()=>drawHUD(), setDot:(r,c)=>{ dot.r=r; dot.c=c; placeDot(); }, lives:()=>lives, lost:()=>lost,
       tapDir:(d)=>{ if(phase!=='move') return null; pressDir(d,null); const md=moveDir; releaseAll(); return md; }, swipe:(dx,dy)=>{ swX=0; swY=0; swActive=true; const r=swipeProcess(dx,dy); swActive=false; return r; }, stepMs:()=>STEP_MS, holdDelay:()=>HOLD_DELAY,
+      lightMeter:()=>lightMeter, lightCatch:()=>LIGHT_CATCH, alarmOn:()=>alarmOn,
       doorTypes:()=>Object.assign({},doorType), enterSolveAt:(r,c,d)=>{ dot.r=r; dot.c=c; enterSolve(d); }, miniOpen:()=>!!(miniEl&&miniEl.classList.contains('show')), miniArrows:()=>mArr.length, miniFlujoCorrectSolves:()=>{ if(!mCorrect)return null; const s=mPipes.slice(); mPipes=mCorrect.slice(); const ok=flujoSolved(); mPipes=s; return ok; }, forceMiniWin:()=>miniWin(),
       nodosDbg:()=>({ nodos:keys.map(k=>({...k})), on:keysGot, total:keys.length, locked:[...lockedDoors], exit:{...exit}, won, lost }), dgOpenCount:()=>{ let n=0; for(let r=0;r<MR;r++)for(let c=0;c<MC;c++){ if(c<MC-1&&DG[2*r+1][2*c+2]==='.')n++; if(r<MR-1&&DG[2*r+2][2*c+1]==='.')n++; } return n; },
       solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<120){ const before=Object.keys(pcs).length; for(const id of Object.keys(pcs).map(Number)){ if(pcs[id]&&bLaneClear(pcs[id])) tapPiece(id); } if(Object.keys(pcs).length===before) break; g++; } },
