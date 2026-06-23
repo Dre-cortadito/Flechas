@@ -98,7 +98,7 @@
   /* ===== Maze ===== */
   .maze-wrap { width:100%; display:flex; justify-content:center; }
   .maze { position:relative; border-radius:18px; overflow:hidden; background:var(--board-bg); border:5px solid var(--accent-2); box-shadow:0 3px 12px rgba(0,0,0,.1); }
-  .maze::before, .play::before { content:''; position:absolute; inset:0; border:2.5px solid var(--ink); border-radius:13px; pointer-events:none; z-index:6; }   /* Cascada double-frame: teal outer + dark inner */
+  .maze::before { content:''; position:absolute; inset:0; border:2.5px solid var(--ink); border-radius:13px; pointer-events:none; z-index:6; }   /* Cascada double-frame: teal outer + dark inner */
   .cell { position:absolute; } .cell.wall { background:var(--wall); }
   .exit { position:absolute; display:flex; align-items:center; justify-content:center; } .exit svg { width:96%; height:96%; }
   .exit .p { fill:none; stroke:var(--success); stroke-width:4.3; stroke-linecap:round; stroke-linejoin:round; }
@@ -150,12 +150,9 @@
   .freeze-btn:not(.ready):not(.frozen) { opacity:.5; cursor:default; }
   .freeze-btn:active { transform:scale(.98); }
 
-  /* ===== Play area: swaps between the arrow board (solve) and the big d-pad (move) ===== */
+  /* ===== Control area: just a clean cross of buttons — NO box, NO circle, part of the UI ===== */
   .play-wrap { width:100%; display:flex; justify-content:center; }
-  .play { position:relative; width:var(--gw); margin:0 auto; background:var(--board-bg); border:5px solid var(--accent-2); border-radius:18px; overflow:hidden; box-shadow:0 3px 12px rgba(0,0,0,.1); }
-  .play.blank { animation:bpulse .5s ease; }
-  @keyframes bpulse { 50% { background:var(--accent-soft); } }
-  .play.blank .panel, .play.blank .dpad { opacity:.18; pointer-events:none; }
+  .play { position:relative; margin:2px auto 0; background:none; border:none; box-shadow:none; }   /* invisible wrapper, sits right under the status strip */
   .panel { position:absolute; inset:0; }
   .panel.hidden, .dpad.hidden { display:none; }
   #panel svg { display:block; width:100%; height:100%; }
@@ -164,19 +161,18 @@
   .piece .phit { fill:none; stroke:transparent; stroke-width:60; stroke-linecap:round; stroke-linejoin:round; }
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
-  /* ===== Circular "dish" D-pad — press a direction (or anywhere on the disc → nearest of 4) ===== */
-  .dpad-disc { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    width:clamp(120px,34vw,158px); height:clamp(120px,34vw,158px);   /* JS resizes to fit the pad exactly */
-    touch-action:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; cursor:pointer; }
-  .dpad-svg { width:100%; height:100%; display:block; overflow:visible; }
-  .dp-rim  { fill:color-mix(in srgb, var(--accent) 30%, var(--paper)); }
-  .dp-face { fill:var(--accent-soft); }
-  .dp-cross { filter:drop-shadow(0 2px 2px rgba(0,0,0,.16)); }
-  .dp-arm  { fill:var(--paper); transition:fill .08s; }
-  .dp-arm.on { fill:var(--accent); }
-  .dp-hub  { fill:color-mix(in srgb, var(--accent) 16%, var(--paper)); }
-  .dp-chev { fill:none; stroke:var(--accent-deep); stroke-width:5; stroke-linecap:round; stroke-linejoin:round; transition:stroke .08s; }
-  .dp-chev.on { stroke:#fff; }
+  /* ===== Minimal cross D-pad — 4 rounded buttons in a plus, no outer box ===== */
+  .dpad-cross { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:8px;
+    touch-action:none; -webkit-user-select:none; user-select:none; }
+  .dbtn { display:flex; align-items:center; justify-content:center; padding:0; margin:0; cursor:pointer;
+    border:2px solid var(--box-edge); border-radius:16px; background:var(--paper); color:var(--accent-deep);
+    -webkit-tap-highlight-color:transparent; touch-action:none; transition:background .08s, transform .06s, border-color .08s; }
+  .dbtn:active, .dbtn.on { background:var(--accent); border-color:var(--accent); transform:scale(.94); }
+  .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
+  .dbtn svg { width:66%; height:66%; display:block; }
+  .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:4.6; stroke-linecap:round; stroke-linejoin:round; }
+  .db-up { grid-area:1/2; } .db-left { grid-area:2/1; } .db-right { grid-area:2/3; } .db-down { grid-area:3/2; }
 
   /* ===== Gate / start + result ===== */
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:var(--board-bg); border-radius:12px; text-align:center; padding:24px; }
@@ -276,24 +272,11 @@
     <div class="play-wrap">
       <div class="play" id="play">
         <div class="panel" id="panel"></div>
-        <div class="dpad-disc hidden" id="dpad">
-          <svg class="dpad-svg" viewBox="0 0 100 100" aria-hidden="true">
-            <circle class="dp-rim" cx="50" cy="50" r="49"/>
-            <circle class="dp-face" cx="50" cy="50" r="45.5"/>
-            <g class="dp-cross">
-              <rect class="dp-arm" data-d="U" x="40" y="9"  width="20" height="41" rx="7"/>
-              <rect class="dp-arm" data-d="D" x="40" y="50" width="20" height="41" rx="7"/>
-              <rect class="dp-arm" data-d="L" x="9"  y="40" width="41" height="20" rx="7"/>
-              <rect class="dp-arm" data-d="R" x="50" y="40" width="41" height="20" rx="7"/>
-              <rect class="dp-hub" x="37" y="37" width="26" height="26" rx="9"/>
-            </g>
-            <g class="dp-chevs">
-              <path class="dp-chev" data-d="U" d="M44 27 L50 20 L56 27"/>
-              <path class="dp-chev" data-d="D" d="M44 73 L50 80 L56 73"/>
-              <path class="dp-chev" data-d="L" d="M27 44 L20 50 L27 56"/>
-              <path class="dp-chev" data-d="R" d="M73 44 L80 50 L73 56"/>
-            </g>
-          </svg>
+        <div class="dpad-cross hidden" id="dpad">
+          <button class="dbtn db-up" data-d="U" type="button" aria-label="Arriba"></button>
+          <button class="dbtn db-left" data-d="L" type="button" aria-label="Izquierda"></button>
+          <button class="dbtn db-right" data-d="R" type="button" aria-label="Derecha"></button>
+          <button class="dbtn db-down" data-d="D" type="button" aria-label="Abajo"></button>
         </div>
       </div>
     </div>
@@ -662,11 +645,11 @@
     if(mazeH + GAP + dpadH > availH){ const room=availH - GAP - mazeH; dpadH=Math.max(132, room); }   // last-resort clamp; keeps maze size intact
     mc=IW/BCOLS;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
-    // Joystick pad: a compact, roughly square thumb area under the board (maze keeps its full height).
-    const playH=dpadH+B; const playW=Math.min(W, Math.round(playH*1.12));
-    const play=$('play'); if(play){ play.style.width=playW+'px'; play.style.height=playH+'px'; }
-    // size the circular D-pad so the whole disc FITS inside the pad (no clipping)
-    const disc=$('dpad'); if(disc){ const bd=Math.max(112, Math.min(playW, playH)-26); disc.style.width=bd+'px'; disc.style.height=bd+'px'; }
+    // Minimal cross D-pad: no box. The plus needs 3 rows of height; we use the full leftover height and
+    // a little extra width so the buttons are big, comfortable tap targets. Maze keeps its full height.
+    const crossH=dpadH+B; const crossW=Math.min(W, Math.round(crossH*1.32));
+    const play=$('play'); if(play){ play.style.width=crossW+'px'; play.style.height=crossH+'px'; }
+    const cross=$('dpad'); if(cross){ cross.style.width=crossW+'px'; cross.style.height=crossH+'px'; }
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit,.keyc,.base').forEach(n=>n.remove());
@@ -702,7 +685,7 @@
   // ===== phase transitions =====
   function showSolve(){ $('dpad').classList.add('hidden'); $('panel').classList.remove('hidden'); renderPieces(); }
   function showMove(){ $('panel').classList.add('hidden'); $('dpad').classList.remove('hidden'); }
-  function enterMove(){ phase='move'; moveDir=null; padReset(); showMove(); placeDot(); }
+  function enterMove(){ phase='move'; moveDir=null; releaseAll(); showMove(); placeDot(); }
   function enterSolve(d){ startRun(); phase='solve'; currentDoor={r:dot.r,c:dot.c,d}; placeDot();
     const type=doorType[dot.r+','+dot.c+','+d]||'cascada';
     openMini(type, ()=>{ phase='move'; openCurrentDoor(); }); }
@@ -773,24 +756,29 @@
     return true; }
   function chevSVG(d){ const p={U:'M9 26 L20 14 L31 26', D:'M9 14 L20 26 L31 14', L:'M26 9 L14 20 L26 31', R:'M14 9 L26 20 L14 31'}[d];
     return '<svg viewBox="0 0 40 40"><path class="p" d="'+p+'"/></svg>'; }   // family chevron, not a full arrow
-  // ===== Circular "dish" D-pad: press a direction; press anywhere on the disc → nearest of 4 =====
-  let padActive=false, padPtr=null, padCX=0, padCY=0, padDir=null;
-  function padHi(d){ document.querySelectorAll('.dp-arm.on,.dp-chev.on').forEach(el=>el.classList.remove('on'));
-    if(d){ document.querySelectorAll('[data-d="'+d+'"]').forEach(el=>{ if(el.classList.contains('dp-arm')||el.classList.contains('dp-chev')) el.classList.add('on'); }); } }
-  function padReset(){ padActive=false; padPtr=null; padDir=null; moveDir=null; padHi(null); }
-  function padDirOf(dx,dy){ if(Math.hypot(dx,dy)<6) return null;          // dead centre = no move
-    return Math.abs(dx)>=Math.abs(dy) ? (dx<0?'L':'R') : (dy<0?'U':'D'); }  // nearest of the 4 grid directions
-  function padPress(clientX,clientY){ const d=padDirOf(clientX-padCX, clientY-padCY); if(!d) return;
-    if(d!==padDir){ padDir=d; moveDir=d; acc=STEP_MS-HOLD_DELAY; step(d); padHi(d); } }   // one step now; repeat only after HOLD_DELAY
-  function buildBigPad(){ const st=$('dpad'); if(!st){ return; } if(st._wired){ padReset(); return; } st._wired=true;
-    st.addEventListener('pointerdown', ev=>{ if(phase!=='move') return; ev.preventDefault();
-      const r=st.getBoundingClientRect(); padCX=r.left+r.width/2; padCY=r.top+r.height/2;   // fixed disc centre
-      padActive=true; padPtr=ev.pointerId; try{ st.setPointerCapture(ev.pointerId); }catch(e){}
-      padPress(ev.clientX,ev.clientY); });
-    st.addEventListener('pointermove', ev=>{ if(!padActive||ev.pointerId!==padPtr) return; ev.preventDefault(); padPress(ev.clientX,ev.clientY); });   // roll thumb to change direction
-    const end=ev=>{ if(ev&&ev.type!=='pointercancel'&&padActive&&ev.pointerId!==padPtr) return; padReset(); };
-    st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end); st.addEventListener('lostpointercapture', end); padReset(); }
-  function releaseAll(){ padReset(); }
+  // ===== Minimal cross D-pad: 4 buttons (tap = 1 step, hold = gentle repeat) + swipe on the board =====
+  function flashBtn(d){ const b=document.querySelector('#dpad .dbtn[data-d="'+d+'"]'); if(b){ b.classList.add('on'); clearTimeout(b._t); b._t=setTimeout(()=>{ try{ b.classList.remove('on'); }catch(e){} },120); } }
+  function pressDir(d,btn){ moveDir=d; acc=STEP_MS-HOLD_DELAY; step(d); if(btn) btn.classList.add('on'); }   // one step now; repeat only after HOLD_DELAY
+  // swipe / drag anywhere on the maze = secondary control: one step per ~SW_GAP px in the dominant axis
+  let swActive=false, swPtr=null, swX=0, swY=0; const SW_GAP=30;
+  function swipeProcess(clientX,clientY){ let dx=clientX-swX, dy=clientY-swY; let n=0,last=null;
+    while(Math.max(Math.abs(dx),Math.abs(dy))>=SW_GAP && phase==='move'){
+      let d; if(Math.abs(dx)>=Math.abs(dy)){ d=dx<0?'L':'R'; if(dx<0){dx+=SW_GAP;swX-=SW_GAP;}else{dx-=SW_GAP;swX+=SW_GAP;} }
+      else { d=dy<0?'U':'D'; if(dy<0){dy+=SW_GAP;swY-=SW_GAP;}else{dy-=SW_GAP;swY+=SW_GAP;} }
+      step(d); flashBtn(d); last=d; n++; }
+    return {n,last}; }
+  function buildBigPad(){
+    document.querySelectorAll('#dpad .dbtn').forEach(b=>{ const d=b.getAttribute('data-d'); b.innerHTML=chevSVG(d);
+      if(b._wired) return; b._wired=true;
+      b.addEventListener('pointerdown', ev=>{ if(phase!=='move') return; ev.preventDefault(); pressDir(d,b); try{ b.setPointerCapture(ev.pointerId); }catch(e){} });
+      const off=()=>{ b.classList.remove('on'); if(moveDir===d) moveDir=null; };
+      b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off); });
+    const bd=$('maze'); if(bd && !bd._swwired){ bd._swwired=true;
+      bd.addEventListener('pointerdown', ev=>{ if(phase!=='move') return; swActive=true; swPtr=ev.pointerId; swX=ev.clientX; swY=ev.clientY; });
+      bd.addEventListener('pointermove', ev=>{ if(!swActive||ev.pointerId!==swPtr||phase!=='move') return; ev.preventDefault(); swipeProcess(ev.clientX,ev.clientY); });
+      const swend=()=>{ swActive=false; swPtr=null; }; bd.addEventListener('pointerup', swend); bd.addEventListener('pointercancel', swend); }
+    releaseAll(); }
+  function releaseAll(){ moveDir=null; swActive=false; swPtr=null; document.querySelectorAll('#dpad .dbtn.on').forEach(b=>b.classList.remove('on')); }
   document.addEventListener('pointerup',releaseAll); document.addEventListener('pointercancel',releaseAll);
   document.addEventListener('keydown',e=>{ const m={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'}[e.key]; if(m&&phase==='move'){ e.preventDefault(); if(moveDir!==m){moveDir=m;acc=STEP_MS-HOLD_DELAY;step(m);} } });
   document.addEventListener('keyup',e=>{ if(e.key.indexOf('Arrow')===0) moveDir=null; });
@@ -923,7 +911,7 @@
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
       enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),
       tick:(ms)=>enemyStep(ms), render:()=>drawHUD(), setDot:(r,c)=>{ dot.r=r; dot.c=c; placeDot(); }, lives:()=>lives, lost:()=>lost,
-      padPress:(dx,dy)=>{ padActive=true; padCX=0; padCY=0; padPress(dx,dy); return moveDir; }, padRelease:()=>{ releaseAll(); return moveDir; }, stepMs:()=>STEP_MS, holdDelay:()=>HOLD_DELAY,
+      tapDir:(d)=>{ if(phase!=='move') return null; pressDir(d,null); const md=moveDir; releaseAll(); return md; }, swipe:(dx,dy)=>{ swX=0; swY=0; swActive=true; const r=swipeProcess(dx,dy); swActive=false; return r; }, stepMs:()=>STEP_MS, holdDelay:()=>HOLD_DELAY,
       doorTypes:()=>Object.assign({},doorType), enterSolveAt:(r,c,d)=>{ dot.r=r; dot.c=c; enterSolve(d); }, miniOpen:()=>!!(miniEl&&miniEl.classList.contains('show')), miniArrows:()=>mArr.length, miniFlujoCorrectSolves:()=>{ if(!mCorrect)return null; const s=mPipes.slice(); mPipes=mCorrect.slice(); const ok=flujoSolved(); mPipes=s; return ok; }, forceMiniWin:()=>miniWin(),
       nodosDbg:()=>({ nodos:keys.map(k=>({...k})), on:keysGot, total:keys.length, locked:[...lockedDoors], exit:{...exit}, won, lost }), dgOpenCount:()=>{ let n=0; for(let r=0;r<MR;r++)for(let c=0;c<MC;c++){ if(c<MC-1&&DG[2*r+1][2*c+2]==='.')n++; if(r<MR-1&&DG[2*r+2][2*c+1]==='.')n++; } return n; },
       solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<120){ const before=Object.keys(pcs).length; for(const id of Object.keys(pcs).map(Number)){ if(pcs[id]&&bLaneClear(pcs[id])) tapPiece(id); } if(Object.keys(pcs).length===before) break; g++; } },
