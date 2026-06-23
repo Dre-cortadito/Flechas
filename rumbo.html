@@ -188,25 +188,6 @@
   .piece .phit { fill:none; stroke:transparent; stroke-width:60; stroke-linecap:round; stroke-linejoin:round; }
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
-  /* ===== Connected cross D-pad — one solid plus (arms touch a shared hub), no outer box ===== */
-  .dpad-cross { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:0;
-    touch-action:none; -webkit-user-select:none; user-select:none;
-    filter:drop-shadow(0 2px 3px rgba(0,0,0,.18)); }   /* one shadow outlines the whole plus */
-  .dbtn, .dpad-hub { background:var(--paper); margin:0; border:none; }
-  .dbtn { display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; color:var(--accent-deep);
-    -webkit-tap-highlight-color:transparent; touch-action:none; transition:background .08s; }
-  .dbtn:active, .dbtn.on { background:var(--accent); }
-  .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
-  .dbtn svg { width:58%; height:58%; display:block; }
-  .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:4.6; stroke-linecap:round; stroke-linejoin:round; }
-  /* rounded outer tips, square junctions so the arms merge into one pad */
-  .db-up   { grid-area:1/2; border-radius:18px 18px 0 0; }
-  .db-down { grid-area:3/2; border-radius:0 0 18px 18px; }
-  .db-left { grid-area:2/1; border-radius:18px 0 0 18px; }
-  .db-right{ grid-area:2/3; border-radius:0 18px 18px 0; }
-  .dpad-hub{ grid-area:2/2; }
-
   /* ===== Gate / start + result ===== */
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:color-mix(in srgb, var(--board-bg) 90%, transparent); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); border-radius:12px; text-align:center; padding:24px; }
   .gate.hidden { display:none; }
