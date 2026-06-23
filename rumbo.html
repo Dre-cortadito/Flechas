@@ -169,10 +169,8 @@
   .stick.dragging { cursor:grabbing; }
   /* resting base, centred; it FLOATS to wherever your thumb lands while dragging */
   .stick-base { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    width:clamp(128px,40vw,170px); height:clamp(128px,40vw,170px); border-radius:50%;
-    background:var(--accent-soft); box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--accent) 26%, transparent), inset 0 6px 16px rgba(0,0,0,.07);
-    transition:opacity .15s ease; }
-  .stick.dragging .stick-base { transition:none; }   /* no lag while floating to the thumb */
+    width:clamp(108px,32vw,150px); height:clamp(108px,32vw,150px); border-radius:50%;   /* JS resizes to fit the pad exactly */
+    background:var(--accent-soft); box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--accent) 26%, transparent), inset 0 6px 16px rgba(0,0,0,.07); }
   /* faint directional hints around the rim */
   .stick-hint { position:absolute; width:0; height:0; opacity:.5; }
   .stick-hint::before { content:""; position:absolute; width:9px; height:9px; border:2.6px solid var(--accent-deep); border-left:0; border-bottom:0; transform:translate(-50%,-50%) rotate(-45deg); }
@@ -656,10 +654,11 @@
     if(mazeH + GAP + dpadH > availH){ const room=availH - GAP - mazeH; dpadH=Math.max(132, room); }   // last-resort clamp; keeps maze size intact
     mc=IW/BCOLS;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
-    // Joystick pad: a roughly square thumb area (the whole pad is touch-active and the stick floats to
-    // your finger), kept compact under the board so the maze keeps its full height.
-    const playH=dpadH+B; const playW=Math.min(W, Math.round(playH*1.3));
+    // Joystick pad: a compact, roughly square thumb area under the board (maze keeps its full height).
+    const playH=dpadH+B; const playW=Math.min(W, Math.round(playH*1.12));
     const play=$('play'); if(play){ play.style.width=playW+'px'; play.style.height=playH+'px'; }
+    // size the joystick base so the whole circle FITS inside the pad (no clipping)
+    const sb=$('stick-base'); if(sb){ const bd=Math.max(108, Math.min(playW, playH)-34); sb.style.width=bd+'px'; sb.style.height=bd+'px'; }
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit,.keyc,.base').forEach(n=>n.remove());
@@ -772,8 +771,8 @@
     if(kn) kn.style.transform='translate(-50%,-50%)';
     if(bs){ bs.style.left=''; bs.style.top=''; }     // CSS recentres the base when idle
     if(st) st.classList.remove('dragging'); }
-  function stickDir(dx,dy){ const dz=13; if(Math.hypot(dx,dy)<dz) return null;   // small deadzone = no movement
-    return Math.abs(dx)>=Math.abs(dy) ? (dx<0?'L':'R') : (dy<0?'U':'D'); }       // dominant axis (grid is 4-way)
+  function stickDir(dx,dy){ const dz=10; if(Math.hypot(dx,dy)<dz) return null;   // tiny deadzone = no movement
+    return Math.abs(dx)>=Math.abs(dy) ? (dx<0?'L':'R') : (dy<0?'U':'D'); }       // snaps to whichever direction the thumb is closest to (grid is 4-way)
   function stickMove(clientX,clientY){ const dxR=clientX-stickCX, dyR=clientY-stickCY;
     const m=Math.hypot(dxR,dyR)||1, cl=Math.min(m,stickR), kx=dxR/m*cl, ky=dyR/m*cl;
     const kn=$('stick-knob'); if(kn) kn.style.transform='translate(calc(-50% + '+kx.toFixed(1)+'px), calc(-50% + '+ky.toFixed(1)+'px))';
@@ -783,11 +782,8 @@
     const base=$('stick-base');
     st.addEventListener('pointerdown', ev=>{ if(phase!=='move') return; ev.preventDefault();
       stickActive=true; stickPtr=ev.pointerId; st.classList.add('dragging');
-      const pr=st.getBoundingClientRect(); const bw=base.offsetWidth||150, half=bw/2;
-      let lx=ev.clientX-pr.left, ly=ev.clientY-pr.top;                          // float the base to where the thumb lands
-      lx=Math.max(half,Math.min(pr.width-half||lx,lx)); ly=Math.max(half,Math.min(pr.height-half||ly,ly));
-      base.style.left=lx+'px'; base.style.top=ly+'px';
-      stickCX=pr.left+lx; stickCY=pr.top+ly; stickR=Math.max(34, half*0.62);
+      const br=base.getBoundingClientRect(); const half=br.width/2||70;          // FIXED, centred base (it doesn't move) — knob just leans toward your thumb
+      stickCX=br.left+br.width/2; stickCY=br.top+br.height/2; stickR=Math.max(22, half*0.46);   // modest travel so it doesn't slide around
       try{ st.setPointerCapture(ev.pointerId); }catch(e){}
       stickMove(ev.clientX,ev.clientY); });
     st.addEventListener('pointermove', ev=>{ if(!stickActive||ev.pointerId!==stickPtr) return; ev.preventDefault(); stickMove(ev.clientX,ev.clientY); });
