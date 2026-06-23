@@ -164,24 +164,19 @@
   .piece .phit { fill:none; stroke:transparent; stroke-width:60; stroke-linecap:round; stroke-linejoin:round; }
   .piece.firing .pline, .piece.firing .phead { stroke:#157145; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
-  /* ===== Joystick — slide your thumb anywhere on the pad; no tiny buttons to hit ===== */
-  .stick { position:absolute; inset:0; touch-action:none; -webkit-user-select:none; user-select:none; cursor:grab; }
-  .stick.dragging { cursor:grabbing; }
-  /* resting base, centred; it FLOATS to wherever your thumb lands while dragging */
-  .stick-base { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    width:clamp(108px,32vw,150px); height:clamp(108px,32vw,150px); border-radius:50%;   /* JS resizes to fit the pad exactly */
-    background:var(--accent-soft); box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--accent) 26%, transparent), inset 0 6px 16px rgba(0,0,0,.07); }
-  /* faint directional hints around the rim */
-  .stick-hint { position:absolute; width:0; height:0; opacity:.5; }
-  .stick-hint::before { content:""; position:absolute; width:9px; height:9px; border:2.6px solid var(--accent-deep); border-left:0; border-bottom:0; transform:translate(-50%,-50%) rotate(-45deg); }
-  .sh-u { left:50%; top:13%; } .sh-d { left:50%; top:87%; } .sh-d::before { transform:translate(-50%,-50%) rotate(135deg); }
-  .sh-l { left:13%; top:50%; } .sh-l::before { transform:translate(-50%,-50%) rotate(-135deg); }
-  .sh-r { left:87%; top:50%; } .sh-r::before { transform:translate(-50%,-50%) rotate(45deg); }
-  /* the knob the thumb pushes */
-  .stick-knob { position:absolute; left:50%; top:50%; width:44%; height:44%; border-radius:50%;
-    background:var(--accent); box-shadow:0 4px 12px rgba(0,0,0,.22), inset 0 2px 4px rgba(255,255,255,.25);
-    transform:translate(-50%,-50%); transition:transform .09s ease, background .1s; will-change:transform; }
-  .stick.dragging .stick-knob { transition:background .1s; background:var(--accent-deep); }
+  /* ===== Circular "dish" D-pad — press a direction (or anywhere on the disc → nearest of 4) ===== */
+  .dpad-disc { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:clamp(120px,34vw,158px); height:clamp(120px,34vw,158px);   /* JS resizes to fit the pad exactly */
+    touch-action:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; cursor:pointer; }
+  .dpad-svg { width:100%; height:100%; display:block; overflow:visible; }
+  .dp-rim  { fill:color-mix(in srgb, var(--accent) 30%, var(--paper)); }
+  .dp-face { fill:var(--accent-soft); }
+  .dp-cross { filter:drop-shadow(0 2px 2px rgba(0,0,0,.16)); }
+  .dp-arm  { fill:var(--paper); transition:fill .08s; }
+  .dp-arm.on { fill:var(--accent); }
+  .dp-hub  { fill:color-mix(in srgb, var(--accent) 16%, var(--paper)); }
+  .dp-chev { fill:none; stroke:var(--accent-deep); stroke-width:5; stroke-linecap:round; stroke-linejoin:round; transition:stroke .08s; }
+  .dp-chev.on { stroke:#fff; }
 
   /* ===== Gate / start + result ===== */
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:var(--board-bg); border-radius:12px; text-align:center; padding:24px; }
@@ -281,12 +276,24 @@
     <div class="play-wrap">
       <div class="play" id="play">
         <div class="panel" id="panel"></div>
-        <div class="stick hidden" id="dpad">
-          <div class="stick-base" id="stick-base">
-            <span class="stick-hint sh-u"></span><span class="stick-hint sh-d"></span>
-            <span class="stick-hint sh-l"></span><span class="stick-hint sh-r"></span>
-            <div class="stick-knob" id="stick-knob"></div>
-          </div>
+        <div class="dpad-disc hidden" id="dpad">
+          <svg class="dpad-svg" viewBox="0 0 100 100" aria-hidden="true">
+            <circle class="dp-rim" cx="50" cy="50" r="49"/>
+            <circle class="dp-face" cx="50" cy="50" r="45.5"/>
+            <g class="dp-cross">
+              <rect class="dp-arm" data-d="U" x="40" y="9"  width="20" height="41" rx="7"/>
+              <rect class="dp-arm" data-d="D" x="40" y="50" width="20" height="41" rx="7"/>
+              <rect class="dp-arm" data-d="L" x="9"  y="40" width="41" height="20" rx="7"/>
+              <rect class="dp-arm" data-d="R" x="50" y="40" width="41" height="20" rx="7"/>
+              <rect class="dp-hub" x="37" y="37" width="26" height="26" rx="9"/>
+            </g>
+            <g class="dp-chevs">
+              <path class="dp-chev" data-d="U" d="M44 27 L50 20 L56 27"/>
+              <path class="dp-chev" data-d="D" d="M44 73 L50 80 L56 73"/>
+              <path class="dp-chev" data-d="L" d="M27 44 L20 50 L27 56"/>
+              <path class="dp-chev" data-d="R" d="M73 44 L80 50 L73 56"/>
+            </g>
+          </svg>
         </div>
       </div>
     </div>
@@ -336,7 +343,8 @@
   const ISO=isoFromHash()||new Date().toISOString().slice(0,10);
 
   const DIR={U:[-1,0],D:[1,0],L:[0,-1],R:[0,1]}, KEYS=['U','D','L','R'];
-  const STEP_MS=150;   // free-roam drive speed (no clock — you move freely; doors gate progress)
+  const STEP_MS=205;   // hold-to-repeat speed (gentler glide; doors gate progress, no clock)
+  const HOLD_DELAY=300;   // a tap = exactly one step; only after holding this long does it start repeating
   const oppDir={U:'D',D:'U',L:'R',R:'L'};
   const BU=100, BCOLS=13, BROWS=10, BCOVER=0.62, BMIN=3;   // denser Cascada board — solving a board is the real cost of a shortcut
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
@@ -657,8 +665,8 @@
     // Joystick pad: a compact, roughly square thumb area under the board (maze keeps its full height).
     const playH=dpadH+B; const playW=Math.min(W, Math.round(playH*1.12));
     const play=$('play'); if(play){ play.style.width=playW+'px'; play.style.height=playH+'px'; }
-    // size the joystick base so the whole circle FITS inside the pad (no clipping)
-    const sb=$('stick-base'); if(sb){ const bd=Math.max(108, Math.min(playW, playH)-34); sb.style.width=bd+'px'; sb.style.height=bd+'px'; }
+    // size the circular D-pad so the whole disc FITS inside the pad (no clipping)
+    const disc=$('dpad'); if(disc){ const bd=Math.max(112, Math.min(playW, playH)-26); disc.style.width=bd+'px'; disc.style.height=bd+'px'; }
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit,.keyc,.base').forEach(n=>n.remove());
@@ -694,7 +702,7 @@
   // ===== phase transitions =====
   function showSolve(){ $('dpad').classList.add('hidden'); $('panel').classList.remove('hidden'); renderPieces(); }
   function showMove(){ $('panel').classList.add('hidden'); $('dpad').classList.remove('hidden'); }
-  function enterMove(){ phase='move'; moveDir=null; stickReset(); showMove(); placeDot(); }
+  function enterMove(){ phase='move'; moveDir=null; padReset(); showMove(); placeDot(); }
   function enterSolve(d){ startRun(); phase='solve'; currentDoor={r:dot.r,c:dot.c,d}; placeDot();
     const type=doorType[dot.r+','+dot.c+','+d]||'cascada';
     openMini(type, ()=>{ phase='move'; openCurrentDoor(); }); }
@@ -765,34 +773,26 @@
     return true; }
   function chevSVG(d){ const p={U:'M9 26 L20 14 L31 26', D:'M9 14 L20 26 L31 14', L:'M26 9 L14 20 L26 31', R:'M14 9 L26 20 L14 31'}[d];
     return '<svg viewBox="0 0 40 40"><path class="p" d="'+p+'"/></svg>'; }   // family chevron, not a full arrow
-  // ===== Joystick: slide a thumb anywhere on the pad; snaps to 4-way for the grid maze =====
-  let stickActive=false, stickPtr=null, stickCX=0, stickCY=0, stickR=46;
-  function stickReset(){ const kn=$('stick-knob'), bs=$('stick-base'), st=$('dpad');
-    if(kn) kn.style.transform='translate(-50%,-50%)';
-    if(bs){ bs.style.left=''; bs.style.top=''; }     // CSS recentres the base when idle
-    if(st) st.classList.remove('dragging'); }
-  function stickDir(dx,dy){ const dz=10; if(Math.hypot(dx,dy)<dz) return null;   // tiny deadzone = no movement
-    return Math.abs(dx)>=Math.abs(dy) ? (dx<0?'L':'R') : (dy<0?'U':'D'); }       // snaps to whichever direction the thumb is closest to (grid is 4-way)
-  function stickMove(clientX,clientY){ const dxR=clientX-stickCX, dyR=clientY-stickCY;
-    const m=Math.hypot(dxR,dyR)||1, cl=Math.min(m,stickR), kx=dxR/m*cl, ky=dyR/m*cl;
-    const kn=$('stick-knob'); if(kn) kn.style.transform='translate(calc(-50% + '+kx.toFixed(1)+'px), calc(-50% + '+ky.toFixed(1)+'px))';
-    const d=stickDir(dxR,dyR);
-    if(d){ if(moveDir!==d){ moveDir=d; acc=0; step(d); } } else { moveDir=null; } }
-  function buildBigPad(){ const st=$('dpad'); if(!st){ return; } if(st._wired){ stickReset(); return; } st._wired=true;
-    const base=$('stick-base');
+  // ===== Circular "dish" D-pad: press a direction; press anywhere on the disc → nearest of 4 =====
+  let padActive=false, padPtr=null, padCX=0, padCY=0, padDir=null;
+  function padHi(d){ document.querySelectorAll('.dp-arm.on,.dp-chev.on').forEach(el=>el.classList.remove('on'));
+    if(d){ document.querySelectorAll('[data-d="'+d+'"]').forEach(el=>{ if(el.classList.contains('dp-arm')||el.classList.contains('dp-chev')) el.classList.add('on'); }); } }
+  function padReset(){ padActive=false; padPtr=null; padDir=null; moveDir=null; padHi(null); }
+  function padDirOf(dx,dy){ if(Math.hypot(dx,dy)<6) return null;          // dead centre = no move
+    return Math.abs(dx)>=Math.abs(dy) ? (dx<0?'L':'R') : (dy<0?'U':'D'); }  // nearest of the 4 grid directions
+  function padPress(clientX,clientY){ const d=padDirOf(clientX-padCX, clientY-padCY); if(!d) return;
+    if(d!==padDir){ padDir=d; moveDir=d; acc=STEP_MS-HOLD_DELAY; step(d); padHi(d); } }   // one step now; repeat only after HOLD_DELAY
+  function buildBigPad(){ const st=$('dpad'); if(!st){ return; } if(st._wired){ padReset(); return; } st._wired=true;
     st.addEventListener('pointerdown', ev=>{ if(phase!=='move') return; ev.preventDefault();
-      stickActive=true; stickPtr=ev.pointerId; st.classList.add('dragging');
-      const br=base.getBoundingClientRect(); const half=br.width/2||70;          // FIXED, centred base (it doesn't move) — knob just leans toward your thumb
-      stickCX=br.left+br.width/2; stickCY=br.top+br.height/2; stickR=Math.max(22, half*0.46);   // modest travel so it doesn't slide around
-      try{ st.setPointerCapture(ev.pointerId); }catch(e){}
-      stickMove(ev.clientX,ev.clientY); });
-    st.addEventListener('pointermove', ev=>{ if(!stickActive||ev.pointerId!==stickPtr) return; ev.preventDefault(); stickMove(ev.clientX,ev.clientY); });
-    const end=ev=>{ if(ev&&ev.type!=='pointercancel'&&stickActive&&ev.pointerId!==stickPtr) return; stickActive=false; stickPtr=null; moveDir=null; stickReset(); };
-    st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end);
-    st.addEventListener('lostpointercapture', end); stickReset(); }
-  function releaseAll(){ stickActive=false; stickPtr=null; moveDir=null; stickReset(); }
+      const r=st.getBoundingClientRect(); padCX=r.left+r.width/2; padCY=r.top+r.height/2;   // fixed disc centre
+      padActive=true; padPtr=ev.pointerId; try{ st.setPointerCapture(ev.pointerId); }catch(e){}
+      padPress(ev.clientX,ev.clientY); });
+    st.addEventListener('pointermove', ev=>{ if(!padActive||ev.pointerId!==padPtr) return; ev.preventDefault(); padPress(ev.clientX,ev.clientY); });   // roll thumb to change direction
+    const end=ev=>{ if(ev&&ev.type!=='pointercancel'&&padActive&&ev.pointerId!==padPtr) return; padReset(); };
+    st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end); st.addEventListener('lostpointercapture', end); padReset(); }
+  function releaseAll(){ padReset(); }
   document.addEventListener('pointerup',releaseAll); document.addEventListener('pointercancel',releaseAll);
-  document.addEventListener('keydown',e=>{ const m={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'}[e.key]; if(m&&phase==='move'){ e.preventDefault(); if(moveDir!==m){moveDir=m;acc=0;step(m);} } });
+  document.addEventListener('keydown',e=>{ const m={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'}[e.key]; if(m&&phase==='move'){ e.preventDefault(); if(moveDir!==m){moveDir=m;acc=STEP_MS-HOLD_DELAY;step(m);} } });
   document.addEventListener('keyup',e=>{ if(e.key.indexOf('Arrow')===0) moveDir=null; });
 
   // ===== rank (ceiling model on elapsed time) =====
@@ -923,7 +923,7 @@
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
       enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),
       tick:(ms)=>enemyStep(ms), render:()=>drawHUD(), setDot:(r,c)=>{ dot.r=r; dot.c=c; placeDot(); }, lives:()=>lives, lost:()=>lost,
-      stickDrag:(dx,dy)=>{ stickActive=true; stickCX=0; stickCY=0; stickR=46; stickMove(dx,dy); return moveDir; }, stickEnd:()=>{ releaseAll(); return moveDir; },
+      padPress:(dx,dy)=>{ padActive=true; padCX=0; padCY=0; padPress(dx,dy); return moveDir; }, padRelease:()=>{ releaseAll(); return moveDir; }, stepMs:()=>STEP_MS, holdDelay:()=>HOLD_DELAY,
       doorTypes:()=>Object.assign({},doorType), enterSolveAt:(r,c,d)=>{ dot.r=r; dot.c=c; enterSolve(d); }, miniOpen:()=>!!(miniEl&&miniEl.classList.contains('show')), miniArrows:()=>mArr.length, miniFlujoCorrectSolves:()=>{ if(!mCorrect)return null; const s=mPipes.slice(); mPipes=mCorrect.slice(); const ok=flujoSolved(); mPipes=s; return ok; }, forceMiniWin:()=>miniWin(),
       nodosDbg:()=>({ nodos:keys.map(k=>({...k})), on:keysGot, total:keys.length, locked:[...lockedDoors], exit:{...exit}, won, lost }), dgOpenCount:()=>{ let n=0; for(let r=0;r<MR;r++)for(let c=0;c<MC;c++){ if(c<MC-1&&DG[2*r+1][2*c+2]==='.')n++; if(r<MR-1&&DG[2*r+2][2*c+1]==='.')n++; } return n; },
       solveBoard:()=>{ let g=0; while(!boardEmpty()&&g<120){ const before=Object.keys(pcs).length; for(const id of Object.keys(pcs).map(Number)){ if(pcs[id]&&bLaneClear(pcs[id])) tapPiece(id); } if(Object.keys(pcs).length===before) break; g++; } },
