@@ -87,30 +87,30 @@
   .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--ink); transition:color .15s linear; }
   .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
   @keyframes cpulse { 50%{ opacity:.45; } }
-  /* bottom console: a clean control panel — status line on top, big D-pad below (one soft, light panel) */
-  .console { width:var(--gw); box-sizing:border-box; margin:8px auto 0; padding:9px 14px 12px; display:flex; flex-direction:column; gap:8px;
-    background:color-mix(in srgb, var(--ink) 4%, var(--paper)); border:1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius:20px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
-  .con-status { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 2px; min-height:22px; }
-  .cs-cell { display:flex; align-items:center; gap:5px; line-height:1; }
-  .cs-hearts .lives-row { gap:3px; } .cs-hearts .heart { width:19px; height:18px; }
-  .cs-dot { color:var(--accent); font-size:14px; transition:color .15s; }
-  .cs-num { font:800 clamp(16px,4.6vw,21px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink); }
-  .cs-cap { font:700 9px var(--font-ui); letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-soft); }
-  .ci-exit { font:800 clamp(11px,3.4vw,15px) var(--font-ui); letter-spacing:.03em; text-transform:uppercase; color:var(--error); transition:color .15s; }
-  .console.open .cs-dot, .console.open .ci-exit { color:#157145; }
-  /* wide mobile D-pad:  ↑  on top,  ←  ↓  →  below (↓ slightly raised) */
-  .dpad2 { display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:var(--db,62px) var(--db,62px); gap:8px; }
+  /* COMPACT bottom console: a small control row — wide D-pad with Nodos/Salida tucked into the top corners */
+  .console { width:var(--gw); box-sizing:border-box; margin:6px auto 0; padding:6px;
+    background:color-mix(in srgb, var(--ink) 3.5%, var(--paper)); border:1px solid color-mix(in srgb, var(--ink) 8%, transparent); border-radius:16px; }
+  /* wide D-pad:  [Nodos]  ↑  [Salida]  /  ←  ↓  →  (↓ slightly raised) */
+  .dpad2 { display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:var(--db,50px) var(--db,50px); gap:6px; }
   .dpad2.hidden { display:none; }
-  .dbtn { display:flex; align-items:center; justify-content:center; padding:0; margin:0; cursor:pointer; border:none; border-radius:16px;
+  .cs-cell { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; line-height:1; min-width:0; overflow:hidden; }
+  .cs-nodos { grid-area:1/1; } .cs-exit { grid-area:1/3; }
+  .cs-line { display:flex; align-items:center; gap:4px; }
+  .cs-dot { color:var(--accent); font-size:13px; transition:color .15s; }
+  .cs-num { font:800 clamp(15px,4.6vw,20px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink); }
+  .cs-cap { font:700 8px var(--font-ui); letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); }
+  .ci-exit { font:800 clamp(10px,3vw,13px) var(--font-ui); letter-spacing:.02em; text-transform:uppercase; color:var(--error); text-align:center; transition:color .15s; }
+  .console.open .cs-dot, .console.open .ci-exit { color:#157145; }
+  .dbtn { display:flex; align-items:center; justify-content:center; padding:0; margin:0; cursor:pointer; border:none; border-radius:14px;
     background:var(--paper); color:var(--accent-deep); box-shadow:0 1px 3px rgba(0,0,0,.13); -webkit-tap-highlight-color:transparent; touch-action:none; transition:background .08s, transform .06s; }
   .dbtn:active, .dbtn.on { background:var(--accent); }
   .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
-  .dbtn svg { width:48%; height:48%; display:block; }
+  .dbtn svg { width:58%; height:62%; display:block; }
   .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:4.6; stroke-linecap:round; stroke-linejoin:round; }
   .db-up { grid-area:1/2; } .db-left { grid-area:2/1; } .db-right { grid-area:2/3; }
-  .db-down { grid-area:2/2; transform:translateY(-13%); }
+  .db-down { grid-area:2/2; transform:translateY(-12%); }
   .db-up:active, .db-up.on, .db-left:active, .db-left.on, .db-right:active, .db-right.on { transform:scale(.95); }
-  .db-down:active, .db-down.on { transform:translateY(-13%) scale(.95); }
+  .db-down:active, .db-down.on { transform:translateY(-12%) scale(.95); }
 
   /* ===== Maze ===== */
   .maze-wrap { width:100%; display:flex; justify-content:center; }
@@ -208,7 +208,7 @@
   .dpad-hub{ grid-area:2/2; }
 
   /* ===== Gate / start + result ===== */
-  .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:var(--board-bg); border-radius:12px; text-align:center; padding:24px; }
+  .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:color-mix(in srgb, var(--board-bg) 90%, transparent); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); border-radius:12px; text-align:center; padding:24px; }
   .gate.hidden { display:none; }
   .gate h2 { font:800 27px var(--font-display); margin:0; }
   .gate h2.accent { color:var(--accent); }
@@ -286,7 +286,7 @@
       <span class="rank-chev">▾</span>
     </div>
     <div class="meta">
-      <div class="side is-left"></div>
+      <div class="side is-left"><div class="lives-row" id="lives-row" aria-label="Vidas"></div><div class="l">Vidas</div></div>
       <div class="clock" id="clock">0:00</div>
       <div class="side is-right"><div class="n" id="reto">—</div><div class="l">Reto</div></div>
     </div>
@@ -302,14 +302,11 @@
 
     <div class="play-wrap">
       <div class="console" id="ctl-row">
-        <div class="con-status">
-          <div class="cs-cell cs-hearts"><div class="lives-row" id="lives-row" aria-label="Vidas"></div></div>
-          <div class="cs-cell cs-nodos"><span class="cs-dot" id="ss-dot">◆</span><span class="cs-num" id="ss-nodos">0/3</span><span class="cs-cap">Nodos</span></div>
-          <div class="cs-cell cs-exit"><span class="cs-cap">Salida</span><span class="ci-exit" id="ss-exit">Cerrada</span></div>
-        </div>
         <div class="panel hidden" id="panel"></div>
         <div class="dpad2 hidden" id="dpad">
+          <div class="cs-cell cs-nodos"><span class="cs-line"><span class="cs-dot" id="ss-dot">◆</span><span class="cs-num" id="ss-nodos">0/3</span></span><span class="cs-cap">Nodos</span></div>
           <button class="dbtn db-up" data-d="U" type="button" aria-label="Arriba"></button>
+          <div class="cs-cell cs-exit"><span class="ci-exit" id="ss-exit">Cerrada</span><span class="cs-cap">Salida</span></div>
           <button class="dbtn db-left" data-d="L" type="button" aria-label="Izquierda"></button>
           <button class="dbtn db-down" data-d="D" type="button" aria-label="Abajo"></button>
           <button class="dbtn db-right" data-d="R" type="button" aria-label="Derecha"></button>
@@ -698,26 +695,28 @@
     setTimeout(()=>{ try{ ln.animate([{strokeDashoffset:(-dist)+'px'},{strokeDashoffset:'0'}],{duration:T,easing:'linear',fill:'forwards'}); hd.animate([{transform:off},{transform:'translate(0px,0px)'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){} },T+50); }
 
   // ===== sizing & layout =====
-  function sizeAll(){ const vw=window.innerWidth||390, vh=window.innerHeight||780;
+  function sizeAll(){ const vw=window.innerWidth||390;
+    const vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight||780;   // VISIBLE height — excludes the mobile browser bar so the d-pad can't be cut off
     const W=Math.min(vw*0.94, 400);                   // EXACT same width as Cascada: min(94vw,400)
-    const B=10, GAP=10;                                 // no more full-width strip — info now flanks the d-pad
-    document.documentElement.style.setProperty('--gw', W+'px');   // rank / meta / control row all match this width
-    // measure the real chrome above the maze so the d-pad can't get pushed off-screen
+    const B=10, GAP=10;
+    document.documentElement.style.setProperty('--gw', W+'px');
     const wrap = (board.closest && board.closest('.maze-wrap')) || board.parentElement;
-    let top=200; try{ const t=wrap.getBoundingClientRect().top; if(t>60) top=t; }catch(e){}
-    const availH = Math.max(220, vh - top - GAP - 14);   // vertical room shared by maze + control row (strip removed → more room)
-    let IW=W-B;
-    mzc=IW/MC; let mazeH=mzc*MR;                        // maze at FULL width (cells stay the same)
-    mc=IW/BCOLS;
+    let top=190; try{ const t=wrap.getBoundingClientRect().top; if(t>60) top=t; }catch(e){}
+    const IW=W-B; mc=IW/BCOLS;
+    const CONCHROME=6/*margin*/+12/*pad*/+2/*border*/+6/*row gap*/;   // small console box around the 2 button rows
+    const avail=Math.max(240, vh - top - 28);                         // visible room for board(+pad) + console, with cushion for the browser bar
+    const cellW=IW/MC;                                                // natural width-driven cell size
+    // Prefer a full-width maze + comfy buttons. If the visible height is tight, keep the d-pad at a tappable
+    // 44px and shrink the maze JUST enough so the controls are always fully on-screen (never under the bar).
+    let db=Math.floor((avail - (cellW*MR + B) - CONCHROME)/2), mzc2;
+    if(db>=44){ mzc2=cellW; db=Math.min(db,56); }
+    else { db=44; mzc2=Math.min(cellW, Math.max(13, (avail - (2*db+CONCHROME) - B)/MR)); }
+    mzc=mzc2; const mazeH=mzc*MR;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
-    // Bottom console = status line + a 2-row D-pad. Size the BUTTONS to whatever room is left under the
-    // (untouched) maze, so the console fits without scrolling and stays a comfortable tap size.
-    const CHROME=8/*margin*/+21/*pad*/+2/*border*/+24/*status*/+8/*gap*/;   // console chrome around the 2 button rows
-    let db=Math.floor((availH - mazeH - GAP - CHROME)/2);
-    db=Math.max(44, Math.min(82, db));
-    document.documentElement.style.setProperty('--db', db+'px');
+    document.documentElement.style.setProperty('--db', Math.round(db)+'px');
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
+  if(window.visualViewport){ window.visualViewport.addEventListener('resize',sizeAll); window.visualViewport.addEventListener('scroll',sizeAll); }   // re-fit when the mobile browser bar appears/disappears
   function layoutMaze(){ board.querySelectorAll('.mz-svg,.exit,.keyc,.base').forEach(n=>n.remove());
     const w=mzc*MC, h=mzc*MR, NS='http://www.w3.org/2000/svg';
     const svg=document.createElementNS(NS,'svg'); svg.setAttribute('class','mz-svg'); svg.setAttribute('viewBox','0 0 '+MC+' '+MR); svg.setAttribute('preserveAspectRatio','none');
