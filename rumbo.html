@@ -528,7 +528,7 @@
   function dirBetween(a,b){ if(b.r<a.r) return 'U'; if(b.r>a.r) return 'D'; if(b.c<a.c) return 'L'; if(b.c>a.c) return 'R'; return null; }
   const PEN={guard:5,camera:3,laser:4,light:4};   // small time penalty on top of −½ heart + back-to-home (kept gentle so it's not over-punishing)
   const SIGHT=4;                                    // vision range in cells (rays stop at walls) — short enough to read & dodge
-  const PURSUE_MS=18000, PURSUE_STEP=360, LOSE_SIGHT_MS=4500;   // chase up to PURSUE_MS (long!); give up only if it loses sight for LOSE_SIGHT_MS (hide / break line of sight!)
+  const PURSUE_MS=18000, PURSUE_STEP=340, LOSE_SIGHT_MS=5000, LOSE_DIST=7;   // relentless chase up to PURSUE_MS; only gives up if you get LOSE_DIST cells away AND stay unseen for LOSE_SIGHT_MS, or you reach home
   const openDirs=(r,c)=>KEYS.filter(k=>{ const [dr,dc]=DIR[k]; return DG[2*r+1+dr] && DG[2*r+1+dr][2*c+1+dc]==='.'; });
   const canMv=(r,c,k)=>{ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; return !(nr<0||nr>=MR||nc<0||nc>=MC) && DG[2*r+1+dr] && DG[2*r+1+dr][2*c+1+dc]==='.'; };
   // BFS: first step direction from (sr,sc) toward (tr,tc) through open corridors (used for guard pursuit / return)
@@ -549,7 +549,7 @@
     const placed=[];
     const startD=distExit[0]&&distExit[0][0]||1;
     const nodoSet=new Set(keys.map(k=>k.r+','+k.c));
-    const farOk=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>4 && (startD-ds)>3 && !(r<=2&&c<=2) && !(r>=exit.r-2&&c>=exit.c-2) && !nodoSet.has(r+','+c); };  // away from start, exit, never ON a Nodo
+    const farOk=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>4 && (startD-ds)>3 && r>0 && r<MR-1 && c>0 && c<MC-1 && !(r<=2&&c<=2) && !(r>=exit.r-2&&c>=exit.c-2) && !nodoSet.has(r+','+c); };  // away from start, exit, the outer wall ring, and never ON a Nodo
     const spaced=(r,c,gap)=>placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=(gap||4));   // spread threats out so their cones/zones don't pile into one blob
     const isStraight=(r,c)=>{ const o=openDirs(r,c); return o.length===2 && ((o.includes('L')&&o.includes('R'))||(o.includes('U')&&o.includes('D'))); };   // chokepoint
     const isJunction=(r,c)=>openDirs(r,c).length>=3;   // corner/intersection / open
@@ -584,9 +584,12 @@
     const gms=[760,700,800,720];
     for(let qi=0; qi<4; qi++){ const q=QUAD[qi]; addGuard(pickInAny(q,any2)||pick(any2), 9+((rng()*5)|0), (qi%2===1), gms[qi], q); }
     addLight(pick(isJunction) || pick(any2));                              // roaming spotlight (3s detection meter), now sweeps the whole board
-    // cameras go where the player MUST travel: one watching each Nodo's approach + one near the exit (no dead-corner cameras)
-    for(const k of keys) addCamera(pickNear(k,6,isJunction) || pickNear(k,6,any2) || pick(isJunction));
-    addCamera(pickNear(exit,7,any2) || pickNear(exit,10,any2) || pick(any2));
+    // CAMERAS sit on the main artery (the home→exit route) + the exit approach — exactly where the player travels.
+    const artery=(()=>{ const prev=new Map(), seen=new Set(['0,0']); const q=[[0,0]]; let h=0;
+      while(h<q.length){ const [r,c]=q[h++]; if(r===exit.r&&c===exit.c) break; for(const k of KEYS){ if(!canMv(r,c,k))continue; const [dr,dc]=DIR[k],nk=(r+dr)+','+(c+dc); if(!seen.has(nk)){ seen.add(nk); prev.set(nk,[r,c]); q.push([r+dr,c+dc]); } } }
+      const path=[]; let cur=exit.r+','+exit.c; if(!prev.has(cur)) return path; while(cur && cur!=='0,0'){ const [r,c]=cur.split(',').map(Number); path.push({r,c}); const p=prev.get(cur); cur=p?p[0]+','+p[1]:null; } return path.reverse(); })();
+    for(const f of [0.28,0.5,0.72]){ const s=artery[Math.floor(artery.length*f)]; if(s) addCamera(pickNear(s,3,any2) || {r:s.r,c:s.c}); }   // 3 cameras spread along the route
+    addCamera(pickNear(exit,7,any2) || pick(any2));                                                          // 1 watching the exit approach
     // 6 lasers round-robined across the quadrants so they don't all pool in one area
     for(let i=0;i<6;i++){ const q=QUAD[i%4]; addLaser(inQuad(q, isStraight) || inQuad(q, any2) || pick(any2)); }
     computeWatch(); }
@@ -600,9 +603,9 @@
   function guardStepToward(e,tr,tc){ const d=bfsNext(e.r,e.c,tr,tc); if(!d) return false; const [dr,dc]=DIR[d]; e.prevR=e.r; e.prevC=e.c; e.r+=dr; e.c+=dc; e.facing=d; return true; }
   function advanceEnemy(e){
     if(e.type==='guard'){
-      if(e.mode==='pursue'){                                   // chase your LAST-SEEN cell; lost too long / timer up → head back
+      if(e.mode==='pursue'){                                   // RELENTLESS: head straight for the player; only give up on timer / sustained-lost-sight
         if((e.pursueLeft||0)<=0 || (e.lostFor||0)>=LOSE_SIGHT_MS){ e.mode='return'; }
-        else { const t=e.lastSeen||dot; guardStepToward(e, t.r, t.c); return; } }
+        else { guardStepToward(e, dot.r, dot.c); return; } }
       if(e.mode==='return'){                                   // walk back to the nearest cell on its patrol route
         let ti=0, bd=1e9; for(let i=0;i<e.path.length;i++){ const d=Math.abs(e.path[i].r-e.r)+Math.abs(e.path[i].c-e.c); if(d<bd){ bd=d; ti=i; } }
         const tgt=e.path[ti];
@@ -623,10 +626,13 @@
     for(const e of enemies){ e.acc+=dt; if(e.type==='guard'&&e.mode==='pursue') e.pursueLeft=(e.pursueLeft||0)-dt; const period=e.type==='laser'?(e.on?e.onMs:e.offMs):(e.type==='guard'&&e.mode==='pursue'?PURSUE_STEP:e.ms); e.stepMs=period; if(e.acc>=period){ e.acc-=period; advanceEnemy(e); } }
     computeWatch();
     const here=dot.r+','+dot.c; let caught=null;
-    // a pursuing guard tracks your LAST-SEEN cell; break line of sight (and distance) long enough and it gives up
+    // a pursuing guard only "loses" you if you get well away (LOSE_DIST) AND out of its cone — turning one corner won't shake it
     for(const e of enemies){ if(e.type==='guard' && e.mode==='pursue'){
-        const inView = e.zone.indexOf(here)>=0 || (Math.abs(e.r-dot.r)+Math.abs(e.c-dot.c))<=1;
-        if(inView){ e.lastSeen={r:dot.r,c:dot.c}; e.lostFor=0; } else { e.lostFor=(e.lostFor||0)+dt; } } }
+        const dist=Math.abs(e.r-dot.r)+Math.abs(e.c-dot.c);
+        const lost = dist>=LOSE_DIST && e.zone.indexOf(here)<0;
+        e.lostFor = lost ? (e.lostFor||0)+dt : 0; } }
+    // home tile is a safe zone — reaching it calls off any chase
+    if(dot.r===0 && dot.c===0){ for(const e of enemies){ if(e.type==='guard'&&e.mode==='pursue') e.mode='return'; } }
     // GUARDS + LASERS still capture instantly. CAMERAS no longer capture — they summon the nearest guard to hunt you.
     for(const e of enemies){ const seen=e.zone.indexOf(here)>=0;
       if(seen && !e.sawYou && started && !won && !lost){
@@ -768,19 +774,19 @@
     const wrap = (board.closest && board.closest('.maze-wrap')) || board.parentElement;
     let top=190; try{ const t=wrap.getBoundingClientRect().top; if(t>60) top=t; }catch(e){}
     const IW=W-B; mc=IW/BCOLS;
-    const CONCHROME=6/*margin*/+50/*status bar*/+9/*gap*/+4/*slack*/;   // info bar above the 2 button rows
+    const CONCHROME=6/*margin*/+46/*status bar*/+8/*gap*/;   // info bar above the 2 button rows
     const avail=Math.max(240, vh - top - 28);                         // visible room for board(+pad) + console, with cushion for the browser bar
     const cellW=IW/MC;                                                // natural width-driven cell size
     // Prefer a full-width maze + comfy buttons. If the visible height is tight, keep the d-pad at a tappable
     // 44px and shrink the maze JUST enough so the controls are always fully on-screen (never under the bar).
     let db=Math.floor((avail - (cellW*MR + B) - CONCHROME)/2), mzc2;
-    if(db>=46){ mzc2=cellW; db=Math.min(db,80); }
+    if(db>=46){ mzc2=cellW; db=Math.min(db,100); }
     else { db=46; mzc2=Math.min(cellW, Math.max(13, (avail - (2*db+CONCHROME) - B)/MR)); }
     mzc=mzc2; const mazeH=mzc*MR;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
     document.documentElement.style.setProperty('--db', Math.round(db)+'px');
     // bring the control tray DOWN into any leftover space (closer to the thumb), capped so it never goes off-screen
-    const con=$('ctl-row'); if(con){ const used=(mazeH+B)+(2*db+CONCHROME); const extra=Math.max(4, Math.min(80, Math.round(avail-used))); con.style.marginTop=extra+'px'; }
+    const con=$('ctl-row'); if(con){ const used=(mazeH+B)+(2*db+CONCHROME); const extra=Math.max(4, Math.min(26, Math.round(avail-used))); con.style.marginTop=extra+'px'; }
     layoutMaze(); }
   window.addEventListener('resize',sizeAll);
   if(window.visualViewport){ window.visualViewport.addEventListener('resize',sizeAll); window.visualViewport.addEventListener('scroll',sizeAll); }   // re-fit when the mobile browser bar appears/disappears
