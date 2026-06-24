@@ -96,9 +96,14 @@
   .stile .slbl { font:700 8.5px var(--font-ui); letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); }
   .stile.ex .sval { color:var(--error); transition:color .15s; }                 /* Salida = red while closed */
   .bottom.open .stile.ex .sval { color:#157145; }                                /* …green once it's open */
-  .stile.ex.pursuing .sval { color:var(--error); animation:tpulse .6s ease-in-out infinite; font-variant-numeric:tabular-nums; }   /* live chase countdown */
-  .stile.ex.pursuing .slbl { color:var(--error); }
   @keyframes tpulse { 50% { opacity:.45; } }
+  /* right box flips to TWO live countdowns while a guard is chasing you */
+  .ex-chase { display:none; flex-direction:column; gap:3px; align-items:center; }
+  .stile.ex.pursuing .ex-normal { display:none; }
+  .stile.ex.pursuing .ex-chase { display:flex; animation:tpulse .7s ease-in-out infinite; }
+  .ex-chase .pt { display:flex; align-items:baseline; gap:4px; line-height:1; }
+  .ex-chase .pt span { font:700 7.5px var(--font-ui); letter-spacing:.6px; text-transform:uppercase; color:var(--ink-soft); width:34px; text-align:right; }
+  .ex-chase .pt b { font:800 15px var(--font-display); font-variant-numeric:tabular-nums; color:var(--error); }
   /* centre = live alert/status feed (keeps the maze clean) */
   .ss-alert { font:800 clamp(9px,2.9vw,12px) var(--font-ui); letter-spacing:.03em; text-transform:uppercase; text-align:center; line-height:1.18; color:var(--ink-soft); transition:color .15s; }
   .ss-alert.idle { color:var(--ink-soft); opacity:.55; }
@@ -303,7 +308,10 @@
         <div class="statusbar">
           <div class="stile"><div class="sval" id="ss-nodos">0/3</div><div class="slbl">Nodos</div></div>
           <div class="stile alert"><div class="ss-alert idle" id="ss-alert">Sigilo</div></div>
-          <div class="stile ex"><div class="sval" id="ss-exit">Cerrada</div><div class="slbl" id="ss-exit-lbl">Salida</div></div>
+          <div class="stile ex">
+            <div class="ex-normal"><div class="sval" id="ss-exit">Cerrada</div><div class="slbl" id="ss-exit-lbl">Salida</div></div>
+            <div class="ex-chase"><div class="pt"><span>Huye</span><b id="pt-flee">10s</b></div><div class="pt"><span>Oculto</span><b id="pt-hide">5s</b></div></div>
+          </div>
         </div>
         <div class="dpad-wrap">
           <div class="panel hidden" id="panel"></div>
@@ -531,7 +539,7 @@
   function dirBetween(a,b){ if(b.r<a.r) return 'U'; if(b.r>a.r) return 'D'; if(b.c<a.c) return 'L'; if(b.c>a.c) return 'R'; return null; }
   const PEN={guard:5,camera:3,laser:4,light:4};   // small time penalty on top of −½ heart + back-to-home (kept gentle so it's not over-punishing)
   const SIGHT=4;                                    // vision range in cells (rays stop at walls) — short enough to read & dodge
-  const PURSUE_MS=18000, PURSUE_STEP=340, LOSE_SIGHT_MS=5000, LOSE_DIST=7;   // relentless chase up to PURSUE_MS; only gives up if you get LOSE_DIST cells away AND stay unseen for LOSE_SIGHT_MS, or you reach home
+  const PURSUE_MS=10000, PURSUE_STEP=340, LOSE_SIGHT_MS=5000, LOSE_DIST=7;   // relentless chase up to PURSUE_MS; only gives up if you get LOSE_DIST cells away AND stay unseen for LOSE_SIGHT_MS, or you reach home
   const openDirs=(r,c)=>KEYS.filter(k=>{ const [dr,dc]=DIR[k]; return DG[2*r+1+dr] && DG[2*r+1+dr][2*c+1+dc]==='.'; });
   const canMv=(r,c,k)=>{ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; return !(nr<0||nr>=MR||nc<0||nc>=MC) && DG[2*r+1+dr] && DG[2*r+1+dr][2*c+1+dc]==='.'; };
   // BFS: first step direction from (sr,sc) toward (tr,tc) through open corridors (used for guard pursuit / return)
@@ -965,17 +973,18 @@
   function drawHUD(){ const cl=$('clock'); if(started&&!won) cl.textContent=fmt(Math.floor(runMs/1000));   // top = total time
     const open=keysGot>=keys.length;                                                                          // all Nodos active → exit opens
     const sn=$('ss-nodos'); if(sn) sn.textContent=keysGot+'/'+keys.length;                                    // left: Nodos count
-    // right box: a contextual TIMER while a guard is hunting you, otherwise the Salida (exit) state
-    const se=$('ss-exit'), sl=$('ss-exit-lbl'), exCell=se?se.parentNode:null;
+    // right box: TWO live countdowns while a guard is hunting you (flee-time + stay-hidden time), else the Salida state
+    const se=$('ss-exit'); const exCell=$('ss-exit')?$('ss-exit').closest('.stile.ex'):null;
     const pursuers = (typeof enemies!=='undefined'?enemies:[]).filter(e=>e.type==='guard'&&e.mode==='pursue');
     if(pursuers.length && started && !won && !lost){
-      const active=pursuers.filter(e=>(e.lostFor||0)===0);
-      let secs, lbl;
-      if(active.length){ secs=Math.ceil(Math.min.apply(null, active.map(e=>e.pursueLeft||0))/1000); lbl='Huye'; }   // still seen → time until the chase auto-ends
-      else { secs=Math.ceil(Math.max.apply(null, pursuers.map(e=>LOSE_SIGHT_MS-(e.lostFor||0)))/1000); lbl='Oculto'; }  // hidden → stay unseen this long to shake it
-      if(se) se.textContent=Math.max(0,secs)+'s'; if(sl) sl.textContent=lbl; if(exCell) exCell.classList.add('pursuing');
+      const flee=Math.max.apply(null, pursuers.map(e=>e.pursueLeft||0));            // outlast this long if you can't lose it
+      const hide=Math.max.apply(null, pursuers.map(e=>LOSE_SIGHT_MS-(e.lostFor||0)));// stay unseen this long to shake it now
+      const pf=$('pt-flee'), ph=$('pt-hide');
+      if(pf) pf.textContent=Math.max(0,Math.ceil(flee/1000))+'s';
+      if(ph) ph.textContent=Math.max(0,Math.ceil(hide/1000))+'s';
+      if(exCell) exCell.classList.add('pursuing');
     } else {
-      if(se) se.textContent=open?'Abierta':'Cerrada'; if(sl) sl.textContent='Salida'; if(exCell) exCell.classList.remove('pursuing');
+      if(se) se.textContent=open?'Abierta':'Cerrada'; const sl=$('ss-exit-lbl'); if(sl) sl.textContent='Salida'; if(exCell) exCell.classList.remove('pursuing');
     }
     const row=$('ctl-row'); if(row) row.classList.toggle('open', open && !pursuers.length);                    // Salida value turns green when open (but red timer wins during a chase)
     updateRank(); }
