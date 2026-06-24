@@ -182,8 +182,8 @@
   .mini-area svg{ width:100%; height:100%; display:block; }
   .mini-hint{ font:600 12.5px var(--font-ui); color:var(--ink-soft); text-align:center; line-height:1.4; }
   .hide{ position:absolute; display:flex; align-items:center; justify-content:center; z-index:2; }
-  .hide svg{ width:84%; height:84%; }
-  .hide.on svg{ filter:drop-shadow(0 0 4px rgba(91,107,122,.9)); }   /* you're tucked inside */
+  .hide svg{ width:96%; height:96%; }
+  .hide.on svg{ filter:drop-shadow(0 0 5px rgba(124,90,46,.95)); }   /* you're tucked inside the box */
   .dot.hidden{ opacity:.4; }   /* visibly hidden */
   .keyc{ position:absolute; display:flex; align-items:center; justify-content:center; z-index:2; animation:keypulse 1.6s ease-in-out infinite; }
   .keyc svg{ width:78%; height:78%; } @keyframes keypulse{ 50%{ transform:scale(1.12); } }
@@ -616,16 +616,15 @@
       const out=[]; let cur=tr+','+tc; if(!prev.has(cur)) return out; while(cur && cur!=='0,0'){ const [r,c]=cur.split(',').map(Number); out.push({r,c}); const p=prev.get(cur); cur=p?p[0]+','+p[1]:null; } return out; };
     const routeCells=[], rset=new Set();
     for(const t of [exit].concat(keys)){ for(const cell of pathTo(t.r,t.c)){ const id=cell.r+','+cell.c; if(!rset.has(id) && farOk(cell.r,cell.c)){ rset.add(id); routeCells.push(cell); } } }
-    // 7 cameras: every one must be >= CAM_GAP cells from every other camera (no bundling), preferring on-route cells.
+    // 7 cameras: every one >= CAM_GAP from every other (no bundling). First ONE PER QUADRANT (covers the whole
+    // board incl. the right side), preferring on-route cells; then 3 more on the busiest routes.
     const CAM_GAP=5, camPos=[]; const camClear=(r,c)=>camPos.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=CAM_GAP);
     const placeCam=(s)=>{ if(!s) return false; addCamera(s); camPos.push({r:s.r,c:s.c}); return true; };
-    for(let i=0;i<7;i++){
-      let best=null,bestD=-1;                                                   // farthest-from-everything route cell that clears the other cameras
-      for(const cell of routeCells){ if(!camClear(cell.r,cell.c)) continue; const d=nearestPlaced(cell.r,cell.c); if(d>bestD){ bestD=d; best=cell; } }
-      if(!best) best=pick((r,c)=>any2(r,c) && camClear(r,c));                    // routes exhausted → any well-spread junction
-      if(!best) best=pick((r,c)=>any2(r,c));                                     // last resort
-      if(!placeCam(best)) break;
-    }
+    const bestRoute=(filter)=>{ let best=null,bestD=-1; for(const cell of routeCells){ if(!camClear(cell.r,cell.c)) continue; if(filter&&!filter(cell)) continue; const d=nearestPlaced(cell.r,cell.c); if(d>bestD){ bestD=d; best=cell; } } return best; };
+    for(const q of QUAD){ const inQ=cell=>cell.r>=q[0]&&cell.r<q[1]&&cell.c>=q[2]&&cell.c<q[3];
+      const s = bestRoute(inQ) || pickInAny(q,(r,c)=>any2(r,c)&&camClear(r,c)) || pickInAny(q,any2);   // one camera in this quadrant
+      placeCam(s); }
+    for(let i=0;i<3;i++){ const s=bestRoute(null) || pick((r,c)=>any2(r,c)&&camClear(r,c)) || pick(any2); if(!placeCam(s)) break; }   // 3 more, spread along routes
     // 6 lasers round-robined across the quadrants so they don't all pool in one area
     for(let i=0;i<6;i++){ const q=QUAD[i%4]; addLaser(inQuad(q, isStraight) || inQuad(q, any2) || pick(any2)); }
     computeWatch(); }
@@ -855,7 +854,11 @@
     base.innerHTML='<svg viewBox="0 0 40 40"><path d="M7 19 L20 7 L33 19" fill="none" stroke="#3a3a3a" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.5 16.5 V31.5 H29.5 V16.5" fill="none" stroke="#3a3a3a" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'; board.appendChild(base);
     // hiding alcoves — step in to vanish from cameras and guards
     hideSet.forEach(id=>{ const a=id.split(','),r=+a[0],c=+a[1]; const hd=document.createElement('div'); hd.className='hide'; hd.id='hide-'+r+'-'+c; hd.style.cssText='left:'+(c*mzc)+'px;top:'+(r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;z-index:2;';
-      hd.innerHTML='<svg viewBox="0 0 40 40"><path d="M10 30 V20 a10 10 0 0 1 20 0 V30" fill="#5b6b7a" opacity="0.28"/><path d="M10 30 V20 a10 10 0 0 1 20 0 V30" fill="none" stroke="#5b6b7a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'; board.appendChild(hd); });
+      hd.innerHTML='<svg viewBox="0 0 40 40">'
+        +'<rect x="2.5" y="2.5" width="35" height="35" rx="3" fill="#c89b5e" stroke="#7c5a2e" stroke-width="2.4"/>'   // cardboard box, top-down
+        +'<path d="M2.5 2.5 L20 20 L37.5 2.5 M2.5 37.5 L20 20 L37.5 37.5" fill="none" stroke="#7c5a2e" stroke-width="1.6" opacity="0.7" stroke-linejoin="round"/>'   // folded flap creases
+        +'<rect x="17" y="2.5" width="6" height="35" fill="#a87f44" opacity="0.5"/>'   // packing tape
+        +'</svg>'; board.appendChild(hd); });
     // NODOS to activate (route nodes, not keys)
     for(const k of keys){ if(k.got) continue; const ke=document.createElement('div'); ke.className='keyc'; ke.style.cssText='left:'+(k.c*mzc)+'px;top:'+(k.r*mzc)+'px;width:'+mzc+'px;height:'+mzc+'px;z-index:2;';
       ke.innerHTML='<svg viewBox="0 0 40 40"><path d="M20 7 L31 13 V27 L20 33 L9 27 V13 Z" fill="none" stroke="#0aa39a" stroke-width="3"/><circle cx="20" cy="20" r="4.5" fill="#0aa39a"/></svg>'; board.appendChild(ke); }
