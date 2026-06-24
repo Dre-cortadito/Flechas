@@ -452,8 +452,7 @@
     dot.r=0; dot.c=0; placeDot(true);                   // back to home base (snap, don't glide across the maze)
     for(const e of enemies){ e.sawYou=false; if(e.type==='guard'&&e.mode==='pursue') e.mode='return'; }   // call off the hunt; guards head back
     if(lives<=0) loseGame(); }
-  function endPursuitVisuals(){ try{ board.classList.remove('pursuit','spotted'); }catch(e){} _wasPursuing=false; for(const e of enemies){ if(e.type==='guard'&&e.mode==='pursue') e.mode='return'; } setSticky(null); }
-  function loseGame(){ if(lost||won) return; lost=true; running=false; lightMeter=0; setAlarm(false,0); endPursuitVisuals(); if(rafId) cancelAnimationFrame(rafId);
+  function loseGame(){ if(lost||won) return; lost=true; running=false; lightMeter=0; setAlarm(false,0); if(rafId) cancelAnimationFrame(rafId);
     const brand='<svg class="brand" viewBox="0 0 120 120" aria-hidden="true"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--error)"/><path d="M44 44 L76 76 M76 44 L44 76" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/></svg>';
     const g=$('gate'); g.classList.remove('hidden');
     g.innerHTML=brand+'<h2>¡Te atraparon!</h2><div class="vlbl">Te quedaste sin vidas</div>'
@@ -594,9 +593,9 @@
   function guardStepToward(e,tr,tc){ const d=bfsNext(e.r,e.c,tr,tc); if(!d) return false; const [dr,dc]=DIR[d]; e.prevR=e.r; e.prevC=e.c; e.r+=dr; e.c+=dc; e.facing=d; return true; }
   function advanceEnemy(e){
     if(e.type==='guard'){
-      if(e.mode==='pursue'){                                   // chase your LAST-SEEN cell; lost too long / timer up → head back
-        if((e.pursueLeft||0)<=0 || (e.lostFor||0)>=LOSE_SIGHT_MS){ e.mode='return'; }
-        else { const t=e.lastSeen||dot; guardStepToward(e, t.r, t.c); return; } }
+      if(e.mode==='pursue'){                                   // chase the player; time's up → head back
+        if((e.pursueLeft||0)<=0){ e.mode='return'; }
+        else { guardStepToward(e, dot.r, dot.c); return; } }
       if(e.mode==='return'){                                   // walk back to the nearest cell on its patrol route
         let ti=0, bd=1e9; for(let i=0;i<e.path.length;i++){ const d=Math.abs(e.path[i].r-e.r)+Math.abs(e.path[i].c-e.c); if(d<bd){ bd=d; ti=i; } }
         const tgt=e.path[ti];
@@ -607,28 +606,24 @@
       const a=e.path[e.idx], b=e.path[n]||a; e.idx=n; e.prevR=e.r; e.prevC=e.c; e.r=b.r; e.c=b.c; return; }
     if(e.type==='camera'){ e.si=(e.si+1)%e.seq.length; e.facing=e.seq[e.si]; }
     else if(e.type==='laser'){ e.on=!e.on; } }
-  // a camera spotted you → the closest free guard breaks off to hunt your last-seen position
+  // a camera spotted you → the closest free guard breaks off to hunt you for PURSUE_MS
   function triggerPursuit(){ const free=enemies.filter(e=>e.type==='guard' && e.mode!=='pursue'); if(!free.length) return;
     let g=null, bd=1e9; for(const e of free){ const d=Math.abs(e.r-dot.r)+Math.abs(e.c-dot.c); if(d<bd){ bd=d; g=e; } }
-    if(g){ g.mode='pursue'; g.pursueLeft=PURSUE_MS; g.lastSeen={r:dot.r,c:dot.c}; g.lostFor=0;
-      try{ board.classList.remove('spotted'); void board.offsetWidth; board.classList.add('spotted'); setTimeout(()=>{ try{ board.classList.remove('spotted'); }catch(e){} },560); }catch(e){}   // background pulses red ONCE
-      setSticky('Persecución','danger'); flashStatus('¡Te vieron! Guardia en camino','danger',2000); } }
+    if(g){ g.mode='pursue'; g.pursueLeft=PURSUE_MS;
+      try{ board.classList.remove('detect'); void board.offsetWidth; board.classList.add('detect'); setTimeout(()=>{ try{ board.classList.remove('detect'); }catch(e){} },520); }catch(e){}
+      rumboToast('¡Cámara! Un guardia te persigue'); } }
   function enemyStep(dt){ if(!enemies.length){ setAlarm(false,0); return; }
     for(const e of enemies){ e.acc+=dt; if(e.type==='guard'&&e.mode==='pursue') e.pursueLeft=(e.pursueLeft||0)-dt; const period=e.type==='laser'?(e.on?e.onMs:e.offMs):(e.type==='guard'&&e.mode==='pursue'?PURSUE_STEP:e.ms); e.stepMs=period; if(e.acc>=period){ e.acc-=period; advanceEnemy(e); } }
     computeWatch();
     const here=dot.r+','+dot.c; let caught=null;
-    // a pursuing guard tracks your LAST-SEEN cell; break line of sight (and distance) long enough and it gives up
-    for(const e of enemies){ if(e.type==='guard' && e.mode==='pursue'){
-        const inView = e.zone.indexOf(here)>=0 || (Math.abs(e.r-dot.r)+Math.abs(e.c-dot.c))<=1;
-        if(inView){ e.lastSeen={r:dot.r,c:dot.c}; e.lostFor=0; } else { e.lostFor=(e.lostFor||0)+dt; } } }
-    // GUARDS + LASERS still capture instantly. CAMERAS no longer capture — they summon the nearest guard to hunt you.
+    // GUARDS + LASERS still catch instantly. CAMERAS no longer kill — they summon the nearest guard to hunt you.
     for(const e of enemies){ const seen=e.zone.indexOf(here)>=0;
       if(seen && !e.sawYou && started && !won && !lost){
         if(e.type==='guard'||e.type==='laser') caught=e.type;
         else if(e.type==='camera') triggerPursuit();
       }
       e.sawYou=seen; }
-    if(caught){ lightMeter=0; setAlarm(false,0); _justCaught=true; onCaught(caught); }
+    if(caught){ lightMeter=0; setAlarm(false,0); onCaught(caught); }
     else {
       // SPOTLIGHT = a 3s detection meter (tension, not instant). It FILLS while you're lit and DRAINS
       // when you slip out — so a roaming spotlight is dodgeable, but lingering in the beam gets you caught.
@@ -638,13 +633,7 @@
         if(lightMeter>=LIGHT_CATCH){ lightMeter=0; setAlarm(false,0); onCaught('light'); }
       } else { if(lightMeter>0) lightMeter=Math.max(0, lightMeter - dt*1.6); if(alarmOn) setAlarm(false,0); }   // drain when out of the beam
     }
-    // board border stays red for the WHOLE pursuit; clears (with an "Escapaste" note) when it ends
-    const pursuing = enemies.some(e=>e.type==='guard' && e.mode==='pursue');
-    board.classList.toggle('pursuit', pursuing);
-    if(_wasPursuing && !pursuing){ setSticky(null); if(!_justCaught) flashStatus('Escapaste','ok',2200); }
-    _wasPursuing=pursuing; _justCaught=false;
     renderEnemies(); }
-  let _wasPursuing=false, _justCaught=false;
   // ---- spotlight detection meter: ring around the player + alarm beep + red spotlight ----
   let lightMeter=0; const LIGHT_CATCH=3000; let alarmOn=false, alarmEl=null, alarmCtx=null, alarmOsc=null, alarmIv=null;
   function setAlarm(on, frac){
@@ -663,8 +652,8 @@
     fire(); alarmIv=setInterval(fire, 300); }catch(e){} }
   function stopBeep(){ try{ if(alarmIv){ clearInterval(alarmIv); alarmIv=null; } }catch(e){} }
   function flashDetect(type){ board.classList.remove('detect'); void board.offsetWidth; board.classList.add('detect'); setTimeout(()=>{ try{ board.classList.remove('detect'); }catch(e){} },520);
-    const nm={guard:'Un guardia te atrapó',laser:'Un láser te detuvo',light:'El reflector te atrapó'}[type]||'Te atraparon';
-    flashStatus(nm+' · −½❤ · +'+(PEN[type]||4)+'s','danger',2200); }   // message goes to the bottom bar, not over the maze
+    const nm={guard:'¡Guardia!',camera:'¡Cámara!',laser:'¡Láser!',light:'¡Reflector!'}[type]||'¡Te vieron!';
+    rumboToast(nm+' −½ ❤ · +'+(PEN[type]||4)+'s · a la base'); }
   function renderEnemies(){ if(!enemyLayer){ enemyLayer=document.createElement('div'); enemyLayer.className='enemy-layer'; enemyLayer.style.cssText='position:absolute;inset:0;z-index:3;pointer-events:none;'; board.appendChild(enemyLayer);
       zoneLayer=document.createElement('div'); zoneLayer.className='zone-layer'; zoneLayer.style.cssText='position:absolute;inset:0;'; enemyLayer.appendChild(zoneLayer); }
     if(spritesDirty){ for(const el of spriteEls){ try{ el.remove(); }catch(e){} } spriteEls=[];   // rebuild persistent sprites after a fresh maze
@@ -827,7 +816,7 @@
     const type=doorType[dot.r+','+dot.c+','+d]||'cascada';
     openMini(type, ()=>{ phase='move'; openCurrentDoor(); }); }
   function openCurrentDoor(){ if(!currentDoor) return; const {r,c,d}=currentDoor; const [dr,dc]=DIR[d];
-    lockedDoors.delete(r+','+c+','+d); lockedDoors.delete((r+dr)+','+(c+dc)+','+oppDir[d]); doorsOpened++; currentDoor=null; closeMini(); placeDot(); layoutMaze(); flashStatus('Puerta abierta','ok',1500); }
+    lockedDoors.delete(r+','+c+','+d); lockedDoors.delete((r+dr)+','+(c+dc)+','+oppDir[d]); doorsOpened++; currentDoor=null; closeMini(); placeDot(); layoutMaze(); }
 
   // ===== puzzle-locked door minis (quick lock-pick overlay on the maze board) =====
   let miniEl=null, miniOnSolve=null, mArr=[], mPipes=null, mCorrect=null, mN=0, mSrc=0, mSnk=0, miniRng=Math.random;
@@ -888,8 +877,8 @@
     if(DG[2*dot.r+1+dr][2*dot.c+1+dc]==='#') return false;  // wall → no move (enemies move on their own clock, not yours)
     if(lockedDoors.has(dot.r+','+dot.c+','+d)){ enterSolve(d); return false; }   // puzzle-locked door → solve a quick Cascada/Flujo board to power it on
     dot.r=nr; dot.c=nc; placeDot();
-    for(const k of keys){ if(!k.got && k.r===dot.r && k.c===dot.c){ k.got=true; keysGot++; flashStatus('Nodo activado '+keysGot+'/'+keys.length,'ok',1500); layoutMaze(); } }   // activate a Nodo
-    if(dot.r===exit.r&&dot.c===exit.c){ if(keysGot>=keys.length) winGame(); else flashStatus('Faltan nodos ('+keysGot+'/'+keys.length+')','danger',1600); }   // exit powers on once all Nodos are active
+    for(const k of keys){ if(!k.got && k.r===dot.r && k.c===dot.c){ k.got=true; keysGot++; rumboToast('◆ Nodo activado '+keysGot+'/'+keys.length); layoutMaze(); } }   // activate a Nodo
+    if(dot.r===exit.r&&dot.c===exit.c){ if(keysGot>=keys.length) winGame(); else rumboToast('Faltan nodos ('+keysGot+'/'+keys.length+')'); }   // exit powers on once all Nodos are active
     return true; }
   function chevSVG(d){ const p={U:'M9 26 L20 14 L31 26', D:'M9 14 L20 26 L31 14', L:'M26 9 L14 20 L26 31', R:'M14 9 L26 20 L14 31'}[d];
     return '<svg viewBox="0 0 40 40"><path class="p" d="'+p+'"/></svg>'; }   // family chevron, not a full arrow
@@ -949,20 +938,21 @@
   function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
   function drawHUD(){ const cl=$('clock'); if(started&&!won) cl.textContent=fmt(Math.floor(runMs/1000));   // top = total time
     const open=keysGot>=keys.length;                                                                          // all Nodos active → exit opens
-    const sn=$('ss-nodos'); if(sn) sn.textContent=keysGot+'/'+keys.length;                                    // left: Nodos count
-    const se=$('ss-exit'); if(se) se.textContent=open?'Abierta':'Cerrada';                                    // right: Salida state
+    const sn=$('ss-nodos'); if(sn) sn.textContent=keysGot+'/'+keys.length;                                    // Borde-style info bar: Nodos count
+    const se=$('ss-exit'); if(se) se.textContent=open?'Abierta':'Cerrada';                                    // Salida state
+    const sv=$('ss-seen'); if(sv) sv.textContent=seenCount;                                                   // times you've been detected
+    const sd=$('ss-doors'); if(sd) sd.textContent=doorsOpened+'/'+totalDoors;                                 // puzzle doors solved
     const row=$('ctl-row'); if(row) row.classList.toggle('open', open);                                       // Salida value turns green when open
     updateRank(); }
 
   // ===== game flow =====
   function startGame(){ won=false; lost=false; started=false; running=true; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; phase='move'; lives=LIVES_MAX;
-    _wasPursuing=false; _justCaught=false; try{ board.classList.remove('pursuit','spotted'); }catch(e){} setSticky(null);
     $('clock').textContent='0:00'; renderLives();
     genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO));
     document.body.classList.add('game-active'); sizeAll(); buildBigPad(); placeDot(true); showMove(); drawHUD();
     $('gate').classList.add('hidden');
     if(rafId) cancelAnimationFrame(rafId); started=true; rafId=requestAnimationFrame(loop); }
-  function winGame(){ if(won||lost) return; won=true; running=false; lightMeter=0; setAlarm(false,0); endPursuitVisuals(); elapsedMs=runMs; if(rafId) cancelAnimationFrame(rafId);
+  function winGame(){ if(won||lost) return; won=true; running=false; lightMeter=0; setAlarm(false,0); elapsedMs=runMs; if(rafId) cancelAnimationFrame(rafId);
     const secs=Math.floor(elapsedMs/1000); finalRank=rankFromTime(secs); const hit=secs<=retoSecs;
     recordStats(secs, finalRank, hit);
     const best=bestToday(); const isBest=(best===null||secs<best); if(isBest) lsSet('rumbo-best-'+ISO, String(secs));
