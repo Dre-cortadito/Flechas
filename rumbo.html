@@ -87,16 +87,16 @@
   .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--ink); transition:color .15s linear; }
   .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
   @keyframes cpulse { 50%{ opacity:.45; } }
-  /* COMPACT control tray: ◆ Nodos · unified D-pad cross · Salida — one thin soft row, not a second board */
-  .console { width:var(--gw); box-sizing:border-box; margin:4px auto 0; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; gap:8px;
-    background:color-mix(in srgb, var(--ink) 3.5%, var(--paper)); border:1px solid color-mix(in srgb, var(--ink) 8%, transparent); border-radius:14px; }
-  .cs-cell { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; line-height:1; flex:0 0 auto; min-width:60px; }
-  .cs-line { display:flex; align-items:center; gap:4px; }
-  .cs-dot { color:var(--accent); font-size:13px; transition:color .15s; }
-  .cs-num { font:800 clamp(15px,4.4vw,19px) var(--font-ui); font-variant-numeric:tabular-nums; color:var(--ink); }
-  .cs-cap { font:700 8px var(--font-ui); letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); }
-  .ci-exit { font:800 clamp(10px,3vw,13px) var(--font-ui); letter-spacing:.02em; text-transform:uppercase; color:var(--error); text-align:center; transition:color .15s; }
-  .console.open .cs-dot, .console.open .ci-exit { color:#157145; }
+  /* bottom = a Borde-style info bar (Nodos · Salida · Visto · Puertas) with the D-pad below it */
+  .bottom { width:var(--gw); margin:6px auto 0; display:flex; flex-direction:column; gap:9px; }
+  .statusbar { width:100%; box-sizing:border-box; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
+  .stile { position:relative; padding:7px 4px 8px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }   /* short inset divider, Borde-style */
+  .stile .sval { font:800 clamp(15px,4.6vw,19px) var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
+  .stile .slbl { font:700 8.5px var(--font-ui); letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); }
+  .stile.ex .sval { color:var(--error); transition:color .15s; }                 /* Salida = red while closed */
+  .bottom.open .stile.ex .sval { color:#157145; }                                /* …green once it's open */
+  .dpad-wrap { display:flex; justify-content:center; }
   /* unified cross: ↑ on top, ← ↓ → all touching in one row below (↓ is the hub). all buttons same size. */
   .dpad2 { display:grid; grid-template-columns:repeat(3,var(--db,56px)); grid-template-rows:repeat(2,var(--db,56px)); gap:2px; flex:0 0 auto; }
   .dpad2.hidden { display:none; }
@@ -283,16 +283,22 @@
     </div>
 
     <div class="play-wrap">
-      <div class="console" id="ctl-row">
-        <div class="cs-cell cs-nodos"><span class="cs-line"><span class="cs-dot" id="ss-dot">◆</span><span class="cs-num" id="ss-nodos">0/3</span></span><span class="cs-cap">Nodos</span></div>
-        <div class="panel hidden" id="panel"></div>
-        <div class="dpad2 hidden" id="dpad">
-          <button class="dbtn db-up" data-d="U" type="button" aria-label="Arriba"></button>
-          <button class="dbtn db-left" data-d="L" type="button" aria-label="Izquierda"></button>
-          <button class="dbtn db-down" data-d="D" type="button" aria-label="Abajo"></button>
-          <button class="dbtn db-right" data-d="R" type="button" aria-label="Derecha"></button>
+      <div class="bottom" id="ctl-row">
+        <div class="statusbar">
+          <div class="stile"><div class="sval" id="ss-nodos">0/3</div><div class="slbl">Nodos</div></div>
+          <div class="stile ex"><div class="sval" id="ss-exit">Cerrada</div><div class="slbl">Salida</div></div>
+          <div class="stile"><div class="sval" id="ss-seen">0</div><div class="slbl">Visto</div></div>
+          <div class="stile"><div class="sval" id="ss-doors">0/0</div><div class="slbl">Puertas</div></div>
         </div>
-        <div class="cs-cell cs-exit"><span class="ci-exit" id="ss-exit">Cerrada</span><span class="cs-cap">Salida</span></div>
+        <div class="dpad-wrap">
+          <div class="panel hidden" id="panel"></div>
+          <div class="dpad2 hidden" id="dpad">
+            <button class="dbtn db-up" data-d="U" type="button" aria-label="Arriba"></button>
+            <button class="dbtn db-left" data-d="L" type="button" aria-label="Izquierda"></button>
+            <button class="dbtn db-down" data-d="D" type="button" aria-label="Abajo"></button>
+            <button class="dbtn db-right" data-d="R" type="button" aria-label="Derecha"></button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -702,7 +708,7 @@
     const wrap = (board.closest && board.closest('.maze-wrap')) || board.parentElement;
     let top=190; try{ const t=wrap.getBoundingClientRect().top; if(t>60) top=t; }catch(e){}
     const IW=W-B; mc=IW/BCOLS;
-    const CONCHROME=6/*margin*/+12/*pad*/+2/*border*/+6/*row gap*/;   // small console box around the 2 button rows
+    const CONCHROME=6/*margin*/+50/*status bar*/+9/*gap*/+4/*slack*/;   // info bar above the 2 button rows
     const avail=Math.max(240, vh - top - 28);                         // visible room for board(+pad) + console, with cushion for the browser bar
     const cellW=IW/MC;                                                // natural width-driven cell size
     // Prefer a full-width maze + comfy buttons. If the visible height is tight, keep the d-pad at a tappable
@@ -889,9 +895,11 @@
   function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
   function drawHUD(){ const cl=$('clock'); if(started&&!won) cl.textContent=fmt(Math.floor(runMs/1000));   // top = total time
     const open=keysGot>=keys.length;                                                                          // all Nodos active → exit opens
-    const sn=$('ss-nodos'); if(sn) sn.textContent=keysGot+'/'+keys.length;                                    // count sits beside the d-pad (label "NODOS" is static)
-    const se=$('ss-exit'); if(se) se.textContent=open?'Abierta':'Cerrada';                                    // "SALIDA" label is static; this is the state
-    const row=$('ctl-row'); if(row) row.classList.toggle('open', open);                                       // turns the dot + state green when open
+    const sn=$('ss-nodos'); if(sn) sn.textContent=keysGot+'/'+keys.length;                                    // Borde-style info bar: Nodos count
+    const se=$('ss-exit'); if(se) se.textContent=open?'Abierta':'Cerrada';                                    // Salida state
+    const sv=$('ss-seen'); if(sv) sv.textContent=seenCount;                                                   // times you've been detected
+    const sd=$('ss-doors'); if(sd) sd.textContent=doorsOpened+'/'+totalDoors;                                 // puzzle doors solved
+    const row=$('ctl-row'); if(row) row.classList.toggle('open', open);                                       // Salida value turns green when open
     updateRank(); }
 
   // ===== game flow =====
