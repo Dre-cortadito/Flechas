@@ -96,6 +96,9 @@
   .stile .slbl { font:700 8.5px var(--font-ui); letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); }
   .stile.ex .sval { color:var(--error); transition:color .15s; }                 /* Salida = red while closed */
   .bottom.open .stile.ex .sval { color:#157145; }                                /* …green once it's open */
+  .stile.ex.pursuing .sval { color:var(--error); animation:tpulse .6s ease-in-out infinite; font-variant-numeric:tabular-nums; }   /* live chase countdown */
+  .stile.ex.pursuing .slbl { color:var(--error); }
+  @keyframes tpulse { 50% { opacity:.45; } }
   /* centre = live alert/status feed (keeps the maze clean) */
   .ss-alert { font:800 clamp(9px,2.9vw,12px) var(--font-ui); letter-spacing:.03em; text-transform:uppercase; text-align:center; line-height:1.18; color:var(--ink-soft); transition:color .15s; }
   .ss-alert.idle { color:var(--ink-soft); opacity:.55; }
@@ -300,7 +303,7 @@
         <div class="statusbar">
           <div class="stile"><div class="sval" id="ss-nodos">0/3</div><div class="slbl">Nodos</div></div>
           <div class="stile alert"><div class="ss-alert idle" id="ss-alert">Sigilo</div></div>
-          <div class="stile ex"><div class="sval" id="ss-exit">Cerrada</div><div class="slbl">Salida</div></div>
+          <div class="stile ex"><div class="sval" id="ss-exit">Cerrada</div><div class="slbl" id="ss-exit-lbl">Salida</div></div>
         </div>
         <div class="dpad-wrap">
           <div class="panel hidden" id="panel"></div>
@@ -962,8 +965,19 @@
   function drawHUD(){ const cl=$('clock'); if(started&&!won) cl.textContent=fmt(Math.floor(runMs/1000));   // top = total time
     const open=keysGot>=keys.length;                                                                          // all Nodos active → exit opens
     const sn=$('ss-nodos'); if(sn) sn.textContent=keysGot+'/'+keys.length;                                    // left: Nodos count
-    const se=$('ss-exit'); if(se) se.textContent=open?'Abierta':'Cerrada';                                    // right: Salida state
-    const row=$('ctl-row'); if(row) row.classList.toggle('open', open);                                       // Salida value turns green when open
+    // right box: a contextual TIMER while a guard is hunting you, otherwise the Salida (exit) state
+    const se=$('ss-exit'), sl=$('ss-exit-lbl'), exCell=se?se.parentNode:null;
+    const pursuers = (typeof enemies!=='undefined'?enemies:[]).filter(e=>e.type==='guard'&&e.mode==='pursue');
+    if(pursuers.length && started && !won && !lost){
+      const active=pursuers.filter(e=>(e.lostFor||0)===0);
+      let secs, lbl;
+      if(active.length){ secs=Math.ceil(Math.min.apply(null, active.map(e=>e.pursueLeft||0))/1000); lbl='Huye'; }   // still seen → time until the chase auto-ends
+      else { secs=Math.ceil(Math.max.apply(null, pursuers.map(e=>LOSE_SIGHT_MS-(e.lostFor||0)))/1000); lbl='Oculto'; }  // hidden → stay unseen this long to shake it
+      if(se) se.textContent=Math.max(0,secs)+'s'; if(sl) sl.textContent=lbl; if(exCell) exCell.classList.add('pursuing');
+    } else {
+      if(se) se.textContent=open?'Abierta':'Cerrada'; if(sl) sl.textContent='Salida'; if(exCell) exCell.classList.remove('pursuing');
+    }
+    const row=$('ctl-row'); if(row) row.classList.toggle('open', open && !pursuers.length);                    // Salida value turns green when open (but red timer wins during a chase)
     updateRank(); }
 
   // ===== game flow =====
