@@ -114,7 +114,15 @@
   @keyframes spotpulse { 0%{ background:var(--board-bg);} 28%{ background:rgba(214,48,48,.4);} 100%{ background:var(--board-bg);} }
   .maze.pursuit { border-color:var(--error); box-shadow:0 0 0 2px color-mix(in srgb, var(--error) 45%, transparent), 0 3px 12px rgba(0,0,0,.1); }
   .maze.pursuit::before { border-color:var(--error); }
-  .dpad-wrap { display:flex; justify-content:center; }
+  .dpad-wrap { display:flex; justify-content:center; align-items:stretch; gap:8px; }
+  /* HACK button — sits beside the D-pad. Dim until you're standing under a camera or beside a colored-wall door, then it lights up so YOU choose whether to hack. */
+  .hackbtn { flex:0 0 auto; width:calc(var(--db,56px) * 0.92); border:none; border-radius:16px; cursor:pointer;
+    background:var(--paper,#efe7d8); color:var(--ink-soft,#9b8e78); box-shadow:0 1px 3px rgba(0,0,0,.14);
+    font:800 13px/1 var(--font-ui,system-ui); letter-spacing:1.5px; text-transform:uppercase; writing-mode:vertical-rl; transform:rotate(180deg);
+    opacity:.45; transition:opacity .15s ease, background .15s ease, color .15s ease; -webkit-tap-highlight-color:transparent; user-select:none; }
+  .hackbtn.ready { opacity:1; background:var(--accent,#1f8a70); color:#fff; animation:hackpulse .9s ease-in-out infinite; }
+  .hackbtn.hidden { display:none; }
+  @keyframes hackpulse { 0%,100%{ box-shadow:0 1px 3px rgba(0,0,0,.14); } 50%{ box-shadow:0 0 0 3px color-mix(in srgb, var(--accent,#1f8a70) 35%, transparent); } }
   /* unified cross: ↑ on top, ← ↓ → all touching in one row below (↓ is the hub). all buttons same size. */
   /* fat D-pad: wide ↑/↓ stacked in a wider centre column; tall ← / → flank the WHOLE stack (incl. ↑'s sides) */
   .dpad2 { display:grid; grid-template-columns:var(--db,56px) calc(var(--db,56px) * 1.55) var(--db,56px); grid-template-rows:repeat(2,var(--db,56px)); gap:2px; flex:0 0 auto; }
@@ -330,6 +338,7 @@
             <button class="dbtn db-down" data-d="D" type="button" aria-label="Abajo"></button>
             <button class="dbtn db-right" data-d="R" type="button" aria-label="Derecha"></button>
           </div>
+          <button class="hackbtn hidden" id="hack-btn" type="button" aria-label="Hackear">HACK</button>
         </div>
       </div>
     </div>
@@ -437,7 +446,6 @@
     computeDist();                    // 3) recompute distances after the new walls
     buildEnemies();                   // 4) place enemies on the FINAL maze, avoiding Nodo tiles
     buildHides();                     // 5) hiding alcoves (safe from detection)
-    buildShadows();                   // 6) shadow zones (cameras can't see you there)
   }
   let hideSet=new Set(), shadowSet=new Set();
   // shadow zones: a couple of dark patches where cameras are blind (guards still see you)
@@ -837,7 +845,7 @@
     // Prefer a full-width maze + comfy buttons. If the visible height is tight, keep the d-pad at a tappable
     // 44px and shrink the maze JUST enough so the controls are always fully on-screen (never under the bar).
     let db=Math.floor((avail - (cellW*MR + B) - CONCHROME)/2), mzc2;
-    if(db>=46){ mzc2=cellW; db=Math.min(db,100); }
+    if(db>=46){ mzc2=cellW; db=Math.min(db,100); db=Math.min(db, Math.floor((W-12)/4.47)); }   // width cap: D-pad (3.55·db) + HACK side button (0.92·db) + gaps must fit the board width
     else { db=46; mzc2=Math.min(cellW, Math.max(13, (avail - (2*db+CONCHROME) - B)/MR)); }
     mzc=mzc2; const mazeH=mzc*MR;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
@@ -894,8 +902,8 @@
     dotEl.style.left=(dot.c*mzc+pad)+'px'; dotEl.style.top=(dot.r*mzc+pad)+'px'; dotEl.classList.toggle('froze',running&&phase!=='move');
     if(snap){ void dotEl.offsetWidth; dotEl.classList.remove('snap'); } }       // commit the jump, then re-enable smooth glide
   // ===== phase transitions =====
-  function showSolve(){ $('dpad').classList.add('hidden'); $('panel').classList.remove('hidden'); renderPieces(); }
-  function showMove(){ $('panel').classList.add('hidden'); $('dpad').classList.remove('hidden'); }
+  function showSolve(){ $('dpad').classList.add('hidden'); const hb=$('hack-btn'); if(hb) hb.classList.add('hidden'); $('panel').classList.remove('hidden'); renderPieces(); }
+  function showMove(){ $('panel').classList.add('hidden'); $('dpad').classList.remove('hidden'); const hb=$('hack-btn'); if(hb) hb.classList.remove('hidden'); }
   function enterMove(){ phase='move'; moveDir=null; releaseAll(); showMove(); placeDot(); }
   function enterSolve(d){ startRun(); phase='solve'; currentDoor={r:dot.r,c:dot.c,d}; placeDot();
     const type=doorType[dot.r+','+dot.c+','+d]||'cascada';
@@ -906,6 +914,14 @@
   let currentCam=null;
   function enterCameraSolve(cam){ startRun(); phase='solve'; currentCam=cam; placeDot();
     openMini(cam.mini||'cascada', ()=>{ phase='move'; cam.disabled=true; cam.disabledLeft=CAM_DISABLE_MS; cam.sawYou=false; currentCam=null; closeMini(); placeDot(); flashStatus('Cámara apagada','ok',1600); }); }
+
+  // What can you hack from where you're standing? A camera you're standing under, or a colored-wall door next to you.
+  function hackTarget(){ if(phase!=='move'||!running||won||lost) return null;
+    const cam=enemies.find(e=>e.type==='camera' && !e.disabled && e.r===dot.r && e.c===dot.c);
+    if(cam) return {kind:'camera', cam};
+    for(const d in DIR){ if(lockedDoors.has(dot.r+','+dot.c+','+d)) return {kind:'door', d}; }
+    return null; }
+  function doHack(){ const t=hackTarget(); if(!t) return false; if(t.kind==='camera') enterCameraSolve(t.cam); else enterSolve(t.d); return true; }
 
   // ===== puzzle-locked door minis (quick lock-pick overlay on the maze board) =====
   let miniEl=null, miniOnSolve=null, mArr=[], mPipes=null, mCorrect=null, mN=0, mSrc=0, mSnk=0, miniRng=Math.random;
@@ -964,9 +980,8 @@
   function step(d){ if(won||!running||phase!=='move') return false; startRun(); const [dr,dc]=DIR[d], nr=dot.r+dr, nc=dot.c+dc;
     if(nr<0||nr>=MR||nc<0||nc>=MC) return false;            // edge → no move
     if(DG[2*dot.r+1+dr][2*dot.c+1+dc]==='#') return false;  // wall → no move (enemies move on their own clock, not yours)
-    if(lockedDoors.has(dot.r+','+dot.c+','+d)){ enterSolve(d); return false; }   // puzzle-locked door → solve a quick Cascada/Flujo board to power it on
+    if(lockedDoors.has(dot.r+','+dot.c+','+d)) return false;   // puzzle-locked door blocks the way → press HACK (when lit) to power it on; movement alone won't open it
     dot.r=nr; dot.c=nc; placeDot();
-    { const cam=enemies.find(e=>e.type==='camera' && !e.disabled && e.r===dot.r && e.c===dot.c); if(cam){ enterCameraSolve(cam); return true; } }   // stand on a camera → hack it
     if(hideSet.has(dot.r+','+dot.c)) flashStatus('Escondido','ok',1200);   // ducked into an alcove
     for(const k of keys){ if(!k.got && k.r===dot.r && k.c===dot.c){ k.got=true; keysGot++; flashStatus('Nodo activado','ok',1400); layoutMaze(); } }   // activate a Nodo
     if(dot.r===exit.r&&dot.c===exit.c){ if(keysGot>=keys.length) winGame(); else flashStatus('Faltan nodos','danger',1500); }   // exit powers on once all Nodos are active
@@ -1005,6 +1020,8 @@
       b.addEventListener('pointerdown', ev=>{ if(phase!=='move') return; ev.preventDefault(); pressDir(d,b); try{ b.setPointerCapture(ev.pointerId); }catch(e){} });
       const off=()=>{ b.classList.remove('on'); if(moveDir===d) moveDir=null; };
       b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off); });
+    const hb=$('hack-btn'); if(hb && !hb._wired){ hb._wired=true;
+      hb.addEventListener('pointerdown', ev=>{ ev.preventDefault(); if(hb.classList.contains('ready')) doHack(); }); }
     const bd=$('maze'); if(bd && !bd._swwired){ bd._swwired=true;
       bd.addEventListener('pointerdown', ev=>{ if(phase!=='move') return; swActive=true; swPtr=ev.pointerId; swX=ev.clientX; swY=ev.clientY; });
       bd.addEventListener('pointermove', ev=>{ if(!swActive||ev.pointerId!==swPtr||phase!=='move') return; ev.preventDefault(); swipeProcess(ev.clientX,ev.clientY); });
@@ -1059,6 +1076,7 @@
       if(se) se.textContent=open?'Abierta':'Cerrada'; const sl=$('ss-exit-lbl'); if(sl) sl.textContent='Salida'; if(exCell) exCell.classList.remove('pursuing');
     }
     const row=$('ctl-row'); if(row) row.classList.toggle('open', open && !pursuers.length);                    // Salida value turns green when open (but red timer wins during a chase)
+    const hb=$('hack-btn'); if(hb) hb.classList.toggle('ready', !!hackTarget());                              // HACK lights up only when there's a camera under you or a door beside you
     updateRank(); }
 
   // ===== game flow =====
@@ -1156,6 +1174,7 @@
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
       enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,dir:e.dir,mode:e.mode,disabled:e.disabled,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),
       tick:(ms)=>enemyStep(ms), render:()=>drawHUD(), setDot:(r,c)=>{ dot.r=r; dot.c=c; placeDot(); }, lives:()=>lives, lost:()=>lost,
+      hackTarget:()=>{ const t=hackTarget(); return t?t.kind:null; }, hack:()=>doHack(),
       tapDir:(d)=>{ if(phase!=='move') return null; pressDir(d,null); const md=moveDir; releaseAll(); return md; }, swipe:(dx,dy)=>{ swX=0; swY=0; swActive=true; const r=swipeProcess(dx,dy); swActive=false; return r; }, stepMs:()=>STEP_MS, holdDelay:()=>HOLD_DELAY,
       lightMeter:()=>lightMeter, lightCatch:()=>LIGHT_CATCH, alarmOn:()=>alarmOn,
       doorTypes:()=>Object.assign({},doorType), enterSolveAt:(r,c,d)=>{ dot.r=r; dot.c=c; enterSolve(d); }, miniOpen:()=>!!(miniEl&&miniEl.classList.contains('show')), miniArrows:()=>mArr.length, miniFlujoCorrectSolves:()=>{ if(!mCorrect)return null; const s=mPipes.slice(); mPipes=mCorrect.slice(); const ok=flujoSolved(); mPipes=s; return ok; }, forceMiniWin:()=>miniWin(),
