@@ -115,7 +115,7 @@
     background:var(--paper); color:var(--accent-deep); -webkit-tap-highlight-color:transparent; touch-action:none; transition:background .08s, transform .05s; }
   .dbtn:active, .dbtn.on { background:var(--accent); transform:scale(.96); }
   .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
-  .dbtn svg { width:46%; height:58%; display:block; }
+  .dbtn svg { width:calc(var(--db,56px) * 0.5); height:calc(var(--db,56px) * 0.5); display:block; }   /* fixed size → every chevron identical on all 4 buttons */
   .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:4.6; stroke-linecap:round; stroke-linejoin:round; }
   /* rounded only on the 4 outer corners so it reads as one solid pad */
   .db-left  { grid-area:1 / 1 / 3 / 2; border-radius:16px 4px 4px 16px; }   /* tall — covers the sides of ↑ and ↓ */
@@ -528,7 +528,7 @@
   function dirBetween(a,b){ if(b.r<a.r) return 'U'; if(b.r>a.r) return 'D'; if(b.c<a.c) return 'L'; if(b.c>a.c) return 'R'; return null; }
   const PEN={guard:5,camera:3,laser:4,light:4};   // small time penalty on top of −½ heart + back-to-home (kept gentle so it's not over-punishing)
   const SIGHT=4;                                    // vision range in cells (rays stop at walls) — short enough to read & dodge
-  const PURSUE_MS=6000, PURSUE_STEP=360, LOSE_SIGHT_MS=2600;   // chase up to PURSUE_MS; give up early if it loses sight for LOSE_SIGHT_MS (hide / break line of sight!)
+  const PURSUE_MS=18000, PURSUE_STEP=360, LOSE_SIGHT_MS=4500;   // chase up to PURSUE_MS (long!); give up only if it loses sight for LOSE_SIGHT_MS (hide / break line of sight!)
   const openDirs=(r,c)=>KEYS.filter(k=>{ const [dr,dc]=DIR[k]; return DG[2*r+1+dr] && DG[2*r+1+dr][2*c+1+dc]==='.'; });
   const canMv=(r,c,k)=>{ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; return !(nr<0||nr>=MR||nc<0||nc>=MC) && DG[2*r+1+dr] && DG[2*r+1+dr][2*c+1+dc]==='.'; };
   // BFS: first step direction from (sr,sc) toward (tr,tc) through open corridors (used for guard pursuit / return)
@@ -538,8 +538,11 @@
   function rayCells(r,c,facing,range){ const out=[]; const [dr,dc]=DIR[facing]; let rr=r,cc=c;
     for(let i=0;i<range;i++){ if(!DG[2*rr+1+dr] || DG[2*rr+1+dr][2*cc+1+dc]==='#') break; rr+=dr; cc+=dc; if(rr<0||rr>=MR||cc<0||cc>=MC) break; out.push(rr+','+cc); } return out; }
   // a wandering corridor route from a start cell (no immediate backtrack), used by guards + searchlights
-  function routeFrom(start,len,rng){ const cells=[{r:start.r,c:start.c}]; let cur={r:start.r,c:start.c}, prev=null;
-    for(let i=0;i<len;i++){ let opts=openDirs(cur.r,cur.c); if(opts.length>1 && prev) opts=opts.filter(k=>k!==oppDir[prev]); if(!opts.length) break;
+  function routeFrom(start,len,rng,bnd){ const inB=(r,c)=>!bnd||(r>=bnd[0]&&r<bnd[1]&&c>=bnd[2]&&c<bnd[3]);   // bnd=[r0,r1,c0,c1] keeps a guard inside its quadrant
+    const cells=[{r:start.r,c:start.c}]; let cur={r:start.r,c:start.c}, prev=null;
+    for(let i=0;i<len;i++){ let opts=openDirs(cur.r,cur.c).filter(k=>{ const [dr,dc]=DIR[k]; return inB(cur.r+dr,cur.c+dc); });
+      if(opts.length>1 && prev){ const f=opts.filter(k=>k!==oppDir[prev]); if(f.length) opts=f; }
+      if(!opts.length) break;
       const k=opts[(rng()*opts.length)|0]; const [dr,dc]=DIR[k]; cur={r:cur.r+dr,c:cur.c+dc}; cells.push({r:cur.r,c:cur.c}); prev=k; } return cells; }
   function buildEnemies(){ enemies=[]; watchedSet=new Set(); seenCount=0; spritesDirty=true;
     const rng=mulberry32(fnv('rumbo-enemy-'+ISO));
@@ -565,22 +568,25 @@
     const QUAD=[[0,hR,0,hC],[0,hR,hC,MC],[hR,MR,0,hC],[hR,MR,hC,MC]];   // TL, TR, BL, BR
     const inQuad=(q,test)=>pickIn(q[0],q[1],q[2],q[3],test);
     // a fair cell guarding a Nodo's approach (a few cells from some Nodo) → each Nodo feels watched
-    const pickNearNodo=(test)=>{ const ks=keys.slice(); for(let i=ks.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=ks[i]; ks[i]=ks[j]; ks[j]=t; }
-      for(const k of ks){ for(let t=0;t<300;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; const d=Math.abs(r-k.r)+Math.abs(c-k.c); if(d>=2&&d<=5 && farOk(r,c)&&spaced(r,c)&&test(r,c)) return {r,c}; } } return null; };
-    // guard with distinct behaviour: len = patrol length, counter = start at the far end going the other way, ms = pace
-    const addGuard=(s,len,counter,ms)=>{ if(!s) return; const path=routeFrom(s, len, rng); if(path.length>=2){
+    // best in-quadrant cell (always returns one if the quadrant has any valid cell — used to seat one guard per quadrant)
+    const pickInAny=(q,test)=>{ let best=null,bestD=-1; for(let t=0;t<500;t++){ const r=q[0]+((rng()*(q[1]-q[0]))|0), c=q[2]+((rng()*(q[3]-q[2]))|0); if(!farOk(r,c)||!test(r,c)) continue; const d=nearestPlaced(r,c); if(d>bestD){ bestD=d; best={r,c}; } } return best; };
+    // best fair cell within `rad` of a target (used to put cameras on the routes to Nodos / the exit, not dead corners)
+    const pickNear=(t,rad,test)=>{ let best=null,bestD=-1; for(let i=0;i<600;i++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; const dd=Math.abs(r-t.r)+Math.abs(c-t.c); if(dd<2||dd>rad) continue; if(!farOk(r,c)||!test(r,c)) continue; const d=nearestPlaced(r,c); if(d>bestD){ bestD=d; best={r,c}; } } return best; };
+    // guard: stays inside its quadrant (bnd); len=patrol length, counter=start at far end going back, ms=pace
+    const addGuard=(s,len,counter,ms,bnd)=>{ if(!s) return; let path=routeFrom(s, len, rng, bnd); if(path.length<2) path=routeFrom(s, len, rng); if(path.length>=2){
         const i0=counter?path.length-1:0; const d0=counter?-1:1; const aN=path[i0], bN=path[i0+d0]||path[i0];
         enemies.push({type:'guard', path, idx:i0, dir:d0, facing:dirBetween(aN,bN)||'R', r:aN.r, c:aN.c, prevR:aN.r, prevC:aN.c, acc:0, ms:ms||740, mode:'patrol', home:{r:aN.r,c:aN.c}, sawYou:false}); placed.push({r:aN.r,c:aN.c}); } };
     const addCamera=(s)=>{ if(!s) return; let seq=openDirs(s.r,s.c); if(seq.length<2) seq=['L','R']; enemies.push({type:'camera', r:s.r, c:s.c, seq, si:0, facing:seq[0], acc:0, ms:1500, sawYou:false}); placed.push(s); };
     const addLaser=(s)=>{ if(!s) return; enemies.push({type:'laser', r:s.r, c:s.c, beam:[s.r+','+s.c], on:true, acc:0, onMs:1800, offMs:1400, sawYou:false}); placed.push(s); };
     // reflector roams a LONG route across the whole board (it sweeps far, not just a corner)
     const addLight=(s)=>{ if(!s) return; const path=routeFrom(s, 34+((rng()*22)|0), rng); enemies.push({type:'light', path:path.length>1?path:[s,{r:s.r,c:s.c}], idx:0, dir:1, r:s.r, c:s.c, prevR:s.r, prevC:s.c, acc:0, ms:640, sawYou:false}); placed.push(s); };
-    // FOUR guards — one per quadrant, so the whole map is patrolled (and one is always near you when a camera calls).
+    // FOUR guards — one per quadrant, and each one PATROLS ONLY ITS OWN QUADRANT (bnd), so they never bunch up.
     const gms=[760,700,800,720];
-    for(let qi=0; qi<4; qi++) addGuard(inQuad(QUAD[qi], any2) || pick(any2), 8+((rng()*5)|0), (qi%2===1), gms[qi]);
+    for(let qi=0; qi<4; qi++){ const q=QUAD[qi]; addGuard(pickInAny(q,any2)||pick(any2), 9+((rng()*5)|0), (qi%2===1), gms[qi], q); }
     addLight(pick(isJunction) || pick(any2));                              // roaming spotlight (3s detection meter), now sweeps the whole board
-    // ONE camera per quadrant → guaranteed coverage of every corner (incl. top-right)
-    for(let qi=0; qi<4; qi++) addCamera(inQuad(QUAD[qi], isJunction) || inQuad(QUAD[qi], any2) || pick(isJunction));
+    // cameras go where the player MUST travel: one watching each Nodo's approach + one near the exit (no dead-corner cameras)
+    for(const k of keys) addCamera(pickNear(k,6,isJunction) || pickNear(k,6,any2) || pick(isJunction));
+    addCamera(pickNear(exit,7,any2) || pickNear(exit,10,any2) || pick(any2));
     // 6 lasers round-robined across the quadrants so they don't all pool in one area
     for(let i=0;i<6;i++){ const q=QUAD[i%4]; addLaser(inQuad(q, isStraight) || inQuad(q, any2) || pick(any2)); }
     computeWatch(); }
@@ -612,7 +618,7 @@
     let g=null, bd=1e9; for(const e of free){ const d=Math.abs(e.r-dot.r)+Math.abs(e.c-dot.c); if(d<bd){ bd=d; g=e; } }
     if(g){ g.mode='pursue'; g.pursueLeft=PURSUE_MS; g.lastSeen={r:dot.r,c:dot.c}; g.lostFor=0;
       try{ board.classList.remove('spotted'); void board.offsetWidth; board.classList.add('spotted'); setTimeout(()=>{ try{ board.classList.remove('spotted'); }catch(e){} },560); }catch(e){}   // background pulses red ONCE
-      setSticky('Persecución','danger'); flashStatus('¡Te vieron! Guardia en camino','danger',2000); } }
+      setSticky('Persecución','danger'); flashStatus('Te vieron','danger',1600); } }
   function enemyStep(dt){ if(!enemies.length){ setAlarm(false,0); return; }
     for(const e of enemies){ e.acc+=dt; if(e.type==='guard'&&e.mode==='pursue') e.pursueLeft=(e.pursueLeft||0)-dt; const period=e.type==='laser'?(e.on?e.onMs:e.offMs):(e.type==='guard'&&e.mode==='pursue'?PURSUE_STEP:e.ms); e.stepMs=period; if(e.acc>=period){ e.acc-=period; advanceEnemy(e); } }
     computeWatch();
@@ -641,7 +647,7 @@
     // board border stays red for the WHOLE pursuit; clears (with an "Escapaste" note) when it ends
     const pursuing = enemies.some(e=>e.type==='guard' && e.mode==='pursue');
     board.classList.toggle('pursuit', pursuing);
-    if(_wasPursuing && !pursuing){ setSticky(null); if(!_justCaught) flashStatus('Escapaste','ok',2200); }
+    if(_wasPursuing && !pursuing){ setSticky(null); if(!_justCaught) flashStatus('Escapaste','ok',2000); }
     _wasPursuing=pursuing; _justCaught=false;
     renderEnemies(); }
   let _wasPursuing=false, _justCaught=false;
@@ -663,8 +669,8 @@
     fire(); alarmIv=setInterval(fire, 300); }catch(e){} }
   function stopBeep(){ try{ if(alarmIv){ clearInterval(alarmIv); alarmIv=null; } }catch(e){} }
   function flashDetect(type){ board.classList.remove('detect'); void board.offsetWidth; board.classList.add('detect'); setTimeout(()=>{ try{ board.classList.remove('detect'); }catch(e){} },520);
-    const nm={guard:'Un guardia te atrapó',laser:'Un láser te detuvo',light:'El reflector te atrapó'}[type]||'Te atraparon';
-    flashStatus(nm+' · −½❤ · +'+(PEN[type]||4)+'s','danger',2200); }   // message goes to the bottom bar, not over the maze
+    const nm={guard:'Atrapado',laser:'Láser',light:'Reflector'}[type]||'Atrapado';
+    flashStatus(nm,'danger',1800); }   // short message in the bottom bar (the heart + clock already show the cost)
   function renderEnemies(){ if(!enemyLayer){ enemyLayer=document.createElement('div'); enemyLayer.className='enemy-layer'; enemyLayer.style.cssText='position:absolute;inset:0;z-index:3;pointer-events:none;'; board.appendChild(enemyLayer);
       zoneLayer=document.createElement('div'); zoneLayer.className='zone-layer'; zoneLayer.style.cssText='position:absolute;inset:0;'; enemyLayer.appendChild(zoneLayer); }
     if(spritesDirty){ for(const el of spriteEls){ try{ el.remove(); }catch(e){} } spriteEls=[];   // rebuild persistent sprites after a fresh maze
@@ -768,7 +774,7 @@
     // Prefer a full-width maze + comfy buttons. If the visible height is tight, keep the d-pad at a tappable
     // 44px and shrink the maze JUST enough so the controls are always fully on-screen (never under the bar).
     let db=Math.floor((avail - (cellW*MR + B) - CONCHROME)/2), mzc2;
-    if(db>=46){ mzc2=cellW; db=Math.min(db,62); }
+    if(db>=46){ mzc2=cellW; db=Math.min(db,80); }
     else { db=46; mzc2=Math.min(cellW, Math.max(13, (avail - (2*db+CONCHROME) - B)/MR)); }
     mzc=mzc2; const mazeH=mzc*MR;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
@@ -888,8 +894,8 @@
     if(DG[2*dot.r+1+dr][2*dot.c+1+dc]==='#') return false;  // wall → no move (enemies move on their own clock, not yours)
     if(lockedDoors.has(dot.r+','+dot.c+','+d)){ enterSolve(d); return false; }   // puzzle-locked door → solve a quick Cascada/Flujo board to power it on
     dot.r=nr; dot.c=nc; placeDot();
-    for(const k of keys){ if(!k.got && k.r===dot.r && k.c===dot.c){ k.got=true; keysGot++; flashStatus('Nodo activado '+keysGot+'/'+keys.length,'ok',1500); layoutMaze(); } }   // activate a Nodo
-    if(dot.r===exit.r&&dot.c===exit.c){ if(keysGot>=keys.length) winGame(); else flashStatus('Faltan nodos ('+keysGot+'/'+keys.length+')','danger',1600); }   // exit powers on once all Nodos are active
+    for(const k of keys){ if(!k.got && k.r===dot.r && k.c===dot.c){ k.got=true; keysGot++; flashStatus('Nodo activado','ok',1400); layoutMaze(); } }   // activate a Nodo
+    if(dot.r===exit.r&&dot.c===exit.c){ if(keysGot>=keys.length) winGame(); else flashStatus('Faltan nodos','danger',1500); }   // exit powers on once all Nodos are active
     return true; }
   function chevSVG(d){ const p={U:'M9 26 L20 14 L31 26', D:'M9 14 L20 26 L31 14', L:'M26 9 L14 20 L26 31', R:'M14 9 L26 20 L14 31'}[d];
     return '<svg viewBox="0 0 40 40"><path class="p" d="'+p+'"/></svg>'; }   // family chevron, not a full arrow
