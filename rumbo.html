@@ -147,6 +147,8 @@
   .en{ position:absolute; display:flex; align-items:center; justify-content:center; }
   .en svg{ width:84%; height:84%; } .en .p{ fill:none; stroke:#fff; stroke-width:3.6; stroke-linecap:round; stroke-linejoin:round; }
   .en-guard{ border-radius:50%; background:#d63030; box-shadow:0 1px 5px rgba(0,0,0,.4); }
+  .en-guard.hunting{ background:#ff2d2d; box-shadow:0 0 7px 2px rgba(255,45,45,.7); animation:huntpulse .5s ease-in-out infinite; }   /* this guard is hunting you */
+  @keyframes huntpulse{ 50%{ transform:scale(1.16); } }
   .en-cam{ border-radius:5px; background:#9a4d12; box-shadow:0 1px 4px rgba(0,0,0,.35); }
   .en-laser{ border-radius:50%; background:#7a1d1d; }
   .en-laser.on{ background:#ff3b3b; box-shadow:0 0 6px 2px rgba(255,59,59,.7); }
@@ -433,7 +435,7 @@
     const lr=$('lives-row'); if(lr){ lr.classList.add('spill'); setTimeout(()=>{ try{ lr.classList.remove('spill'); }catch(e){} },320); }
     flashDetect(type);
     dot.r=0; dot.c=0; placeDot(true);                   // back to home base (snap, don't glide across the maze)
-    for(const e of enemies) e.sawYou=false;             // don't re-trigger instantly on the way back
+    for(const e of enemies){ e.sawYou=false; if(e.type==='guard'&&e.mode==='pursue') e.mode='return'; }   // call off the hunt; guards head back
     if(lives<=0) loseGame(); }
   function loseGame(){ if(lost||won) return; lost=true; running=false; lightMeter=0; setAlarm(false,0); if(rafId) cancelAnimationFrame(rafId);
     const brand='<svg class="brand" viewBox="0 0 120 120" aria-hidden="true"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--error)"/><path d="M44 44 L76 76 M76 44 L44 76" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/></svg>';
@@ -510,7 +512,13 @@
   function dirBetween(a,b){ if(b.r<a.r) return 'U'; if(b.r>a.r) return 'D'; if(b.c<a.c) return 'L'; if(b.c>a.c) return 'R'; return null; }
   const PEN={guard:5,camera:3,laser:4,light:4};   // small time penalty on top of −½ heart + back-to-home (kept gentle so it's not over-punishing)
   const SIGHT=4;                                    // vision range in cells (rays stop at walls) — short enough to read & dodge
+  const PURSUE_MS=6000, PURSUE_STEP=360;            // a camera-summoned guard chases for this long, moving this fast — escape it!
   const openDirs=(r,c)=>KEYS.filter(k=>{ const [dr,dc]=DIR[k]; return DG[2*r+1+dr] && DG[2*r+1+dr][2*c+1+dc]==='.'; });
+  const canMv=(r,c,k)=>{ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; return !(nr<0||nr>=MR||nc<0||nc>=MC) && DG[2*r+1+dr] && DG[2*r+1+dr][2*c+1+dc]==='.'; };
+  // BFS: first step direction from (sr,sc) toward (tr,tc) through open corridors (used for guard pursuit / return)
+  function bfsNext(sr,sc,tr,tc){ if(sr===tr&&sc===tc) return null; const prev=new Map(), seen=new Set([sr+','+sc]); const q=[[sr,sc]]; let h=0;
+    while(h<q.length){ const [r,c]=q[h++]; if(r===tr&&c===tc) break; for(const k of KEYS){ if(!canMv(r,c,k)) continue; const [dr,dc]=DIR[k], nk=(r+dr)+','+(c+dc); if(!seen.has(nk)){ seen.add(nk); prev.set(nk,[r,c,k]); q.push([r+dr,c+dc]); } } }
+    let cur=tr+','+tc; if(!prev.has(cur)) return null; let first=null; while(cur!==sr+','+sc){ const p=prev.get(cur); if(!p) return null; first=p[2]; cur=p[0]+','+p[1]; } return first; }
   function rayCells(r,c,facing,range){ const out=[]; const [dr,dc]=DIR[facing]; let rr=r,cc=c;
     for(let i=0;i<range;i++){ if(!DG[2*rr+1+dr] || DG[2*rr+1+dr][2*cc+1+dc]==='#') break; rr+=dr; cc+=dc; if(rr<0||rr>=MR||cc<0||cc>=MC) break; out.push(rr+','+cc); } return out; }
   // a wandering corridor route from a start cell (no immediate backtrack), used by guards + searchlights
@@ -546,15 +554,14 @@
     // guard with distinct behaviour: len = patrol length, counter = start at the far end going the other way, ms = pace
     const addGuard=(s,len,counter,ms)=>{ if(!s) return; const path=routeFrom(s, len, rng); if(path.length>=2){
         const i0=counter?path.length-1:0; const d0=counter?-1:1; const aN=path[i0], bN=path[i0+d0]||path[i0];
-        enemies.push({type:'guard', path, idx:i0, dir:d0, facing:dirBetween(aN,bN)||'R', r:aN.r, c:aN.c, prevR:aN.r, prevC:aN.c, acc:0, ms:ms||740, sawYou:false}); placed.push({r:aN.r,c:aN.c}); } };
+        enemies.push({type:'guard', path, idx:i0, dir:d0, facing:dirBetween(aN,bN)||'R', r:aN.r, c:aN.c, prevR:aN.r, prevC:aN.c, acc:0, ms:ms||740, mode:'patrol', home:{r:aN.r,c:aN.c}, sawYou:false}); placed.push({r:aN.r,c:aN.c}); } };
     const addCamera=(s)=>{ if(!s) return; let seq=openDirs(s.r,s.c); if(seq.length<2) seq=['L','R']; enemies.push({type:'camera', r:s.r, c:s.c, seq, si:0, facing:seq[0], acc:0, ms:1500, sawYou:false}); placed.push(s); };
     const addLaser=(s)=>{ if(!s) return; enemies.push({type:'laser', r:s.r, c:s.c, beam:[s.r+','+s.c], on:true, acc:0, onMs:1800, offMs:1400, sawYou:false}); placed.push(s); };
     // reflector roams a LONG route across the whole board (it sweeps far, not just a corner)
     const addLight=(s)=>{ if(!s) return; const path=routeFrom(s, 34+((rng()*22)|0), rng); enemies.push({type:'light', path:path.length>1?path:[s,{r:s.r,c:s.c}], idx:0, dir:1, r:s.r, c:s.c, prevR:s.r, prevC:s.c, acc:0, ms:640, sawYou:false}); placed.push(s); };
-    // 3 guards (distinct behaviour) + 4 cameras + 6 laser tripwires + 1 board-roaming reflector → heavily monitored.
-    addGuard(pick(any2), 8+((rng()*4)|0), false, 760);                       // Guard A — simple patrol loop
-    addGuard(pick(any2), 9+((rng()*5)|0), true, 700);                        // Guard B — counter-patrol (opposite end/direction, a touch faster)
-    addGuard(pickNearNodo(any2) || pick(any2), 11+((rng()*5)|0), false, 800);// Guard C — long route that roams between objectives
+    // FOUR guards — one per quadrant, so the whole map is patrolled (and one is always near you when a camera calls).
+    const gms=[760,700,800,720];
+    for(let qi=0; qi<4; qi++) addGuard(inQuad(QUAD[qi], any2) || pick(any2), 8+((rng()*5)|0), (qi%2===1), gms[qi]);
     addLight(pick(isJunction) || pick(any2));                              // roaming spotlight (3s detection meter), now sweeps the whole board
     // ONE camera per quadrant → guaranteed coverage of every corner (incl. top-right)
     for(let qi=0; qi<4; qi++) addCamera(inQuad(QUAD[qi], isJunction) || inQuad(QUAD[qi], any2) || pick(isJunction));
@@ -568,18 +575,38 @@
       else if(e.type==='laser'){ z = e.on ? e.beam.slice() : []; }
       else if(e.type==='light'){ for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){ const r=e.r+dr,c=e.c+dc; if(r>=0&&r<MR&&c>=0&&c<MC) z.push(r+','+c); } }
       e.zone=z; for(const k of z) watchedSet.add(k); } }
+  function guardStepToward(e,tr,tc){ const d=bfsNext(e.r,e.c,tr,tc); if(!d) return false; const [dr,dc]=DIR[d]; e.prevR=e.r; e.prevC=e.c; e.r+=dr; e.c+=dc; e.facing=d; return true; }
   function advanceEnemy(e){
-    if(e.type==='guard'||e.type==='light'){ let n=e.idx+e.dir; if(n>e.path.length-1||n<0){ e.dir=-e.dir; n=e.idx+e.dir; }
-      const a=e.path[e.idx], b=e.path[n]||a; e.idx=n; e.prevR=e.r; e.prevC=e.c; e.r=b.r; e.c=b.c; if(e.type==='guard'){ const f=dirBetween(a,b); if(f) e.facing=f; } }
-    else if(e.type==='camera'){ e.si=(e.si+1)%e.seq.length; e.facing=e.seq[e.si]; }
+    if(e.type==='guard'){
+      if(e.mode==='pursue'){                                   // chase the player; time's up → head back
+        if((e.pursueLeft||0)<=0){ e.mode='return'; }
+        else { guardStepToward(e, dot.r, dot.c); return; } }
+      if(e.mode==='return'){                                   // walk back to the nearest cell on its patrol route
+        let ti=0, bd=1e9; for(let i=0;i<e.path.length;i++){ const d=Math.abs(e.path[i].r-e.r)+Math.abs(e.path[i].c-e.c); if(d<bd){ bd=d; ti=i; } }
+        const tgt=e.path[ti];
+        if(e.r===tgt.r&&e.c===tgt.c){ e.mode='patrol'; e.idx=ti; } else { if(!guardStepToward(e,tgt.r,tgt.c)){ e.mode='patrol'; e.idx=ti; } return; } }
+      let n=e.idx+e.dir; if(n>e.path.length-1||n<0){ e.dir=-e.dir; n=e.idx+e.dir; }   // normal patrol
+      const a=e.path[e.idx], b=e.path[n]||a; e.idx=n; e.prevR=e.r; e.prevC=e.c; e.r=b.r; e.c=b.c; const f=dirBetween(a,b); if(f) e.facing=f; return; }
+    if(e.type==='light'){ let n=e.idx+e.dir; if(n>e.path.length-1||n<0){ e.dir=-e.dir; n=e.idx+e.dir; }
+      const a=e.path[e.idx], b=e.path[n]||a; e.idx=n; e.prevR=e.r; e.prevC=e.c; e.r=b.r; e.c=b.c; return; }
+    if(e.type==='camera'){ e.si=(e.si+1)%e.seq.length; e.facing=e.seq[e.si]; }
     else if(e.type==='laser'){ e.on=!e.on; } }
+  // a camera spotted you → the closest free guard breaks off to hunt you for PURSUE_MS
+  function triggerPursuit(){ const free=enemies.filter(e=>e.type==='guard' && e.mode!=='pursue'); if(!free.length) return;
+    let g=null, bd=1e9; for(const e of free){ const d=Math.abs(e.r-dot.r)+Math.abs(e.c-dot.c); if(d<bd){ bd=d; g=e; } }
+    if(g){ g.mode='pursue'; g.pursueLeft=PURSUE_MS;
+      try{ board.classList.remove('detect'); void board.offsetWidth; board.classList.add('detect'); setTimeout(()=>{ try{ board.classList.remove('detect'); }catch(e){} },520); }catch(e){}
+      rumboToast('¡Cámara! Un guardia te persigue'); } }
   function enemyStep(dt){ if(!enemies.length){ setAlarm(false,0); return; }
-    for(const e of enemies){ e.acc+=dt; const period=e.type==='laser'?(e.on?e.onMs:e.offMs):e.ms; if(e.acc>=period){ e.acc-=period; advanceEnemy(e); } }
+    for(const e of enemies){ e.acc+=dt; if(e.type==='guard'&&e.mode==='pursue') e.pursueLeft=(e.pursueLeft||0)-dt; const period=e.type==='laser'?(e.on?e.onMs:e.offMs):(e.type==='guard'&&e.mode==='pursue'?PURSUE_STEP:e.ms); e.stepMs=period; if(e.acc>=period){ e.acc-=period; advanceEnemy(e); } }
     computeWatch();
     const here=dot.r+','+dot.c; let caught=null;
-    // guards / cameras / lasers = instant detection (as before)
+    // GUARDS + LASERS still catch instantly. CAMERAS no longer kill — they summon the nearest guard to hunt you.
     for(const e of enemies){ const seen=e.zone.indexOf(here)>=0;
-      if(e.type!=='light' && seen && !e.sawYou && started && !won && !lost) caught=e.type;
+      if(seen && !e.sawYou && started && !won && !lost){
+        if(e.type==='guard'||e.type==='laser') caught=e.type;
+        else if(e.type==='camera') triggerPursuit();
+      }
       e.sawYou=seen; }
     if(caught){ lightMeter=0; setAlarm(false,0); onCaught(caught); }
     else {
@@ -623,9 +650,9 @@
     const m=mzc;
     for(const e of enemies){ const el=e.el; if(!el) continue;
       let cx=e.c, cy=e.r;   // smooth: interpolate between the cell it left and the one it's entering (no stepping)
-      if((e.type==='guard'||e.type==='light') && e.prevR!=null){ const fr=Math.min(1,(e.acc||0)/(e.ms||1)); cx=e.prevC+(e.c-e.prevC)*fr; cy=e.prevR+(e.r-e.prevR)*fr; }
+      if((e.type==='guard'||e.type==='light') && e.prevR!=null){ const fr=Math.min(1,(e.acc||0)/(e.stepMs||e.ms||1)); cx=e.prevC+(e.c-e.prevC)*fr; cy=e.prevR+(e.r-e.prevR)*fr; }
       const set=(pad,sz)=>{ el.style.left=((cx+pad)*m)+'px'; el.style.top=((cy+pad)*m)+'px'; el.style.width=(m*sz)+'px'; el.style.height=(m*sz)+'px'; };
-      if(e.type==='guard'){ set(0.16,0.68); if(el._f!==e.facing){ el.innerHTML=chevSVG(e.facing); el._f=e.facing; } }
+      if(e.type==='guard'){ set(0.16,0.68); el.classList.toggle('hunting', e.mode==='pursue'); if(el._f!==e.facing){ el.innerHTML=chevSVG(e.facing); el._f=e.facing; } }
       else if(e.type==='camera'){ set(0.14,0.72); if(el._f!==e.facing){ el.innerHTML=chevSVG(e.facing); el._f=e.facing; } }
       else if(e.type==='laser'){ set(0.24,0.52); el.classList.toggle('on', !!e.on); }
       else if(e.type==='light'){ set(0.08,0.84); } }
@@ -995,7 +1022,7 @@
     sizeAll(); buildBigPad(); placeDot(); buildRankTrack(); showMove(); drawHUD();
     window.__rumbo={ start:startGame, step, tapPiece, solve:()=>solvePath(), phase:()=>phase, pieces:()=>Object.keys(pcs).length, doorsLeft:()=>totalDoors-doorsOpened, totalDoors:()=>totalDoors,
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
-      enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,dir:e.dir,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),
+      enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,dir:e.dir,mode:e.mode,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),
       tick:(ms)=>enemyStep(ms), render:()=>drawHUD(), setDot:(r,c)=>{ dot.r=r; dot.c=c; placeDot(); }, lives:()=>lives, lost:()=>lost,
       tapDir:(d)=>{ if(phase!=='move') return null; pressDir(d,null); const md=moveDir; releaseAll(); return md; }, swipe:(dx,dy)=>{ swX=0; swY=0; swActive=true; const r=swipeProcess(dx,dy); swActive=false; return r; }, stepMs:()=>STEP_MS, holdDelay:()=>HOLD_DELAY,
       lightMeter:()=>lightMeter, lightCatch:()=>LIGHT_CATCH, alarmOn:()=>alarmOn,
