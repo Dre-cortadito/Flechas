@@ -595,12 +595,14 @@
     const gms=[760,700,800,720];
     for(let qi=0; qi<4; qi++){ const q=QUAD[qi]; addGuard(pickInAny(q,any2)||pick(any2), 9+((rng()*5)|0), (qi%2===1), gms[qi], q); }
     addLight(pick(isJunction) || pick(any2));                              // roaming spotlight (3s detection meter), now sweeps the whole board
-    // CAMERAS sit on the main artery (the home→exit route) + the exit approach — exactly where the player travels.
-    const artery=(()=>{ const prev=new Map(), seen=new Set(['0,0']); const q=[[0,0]]; let h=0;
-      while(h<q.length){ const [r,c]=q[h++]; if(r===exit.r&&c===exit.c) break; for(const k of KEYS){ if(!canMv(r,c,k))continue; const [dr,dc]=DIR[k],nk=(r+dr)+','+(c+dc); if(!seen.has(nk)){ seen.add(nk); prev.set(nk,[r,c]); q.push([r+dr,c+dc]); } } }
-      const path=[]; let cur=exit.r+','+exit.c; if(!prev.has(cur)) return path; while(cur && cur!=='0,0'){ const [r,c]=cur.split(',').map(Number); path.push({r,c}); const p=prev.get(cur); cur=p?p[0]+','+p[1]:null; } return path.reverse(); })();
-    for(const f of [0.28,0.5,0.72]){ const s=artery[Math.floor(artery.length*f)]; if(s) addCamera(pickNear(s,3,any2) || {r:s.r,c:s.c}); }   // 3 cameras spread along the route
-    addCamera(pickNear(exit,7,any2) || pick(any2));                                                          // 1 watching the exit approach
+    // CAMERAS sit on the routes the player must travel: shortest paths home→exit and home→each Nodo.
+    const pathTo=(tr,tc)=>{ const prev=new Map(), seen=new Set(['0,0']); const q=[[0,0]]; let h=0;
+      while(h<q.length){ const [r,c]=q[h++]; if(r===tr&&c===tc) break; for(const k of KEYS){ if(!canMv(r,c,k))continue; const [dr,dc]=DIR[k],nk=(r+dr)+','+(c+dc); if(!seen.has(nk)){ seen.add(nk); prev.set(nk,[r,c]); q.push([r+dr,c+dc]); } } }
+      const out=[]; let cur=tr+','+tc; if(!prev.has(cur)) return out; while(cur && cur!=='0,0'){ const [r,c]=cur.split(',').map(Number); out.push({r,c}); const p=prev.get(cur); cur=p?p[0]+','+p[1]:null; } return out; };
+    const routeCells=[], rset=new Set();
+    for(const t of [exit].concat(keys)){ for(const cell of pathTo(t.r,t.c)){ const id=cell.r+','+cell.c; if(!rset.has(id) && farOk(cell.r,cell.c)){ rset.add(id); routeCells.push(cell); } } }
+    // 7 cameras, each the route cell FARTHEST from the ones already placed → on-route AND spread out (never bundled)
+    for(let i=0;i<7 && routeCells.length; i++){ let best=null,bestD=-1; for(const cell of routeCells){ const d=nearestPlaced(cell.r,cell.c); if(d>bestD){ bestD=d; best=cell; } } if(!best) break; addCamera(best); }
     // 6 lasers round-robined across the quadrants so they don't all pool in one area
     for(let i=0;i<6;i++){ const q=QUAD[i%4]; addLaser(inQuad(q, isStraight) || inQuad(q, any2) || pick(any2)); }
     computeWatch(); }
