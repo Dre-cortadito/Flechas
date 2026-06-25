@@ -27,6 +27,7 @@
     --bg:#ffffff; --paper:#f5f4f2; --ink:#1c1c1c; --ink-soft:#8a8a8a; --ink-line:#e4e3e1; --box-edge:#5e5e5e;
     --accent:#1c1c1c; --accent-deep:#000000; --accent-soft:#d5d5d2; --accent-2:#5e5e5e; --success:#1c1c1c; --error:#b03434;
     --board-bg:#f0efed; --arrow:#1c1c1c; --wall:#2b2b2b; --door:#8c8c8c; --gw:min(94vw,400px);
+    --shield-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l8 3v6c0 5-3.5 8.6-8 11-4.5-2.4-8-6-8-11V5l8-3z'/%3E%3C/svg%3E");
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
@@ -114,36 +115,29 @@
   @keyframes spotpulse { 0%{ background:var(--board-bg);} 28%{ background:rgba(214,48,48,.4);} 100%{ background:var(--board-bg);} }
   .maze.pursuit { border-color:var(--error); box-shadow:0 0 0 2px color-mix(in srgb, var(--error) 45%, transparent), 0 3px 12px rgba(0,0,0,.1); }
   .maze.pursuit::before { border-color:var(--error); }
-  /* balanced control group, centered under the board: [ Blindaje ] [ D-pad ] [ HACK + meter ]. The two side columns match the D-pad height. */
+  /* balanced control row spanning the board width: [ Blindaje ] [ D-pad ] [ HACK ]. Side panels stretch outward to the edges; D-pad centered. */
   .dpad-wrap { display:flex; justify-content:center; align-items:stretch; gap:8px; width:var(--gw,360px); margin:0 auto; }
-  .sidecol { flex:0 0 auto; width:calc(var(--db,56px) * 0.82); height:calc(var(--db,56px) * 2 + 2px); display:flex; flex-direction:column; }
-  .shieldcol { justify-content:center; }   /* Blindaje box mirrors the D-pad on the LEFT */
-  .hackcol { gap:5px; }                     /* HACK + 3-segment meter on the RIGHT */
-  .hackcol.hidden, .shieldcol.hidden { display:none; }
-  /* HACK button — fills its column above the meter. Dim until you're under a camera or beside a door, then it lights up so YOU choose whether to hack. */
-  .hackbtn { flex:1 1 auto; width:100%; border:none; border-radius:16px; cursor:pointer;
-    background:var(--paper,#efe7d8); color:var(--ink-soft,#9b8e78); box-shadow:0 1px 3px rgba(0,0,0,.14);
-    font:800 15px/1 var(--font-ui,system-ui); letter-spacing:1.5px; text-transform:uppercase;
-    display:flex; align-items:center; justify-content:center;
-    opacity:.45; transition:opacity .15s ease, background .15s ease, color .15s ease; -webkit-tap-highlight-color:transparent; user-select:none; }
-  .hackbtn.ready { opacity:1; background:var(--accent,#1f8a70); color:#fff; animation:hackpulse .9s ease-in-out infinite; }
-  .hackbtn.free { opacity:1; background:#caa53e; color:#3a2e08; }                  /* free hack ready → GRATIS, gold */
-  .hackbtn.free.ready { animation:hackpulse .8s ease-in-out infinite; }
-  @keyframes hackpulse { 0%,100%{ box-shadow:0 1px 3px rgba(0,0,0,.14); } 50%{ box-shadow:0 0 0 3px color-mix(in srgb, var(--accent,#1f8a70) 35%, transparent); } }
-  /* hack meter — 3 segments under HACK; fills one per solved camera hack, all gold when a free hack is ready */
-  .hackmeter { flex:0 0 auto; width:100%; height:9px; display:flex; gap:3px; }
-  .hackmeter span { flex:1; border-radius:3px; background:rgba(0,0,0,.13); transition:background .2s ease; }
-  .hackmeter span.lit { background:var(--accent,#1f8a70); }
+  /* matching side modules: full D-pad height, split into two EQUAL halves with a divider (top = label/action, bottom = charges) */
+  .sidecol { flex:1 1 0; min-width:0; height:calc(var(--db,56px) * 2 + 2px); display:grid; grid-template-rows:1fr 1fr;
+    border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.16); background:var(--paper,#efe7d8); }
+  .sidecol.hidden { display:none; }
+  .sp-top { display:flex; align-items:center; justify-content:center; border:none; margin:0; width:100%; height:100%;
+    font:800 14px/1 var(--font-ui,system-ui); letter-spacing:1.5px; text-transform:uppercase; user-select:none; -webkit-tap-highlight-color:transparent; }
+  .sp-bot { display:flex; align-items:center; justify-content:center; gap:7px; border-top:2px solid rgba(0,0,0,.12); background:#fff; }
+  /* BLINDAJE — teal like the Cascada shield. Title on top, up to 2 shield charges below. */
+  .sp-shield { background:#0aa39a; color:#fff; }
+  #shield-pips i { width:13px; height:15px; background:#cfd8dc; -webkit-mask:var(--shield-mask) center/contain no-repeat; mask:var(--shield-mask) center/contain no-repeat; transition:background .15s ease; }
+  #shield-pips i.lit { background:#0aa39a; }
+  /* HACK — green/teal-green action. Title (button) on top, 3-segment meter below. */
+  .sp-hack { cursor:pointer; background:#dfeae6; color:#5f7d74; transition:background .15s ease, color .15s ease; }
+  .sp-hack.ready { background:#15a07c; color:#fff; animation:hackpulse .9s ease-in-out infinite; }
+  .sp-hack.free { background:#caa53e; color:#3a2e08; }
+  .sp-hack.free.ready { animation:hackpulse .8s ease-in-out infinite; }
+  @keyframes hackpulse { 0%,100%{ box-shadow:inset 0 0 0 0 rgba(21,160,124,0); } 50%{ box-shadow:inset 0 0 0 3px rgba(255,255,255,.35); } }
+  .hackmeter { gap:4px; padding:0 8px; }
+  .hackmeter span { flex:1; height:9px; border-radius:3px; background:rgba(0,0,0,.12); transition:background .2s ease; }
+  .hackmeter span.lit { background:#15a07c; }
   .hackmeter.full span { background:#caa53e; }
-  /* BLINDAJE shield status box — LEFT column. Dim when no charge; lit when armed; gold for Blindaje+. */
-  .shieldbox { width:100%; height:100%; border-radius:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
-    background:var(--paper,#efe7d8); color:var(--ink-soft,#9b8e78); box-shadow:0 1px 3px rgba(0,0,0,.14);
-    font:800 10px/1 var(--font-ui,system-ui); letter-spacing:.5px; text-transform:uppercase; user-select:none;
-    opacity:.5; transition:opacity .15s ease, background .15s ease, color .15s ease; }
-  .shieldbox .sh-ic { width:38%; line-height:0; }
-  .shieldbox .sh-ic svg { width:100%; height:auto; display:block; fill:currentColor; }
-  .shieldbox.on { opacity:1; background:var(--accent,#1f8a70); color:#fff; }
-  .shieldbox.plus { background:#caa53e; color:#3a2e08; animation:hackpulse .9s ease-in-out infinite; }
   /* unified cross: ↑ on top, ← ↓ → all touching in one row below (↓ is the hub). all buttons same size. */
   /* fat D-pad: wide ↑/↓ stacked in a wider centre column; tall ← / → flank the WHOLE stack (incl. ↑'s sides) */
   .dpad2 { display:grid; grid-template-columns:var(--db,56px) calc(var(--db,56px) * 1.55) var(--db,56px); grid-template-rows:repeat(2,var(--db,56px)); gap:2px; flex:0 0 auto; }
@@ -356,10 +350,8 @@
         </div>
         <div class="dpad-wrap">
           <div class="sidecol shieldcol hidden" id="shieldcol">
-            <div class="shieldbox" id="shield-box" aria-label="Blindaje">
-              <span class="sh-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.5 8.6-8 11-4.5-2.4-8-6-8-11V5l8-3z"/></svg></span>
-              <span class="sh-lbl">Blindaje</span>
-            </div>
+            <div class="sp-top sp-shield">Blindaje</div>
+            <div class="sp-bot" id="shield-pips"><i></i><i></i></div>
           </div>
           <div class="panel hidden" id="panel"></div>
           <div class="dpad2 hidden" id="dpad">
@@ -369,8 +361,8 @@
             <button class="dbtn db-right" data-d="R" type="button" aria-label="Derecha"></button>
           </div>
           <div class="sidecol hackcol hidden" id="hackcol">
-            <button class="hackbtn" id="hack-btn" type="button" aria-label="Hackear">HACK</button>
-            <div class="hackmeter" id="hack-meter" aria-hidden="true"><span></span><span></span><span></span></div>
+            <button class="sp-top sp-hack" id="hack-btn" type="button" aria-label="Hackear">HACK</button>
+            <div class="sp-bot hackmeter" id="hack-meter" aria-hidden="true"><span></span><span></span><span></span></div>
           </div>
         </div>
       </div>
@@ -447,12 +439,9 @@
   let enemies=[], watchedSet=new Set(), enemyLayer=null, zoneLayer=null, spriteEls=[], spritesDirty=true, seenCount=0;   // real-time stealth enemies
   let keys=[], keysGot=0;   // NODOS — route objectives to activate; the exit powers on once all are active
   const LIVES_MAX=3; let lives=LIVES_MAX, lost=false;   // caught = −½ heart + back to base; 0 hearts = lost
-  let blindaje=0;   // BLINDAJE shield from hacking a camera: 0=none, 1=Blindaje, 2=Blindaje+. Blocks the NEXT camera detection (one-time). Refreshes to + on a 2nd hack; + also freezes the nearest guard 2s when consumed.
-  function grantBlindaje(){ blindaje = blindaje>=1 ? 2 : 1; flashStatus(blindaje===2?'Blindaje+':'Blindaje','ok',1500); }
-  function consumeBlindaje(){ const wasPlus = blindaje===2; blindaje=0;
-    flashStatus('Blindaje usado','ok',1500);
-    if(wasPlus){ let g=null,bd=1e9; for(const e of enemies){ if(e.type==='guard'&&e.mode!=='pursue'){ const d=Math.abs(e.r-dot.r)+Math.abs(e.c-dot.c); if(d<bd){ bd=d; g=e; } } } if(g) g.frozenLeft=2000; }   // Blindaje+ buys a 2s head start on the nearest guard
-  }
+  const BLINDAJE_MAX=2; let blindaje=0;   // BLINDAJE shield charges 0..2 from hacking cameras. Each charge blocks ONE camera detection (no guard summoned). Simple stack, no "plus".
+  function grantBlindaje(){ if(blindaje<BLINDAJE_MAX){ blindaje++; flashStatus('Blindaje +1','ok',1400); } }
+  function consumeBlindaje(){ if(blindaje>0){ blindaje--; flashStatus('Blindaje usado','ok',1400); } }
   let hackMeter=0;   // camera-hack meter: +1 per camera mini SOLVED, cap 3. At 3 the next HACK (gate or camera) is FREE — skips the mini-board and acts instantly.
   function freeHackReady(){ return hackMeter>=3; }
   function addHackCharge(){ const was=hackMeter; hackMeter=Math.min(3,hackMeter+1); if(hackMeter>=3 && was<3) flashStatus('Hackeo gratis listo','ok',1600); }
@@ -593,6 +582,18 @@
       const bfsHome=()=>{ const d=Array.from({length:MR},()=>Array(MC).fill(-1)); d[0][0]=0; const q=[[0,0]]; let h=0;
         while(h<q.length){ const [r,c]=q[h++]; for(const k of KEYS){ if(!passable(r,c,k))continue; const [dr,dc]=DIR[k],nr=r+dr,nc=c+dc; if(d[nr][nc]<0){ d[nr][nc]=d[r][c]+1; q.push([nr,nc]); } } } return d; };
       const reachOK=(extra)=>{ const d=bfsHome(); if(d[exit.r][exit.c]<0) return false; for(const k of keys){ if(d[k.r][k.c]<0) return false; } if(extra && d[extra[0]][extra[1]]<0) return false; return true; };
+      // For a laser wall: walk from the Nodo toward home; pick the DEEPEST edge (up to ROOM_DEPTH back) that, if blocked,
+      // isolates the Nodo from home → that edge seals a small ROOM with the Nodo inside. b = home-side cell (camera goes there).
+      const pickRoomBarrier=(nr,nc)=>{ const dH=bfsHome(); if(dH[nr][nc]<0) return null;
+        const path=[{r:nr,c:nc}]; let cur={r:nr,c:nc};                 // path[0]=Nodo … toward home
+        while(dH[cur.r][cur.c]>0){ let nx=null; for(const k of KEYS){ if(!passable(cur.r,cur.c,k)) continue; const [dr,dc]=DIR[k]; const r2=cur.r+dr,c2=cur.c+dc; if(dH[r2][c2]===dH[cur.r][cur.c]-1){ nx={r:r2,c:c2,fromDir:k}; break; } } if(!nx) break; path.push(nx); cur=nx; }
+        const isolates=(a,b,dir)=>{ const bA=a.r+','+a.c+','+dir, bB=b.r+','+b.c+','+oppDir[dir];   // blocking edge a↔b: must cut ONLY this Nodo (exit + other Nodos stay reachable from home)
+          const seen=new Set(['0,0']); const q=[[0,0]]; let h=0; while(h<q.length){ const [r,c]=q[h++]; for(const k of KEYS){ if(!passable(r,c,k)) continue; const kk=r+','+c+','+k; if(kk===bA||kk===bB) continue; const [dr,dc]=DIR[k]; const nk=(r+dr)+','+(c+dc); if(!seen.has(nk)){ seen.add(nk); q.push([r+dr,c+dc]); } } }
+          if(seen.has(nr+','+nc)) return false;                       // the Nodo must end up cut off
+          if(!seen.has(exit.r+','+exit.c)) return false;              // but the EXIT must stay reachable
+          for(const kk of keys){ if(kk.r===nr&&kk.c===nc) continue; if(!seen.has(kk.r+','+kk.c)) return false; }   // and every OTHER Nodo too
+          return true; };
+        const ROOM_DEPTH=3; for(let k=Math.min(ROOM_DEPTH, path.length-2); k>=0; k--){ const a=path[k], b=path[k+1]; if(isolates(a,b,b.fromDir)) return {a:{r:a.r,c:a.c}, b:{r:b.r,c:b.c}, dir:b.fromDir}; } return null; };
       const types=['cascada','flujo']; let placed=0, laserPlaced=0; const LASER_TARGET=2;
       // gate Nodos in near->far order so the run introduces them naturally
       const order=keys.map(k=>({k, d:(bfsHome()[k.r][k.c])})).sort((a,b)=>(a.d<0?1e9:a.d)-(b.d<0?1e9:b.d));
@@ -606,12 +607,12 @@
           const [dr,dc]=DIR[d]; DG[2*nr+1+dr][2*nc+1+dc]='#';
           if(!reachOK([nr+dr,nc+dc])) DG[2*nr+1+dr][2*nc+1+dc]='.';   // revert if it would orphan the exit / a Nodo / that branch
         }
-        // FIRST gated Nodo keeps the familiar puzzle DOOR; the next two become camera-linked LASER WALLS (Idea 2)
+        // FIRST gated Nodo keeps the familiar puzzle DOOR; the next two become camera-linked LASER WALLS that seal a small ROOM with the Nodo inside (Idea 2).
         const gatedSoFar = placed + laserPlaced;
-        if(gatedSoFar>0 && laserPlaced<LASER_TARGET){
-          const [gdr,gdc]=DIR[gate]; const er=nr+gdr, ec=nc+gdc;
-          const wall={ r:nr, c:nc, d:gate, er, ec, nodoKey:nr+','+nc, pair:laserPlaced, cam:null, perm:false };
-          laserWalls.set(nr+','+nc+','+gate, wall); laserWalls.set(er+','+ec+','+oppDir[gate], wall); laserList.push(wall); laserPlaced++;
+        const bar = (gatedSoFar>0 && laserPlaced<LASER_TARGET) ? pickRoomBarrier(nr,nc) : null;
+        if(bar){
+          const wall={ r:bar.a.r, c:bar.a.c, d:bar.dir, er:bar.b.r, ec:bar.b.c, nodoKey:nr+','+nc, pair:laserPlaced, cam:null, perm:false };
+          laserWalls.set(bar.a.r+','+bar.a.c+','+bar.dir, wall); laserWalls.set(bar.b.r+','+bar.b.c+','+oppDir[bar.dir], wall); laserList.push(wall); laserPlaced++;
         } else {
           addDoor(nr,nc,gate,types[placed%2]); placed++;              // the puzzle lock that protects this Nodo
         }
@@ -908,7 +909,7 @@
     // Prefer a full-width maze + comfy buttons. If the visible height is tight, keep the d-pad at a tappable
     // 44px and shrink the maze JUST enough so the controls are always fully on-screen (never under the bar).
     let db=Math.floor((avail - (cellW*MR + B) - CONCHROME)/2), mzc2;
-    if(db>=46){ mzc2=cellW; db=Math.min(db,100); db=Math.min(db, Math.floor((W-16)/5.2)); }   // width cap: D-pad (3.55·db) + two side columns (2·0.82·db) + gaps must fit the board width → balanced [Blindaje][D-pad][HACK]
+    if(db>=46){ mzc2=cellW; db=Math.min(db,100); db=Math.min(db, Math.floor((W-150)/3.55)); }   // width cap: reserve ~150px for the two full-height side panels so [Blindaje][D-pad][HACK] spans the whole board width
     else { db=46; mzc2=Math.min(cellW, Math.max(13, (avail - (2*db+CONCHROME) - B)/MR)); }
     mzc=mzc2; const mazeH=mzc*MR;
     board.style.width=(mzc*MC+B)+'px'; board.style.height=(mazeH+B)+'px';
@@ -1173,7 +1174,7 @@
     const free=freeHackReady();
     const hb=$('hack-btn'); if(hb){ hb.classList.toggle('ready', !!hackTarget()); hb.classList.toggle('free', free); hb.textContent = free ? 'GRATIS' : 'HACK'; }   // HACK lights when there's a target; shows GRATIS when the meter is full
     const hm=$('hack-meter'); if(hm){ const seg=hm.children; for(let i=0;i<seg.length;i++) seg[i].classList.toggle('lit', i<hackMeter); hm.classList.toggle('full', free); }
-    const sb=$('shield-box'); if(sb){ sb.classList.toggle('on', blindaje>=1); sb.classList.toggle('plus', blindaje===2); const sl=sb.querySelector('.sh-lbl'); if(sl) sl.textContent = blindaje===2?'Blindaje+':'Blindaje'; }
+    const sp=$('shield-pips'); if(sp){ const pip=sp.children; for(let i=0;i<pip.length;i++) pip[i].classList.toggle('lit', i<blindaje); }   // Blindaje charges 0..2
     for(let li=0; li<laserList.length; li++){ const w=laserList[li], chip=$('lw-chip-'+li); if(!chip) continue;   // live barrier countdowns
       if(!w.perm && w.cam && w.cam.disabled){ chip.style.display='flex'; chip.textContent=Math.max(0,Math.ceil((w.cam.disabledLeft||0)/1000))+'s'; } else chip.style.display='none'; }
     updateRank(); }
@@ -1273,7 +1274,7 @@
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
       enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,dir:e.dir,mode:e.mode,disabled:e.disabled,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),
       tick:(ms)=>enemyStep(ms), render:()=>drawHUD(), setDot:(r,c)=>{ dot.r=r; dot.c=c; placeDot(); }, lives:()=>lives, lost:()=>lost,
-      hackTarget:()=>{ const t=hackTarget(); return t?t.kind:null; }, hack:()=>doHack(), blindaje:()=>blindaje, guardFrozen:()=>enemies.some(e=>e.type==='guard'&&e.frozenLeft>0),
+      hackTarget:()=>{ const t=hackTarget(); return t?t.kind:null; }, hack:()=>doHack(), blindaje:()=>blindaje,
       hackMeter:()=>hackMeter, freeHackReady:()=>freeHackReady(),
       lasersDbg:()=>laserList.map(w=>({r:w.r,c:w.c,d:w.d,er:w.er,ec:w.ec,nodoKey:w.nodoKey,pair:w.pair,perm:w.perm,active:laserActive(w),camR:w.cam?w.cam.r:null,camC:w.cam?w.cam.c:null,camDisabled:w.cam?!!w.cam.disabled:null})),
       tapDir:(d)=>{ if(phase!=='move') return null; pressDir(d,null); const md=moveDir; releaseAll(); return md; }, swipe:(dx,dy)=>{ swX=0; swY=0; swActive=true; const r=swipeProcess(dx,dy); swActive=false; return r; }, stepMs:()=>STEP_MS, holdDelay:()=>HOLD_DELAY,
