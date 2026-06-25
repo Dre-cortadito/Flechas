@@ -124,10 +124,18 @@
   .sp-top { display:flex; align-items:center; justify-content:center; border:none; margin:0; width:100%; height:100%;
     font:800 14px/1 var(--font-ui,system-ui); letter-spacing:1.5px; text-transform:uppercase; user-select:none; -webkit-tap-highlight-color:transparent; }
   .sp-bot { display:flex; align-items:center; justify-content:center; gap:7px; border-top:2px solid rgba(0,0,0,.12); background:#fff; }
-  /* BLINDAJE — teal like the Cascada shield. Title on top, up to 2 shield charges below. */
-  .sp-shield { background:#0aa39a; color:#fff; }
-  #shield-pips i { width:13px; height:15px; background:#cfd8dc; -webkit-mask:var(--shield-mask) center/contain no-repeat; mask:var(--shield-mask) center/contain no-repeat; transition:background .15s ease; }
-  #shield-pips i.lit { background:#0aa39a; }
+  /* SIGILO — teal like the Cascada shield. Tappable title on top; 2 charges (or a 5s countdown) below. */
+  .sp-shield { cursor:pointer; background:#0aa39a; color:#fff; transition:background .15s ease, opacity .15s ease; }
+  .sp-shield.dim { opacity:.5; }                                   /* no charges and not active → dimmed but visible */
+  .sp-shield.active { animation:hackpulse .8s ease-in-out infinite; }   /* cloaking right now */
+  .sg-bot { position:relative; }
+  .sg-pips { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:100%; }
+  .sg-pips i { width:24px; height:28px; background:#cfd8dc; -webkit-mask:var(--shield-mask) center/contain no-repeat; mask:var(--shield-mask) center/contain no-repeat; transition:background .15s ease; }
+  .sg-pips i.lit { background:#0aa39a; }
+  .sg-timer { display:none; position:absolute; inset:9px 10px; border-radius:7px; background:rgba(10,163,154,.16); overflow:hidden; }
+  .sg-timer span { display:block; height:100%; width:100%; background:#0aa39a; transform-origin:left center; }
+  .sg-bot.counting .sg-pips { display:none; }
+  .sg-bot.counting .sg-timer { display:block; }
   /* HACK — green/teal-green action. Title (button) on top, 3-segment meter below. */
   .sp-hack { cursor:pointer; background:#dfeae6; color:#5f7d74; transition:background .15s ease, color .15s ease; }
   .sp-hack.ready { background:#15a07c; color:#fff; animation:hackpulse .9s ease-in-out infinite; }
@@ -170,6 +178,8 @@
   .lw-chip { position:absolute; transform:translate(-50%,-50%); z-index:4; display:flex; align-items:center; justify-content:center; background:#0aa39a; color:#fff; font:800 9px/1 var(--font-ui,system-ui); padding:2px 4px; border-radius:6px; pointer-events:none; box-shadow:0 1px 3px rgba(0,0,0,.28); }
   @keyframes exitpulse { 50%{ transform:scale(1.08); } }
   .dot { position:absolute; border-radius:50%; background:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.3); transition:top .2s linear,left .2s linear; z-index:3; }   /* glide == step interval → continuous, no stutter */
+  .dot.stealth { background:#0aa39a; opacity:.5; box-shadow:0 0 9px 3px rgba(10,163,154,.85); animation:cloakpulse .9s ease-in-out infinite; }   /* SIGILO active → teal, semi-transparent, glowing */
+  @keyframes cloakpulse { 50% { opacity:.78; } }
   .dot.snap { transition:none; }   /* used when teleporting home after a catch */
   .dot.froze { filter:grayscale(.75); opacity:.5; }
   /* spotlight detection meter: a red countdown ring around the player + alarmed maze/spotlight */
@@ -350,8 +360,11 @@
         </div>
         <div class="dpad-wrap">
           <div class="sidecol shieldcol hidden" id="shieldcol">
-            <div class="sp-top sp-shield">Blindaje</div>
-            <div class="sp-bot" id="shield-pips"><i></i><i></i></div>
+            <button class="sp-top sp-shield" id="sigilo-btn" type="button" aria-label="Sigilo">Sigilo</button>
+            <div class="sp-bot sg-bot">
+              <div class="sg-pips" id="shield-pips"><i></i><i></i></div>
+              <div class="sg-timer" id="sigilo-timer"><span></span></div>
+            </div>
           </div>
           <div class="panel hidden" id="panel"></div>
           <div class="dpad2 hidden" id="dpad">
@@ -439,9 +452,10 @@
   let enemies=[], watchedSet=new Set(), enemyLayer=null, zoneLayer=null, spriteEls=[], spritesDirty=true, seenCount=0;   // real-time stealth enemies
   let keys=[], keysGot=0;   // NODOS — route objectives to activate; the exit powers on once all are active
   const LIVES_MAX=3; let lives=LIVES_MAX, lost=false;   // caught = −½ heart + back to base; 0 hearts = lost
-  const BLINDAJE_MAX=2; let blindaje=0;   // BLINDAJE shield charges 0..2 from hacking cameras. Each charge blocks ONE camera detection (no guard summoned). Simple stack, no "plus".
-  function grantBlindaje(){ if(blindaje<BLINDAJE_MAX){ blindaje++; flashStatus('Blindaje +1','ok',1400); } }
-  function consumeBlindaje(){ if(blindaje>0){ blindaje--; flashStatus('Blindaje usado','ok',1400); } }
+  const SIGILO_MAX=2, SIGILO_MS=5000; let blindaje=0, sigiloLeft=0;   // SIGILO: 0..2 charges from hacking cameras. Spend one to go INVISIBLE for 5s (cameras/guards/reflector can't detect; lasers & walls still apply).
+  function sigiloActive(){ return sigiloLeft>0; }
+  function grantBlindaje(){ if(blindaje<SIGILO_MAX){ blindaje++; flashStatus('Sigilo +1','ok',1400); } }   // a camera hack can hand you a Sigilo charge
+  function activateSigilo(){ if(sigiloLeft>0) return false; if(blindaje<=0){ flashStatus('Sin sigilo','danger',1200); return false; } blindaje--; sigiloLeft=SIGILO_MS; flashStatus('Sigilo activado','ok',1500); return true; }
   let hackMeter=0;   // camera-hack meter: +1 per camera mini SOLVED, cap 3. At 3 the next HACK (gate or camera) is FREE — skips the mini-board and acts instantly.
   function freeHackReady(){ return hackMeter>=3; }
   function addHackCharge(){ const was=hackMeter; hackMeter=Math.min(3,hackMeter+1); if(hackMeter>=3 && was<3) flashStatus('Hackeo gratis listo','ok',1600); }
@@ -522,7 +536,7 @@
   // ===== bottom-bar alert feed (keeps messages OFF the maze board) =====
   let _stickyMsg=null, _stickyKind='';   // persistent state (e.g. during a pursuit)
   function _renderAlert(msg,kind){ const el=$('ss-alert'); if(!el) return; el.textContent=msg; el.className='ss-alert '+(kind||'idle'); }
-  function alertIdle(){ if(_stickyMsg) _renderAlert(_stickyMsg,_stickyKind); else _renderAlert('Sigilo','idle'); }
+  function alertIdle(){ if(_stickyMsg) _renderAlert(_stickyMsg,_stickyKind); else _renderAlert('Despejado','idle'); }
   function setSticky(msg,kind){ _stickyMsg=msg||null; _stickyKind=kind||''; alertIdle(); }
   function flashStatus(msg,kind,ms){ const el=$('ss-alert'); if(!el) return; _renderAlert(msg,kind); clearTimeout(el._t); el._t=setTimeout(alertIdle, ms||1600); }   // temporary message, then back to sticky/idle
   const _HALFHEART='M16.884 5.116c-1.728-1.885-4.201-3.063-6.949-3.063-0.8 0-1.578 0.1-2.32 0.288l0.065-0.014c-3.276 0.931-5.804 3.458-6.718 6.666l-0.017 0.068c-0.175 0.678-0.276 1.457-0.276 2.259 0 2.724 1.161 5.178 3.015 6.892l0.006 0.006 11.381 12.619c0.23 0.253 0.561 0.412 0.929 0.412v0c0.69-0.002 1.248-0.56 1.25-1.25v-24c-0-0.345-0.14-0.658-0.366-0.884v0z';
@@ -745,35 +759,38 @@
     if(g){ g.mode='pursue'; g.pursueLeft=PURSUE_MS; g.lastSeen={r:dot.r,c:dot.c}; g.lostFor=0;
       try{ board.classList.remove('spotted'); void board.offsetWidth; board.classList.add('spotted'); setTimeout(()=>{ try{ board.classList.remove('spotted'); }catch(e){} },560); }catch(e){}   // background pulses red ONCE
       setSticky('Persecución','danger'); flashStatus('Te vieron','danger',1600); } }
-  function enemyStep(dt){ if(!enemies.length){ setAlarm(false,0); return; }
+  function enemyStep(dt){ if(sigiloLeft>0) sigiloLeft=Math.max(0, sigiloLeft-dt);   // Sigilo invisibility ticks down
+    if(!enemies.length){ setAlarm(false,0); return; }
     for(const e of enemies){ e.acc+=dt; if(e.frozenLeft>0) e.frozenLeft-=dt; if(e.type==='guard'&&e.mode==='pursue') e.pursueLeft=(e.pursueLeft||0)-dt; if(e.type==='camera'&&e.disabled){ e.disabledLeft-=dt; if(e.disabledLeft<=0){ e.disabled=false; if(e.linkedWall && !e.linkedWall.perm) layoutMaze(); } } const period=e.type==='laser'?(e.on?e.onMs:e.offMs):(e.type==='guard'&&e.mode==='pursue'?PURSUE_STEP:e.ms); e.stepMs=period; if(e.acc>=period){ e.acc-=period; if(!(e.frozenLeft>0)) advanceEnemy(e); } }   // frozen (Blindaje+) guards hold still
     computeWatch();
     const here=dot.r+','+dot.c; let caught=null;
+    const stealth = sigiloLeft>0;       // SIGILO active → invisible to cameras, guard cones and the reflector (NOT lasers)
     const hidden = hideSet.has(here);   // tucked in an alcove → invisible to everything
-    if(dotEl) dotEl.classList.toggle('hidden', hidden);
+    if(dotEl){ dotEl.classList.toggle('hidden', hidden); dotEl.classList.toggle('stealth', stealth && !hidden); }
     document.querySelectorAll('.hide.on').forEach(el=>el.classList.remove('on'));
     if(hidden){ const hel=document.getElementById('hide-'+dot.r+'-'+dot.c); if(hel) hel.classList.add('on'); }
-    // a pursuing guard "loses" you if you're hidden, OR you get well away (LOSE_DIST) and out of its cone
+    // a pursuing guard "loses" you if you're hidden / cloaked in Sigilo, OR you get well away (LOSE_DIST) and out of its cone
     for(const e of enemies){ if(e.type==='guard' && e.mode==='pursue'){
         const dist=Math.abs(e.r-dot.r)+Math.abs(e.c-dot.c);
-        const lost = hidden || (dist>=LOSE_DIST && e.zone.indexOf(here)<0);
+        const lost = hidden || stealth || (dist>=LOSE_DIST && e.zone.indexOf(here)<0);
         e.lostFor = lost ? (e.lostFor||0)+dt : 0; } }
     // home tile is a safe zone — reaching it calls off any chase
     if(dot.r===0 && dot.c===0){ for(const e of enemies){ if(e.type==='guard'&&e.mode==='pursue') e.mode='return'; } }
     const inShadow = shadowSet.has(here);   // cameras are blind in shadow (guards/lasers still see you)
-    // GUARDS + LASERS still capture instantly. CAMERAS summon the nearest guard. None of it triggers while you're hidden.
+    // GUARDS + LASERS still capture instantly. CAMERAS summon the nearest guard. Sigilo hides you from everything EXCEPT lasers; an alcove hides you from everything.
     for(const e of enemies){ let seen=e.zone.indexOf(here)>=0 && !hidden;
       if(e.type==='camera' && inShadow) seen=false;
+      if(stealth && e.type!=='laser') seen=false;   // invisible to cameras/guards/reflector while cloaked — but lasers still trip
       if(seen && !e.sawYou && started && !won && !lost){
         if(e.type==='guard'||e.type==='laser') caught=e.type;
-        else if(e.type==='camera'){ if(blindaje>0) consumeBlindaje(); else triggerPursuit(); }   // Blindaje absorbs this camera spot instead of summoning a guard
+        else if(e.type==='camera') triggerPursuit();
       }
       e.sawYou=seen; }
     if(caught){ lightMeter=0; setAlarm(false,0); _justCaught=true; onCaught(caught); }
     else {
       // SPOTLIGHT = a 3s detection meter (tension, not instant). It FILLS while you're lit and DRAINS
       // when you slip out or hide — so a roaming spotlight is dodgeable, but lingering in the beam gets you caught.
-      const inLight = !hidden && enemies.some(e=>e.type==='light' && e.zone.indexOf(here)>=0);
+      const inLight = !hidden && !stealth && enemies.some(e=>e.type==='light' && e.zone.indexOf(here)>=0);   // Sigilo also keeps the reflector meter from filling
       if(inLight && started && !won && !lost && phase==='move'){
         lightMeter += dt; setAlarm(true, Math.min(1, lightMeter/LIGHT_CATCH));
         if(lightMeter>=LIGHT_CATCH){ lightMeter=0; setAlarm(false,0); onCaught('light'); }
@@ -1117,6 +1134,8 @@
       b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off); });
     const hb=$('hack-btn'); if(hb && !hb._wired){ hb._wired=true;
       hb.addEventListener('pointerdown', ev=>{ ev.preventDefault(); if(hb.classList.contains('ready')) doHack(); }); }
+    const sgb=$('sigilo-btn'); if(sgb && !sgb._wired){ sgb._wired=true;
+      sgb.addEventListener('pointerdown', ev=>{ ev.preventDefault(); if(phase==='move') activateSigilo(); }); }
     const bd=$('maze'); if(bd && !bd._swwired){ bd._swwired=true;
       bd.addEventListener('pointerdown', ev=>{ if(phase!=='move') return; swActive=true; swPtr=ev.pointerId; swX=ev.clientX; swY=ev.clientY; });
       bd.addEventListener('pointermove', ev=>{ if(!swActive||ev.pointerId!==swPtr||phase!=='move') return; ev.preventDefault(); swipeProcess(ev.clientX,ev.clientY); });
@@ -1174,13 +1193,18 @@
     const free=freeHackReady();
     const hb=$('hack-btn'); if(hb){ hb.classList.toggle('ready', !!hackTarget()); hb.classList.toggle('free', free); hb.textContent = free ? 'GRATIS' : 'HACK'; }   // HACK lights when there's a target; shows GRATIS when the meter is full
     const hm=$('hack-meter'); if(hm){ const seg=hm.children; for(let i=0;i<seg.length;i++) seg[i].classList.toggle('lit', i<hackMeter); hm.classList.toggle('full', free); }
-    const sp=$('shield-pips'); if(sp){ const pip=sp.children; for(let i=0;i<pip.length;i++) pip[i].classList.toggle('lit', i<blindaje); }   // Blindaje charges 0..2
+    const active=sigiloActive();
+    const sgBtn=$('sigilo-btn'); if(sgBtn){ sgBtn.classList.toggle('active', active); sgBtn.classList.toggle('dim', !active && blindaje<=0); }
+    const sp=$('shield-pips'); if(sp){ const pip=sp.children; for(let i=0;i<pip.length;i++) pip[i].classList.toggle('lit', i<blindaje); }   // Sigilo charges 0..2
+    const sgBot=document.querySelector('.sg-bot'); if(sgBot) sgBot.classList.toggle('counting', active);
+    const sgT=$('sigilo-timer'); if(sgT && active){ const fr=Math.max(0, sigiloLeft/SIGILO_MS); sgT.firstElementChild.style.transform='scaleX('+fr+')'; }   // draining teal countdown
+    if(dotEl) dotEl.classList.toggle('stealth', active && !hideSet.has(dot.r+','+dot.c));   // cloak the player the instant Sigilo turns on
     for(let li=0; li<laserList.length; li++){ const w=laserList[li], chip=$('lw-chip-'+li); if(!chip) continue;   // live barrier countdowns
       if(!w.perm && w.cam && w.cam.disabled){ chip.style.display='flex'; chip.textContent=Math.max(0,Math.ceil((w.cam.disabledLeft||0)/1000))+'s'; } else chip.style.display='none'; }
     updateRank(); }
 
   // ===== game flow =====
-  function startGame(){ won=false; lost=false; started=false; running=true; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; phase='move'; lives=LIVES_MAX; blindaje=0; hackMeter=0;
+  function startGame(){ won=false; lost=false; started=false; running=true; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; phase='move'; lives=LIVES_MAX; blindaje=0; sigiloLeft=0; hackMeter=0;
     _wasPursuing=false; _justCaught=false; try{ board.classList.remove('pursuit','spotted'); }catch(e){} setSticky(null);
     $('clock').textContent='0:00'; renderLives();
     genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO));
@@ -1274,7 +1298,7 @@
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
       enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,dir:e.dir,mode:e.mode,disabled:e.disabled,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),
       tick:(ms)=>enemyStep(ms), render:()=>drawHUD(), setDot:(r,c)=>{ dot.r=r; dot.c=c; placeDot(); }, lives:()=>lives, lost:()=>lost,
-      hackTarget:()=>{ const t=hackTarget(); return t?t.kind:null; }, hack:()=>doHack(), blindaje:()=>blindaje,
+      hackTarget:()=>{ const t=hackTarget(); return t?t.kind:null; }, hack:()=>doHack(), blindaje:()=>blindaje, sigilo:()=>sigiloActive(), sigiloLeft:()=>sigiloLeft, useSigilo:()=>activateSigilo(),
       hackMeter:()=>hackMeter, freeHackReady:()=>freeHackReady(),
       lasersDbg:()=>laserList.map(w=>({r:w.r,c:w.c,d:w.d,er:w.er,ec:w.ec,nodoKey:w.nodoKey,pair:w.pair,perm:w.perm,active:laserActive(w),camR:w.cam?w.cam.r:null,camC:w.cam?w.cam.c:null,camDisabled:w.cam?!!w.cam.disabled:null})),
       tapDir:(d)=>{ if(phase!=='move') return null; pressDir(d,null); const md=moveDir; releaseAll(); return md; }, swipe:(dx,dy)=>{ swX=0; swY=0; swActive=true; const r=swipeProcess(dx,dy); swActive=false; return r; }, stepMs:()=>STEP_MS, holdDelay:()=>HOLD_DELAY,
