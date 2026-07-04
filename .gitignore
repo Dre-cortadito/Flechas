@@ -23,3 +23,10 @@ _archive/
 
 # Local-only helper docs — not part of the deployable game.
 DEPLOY-GUIDE.md
+RULES.md
+
+# Backups, Finder duplicates, and local shortcuts — never publish.
+*.backup-*.html
+*backup*.html
+rumbo 2.html
+*.webloc
