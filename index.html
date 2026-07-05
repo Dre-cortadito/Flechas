@@ -31,7 +31,7 @@
     --accent:#662E9B; --accent-deep:#4E1660; --accent-soft:#ECD9F0;
     --accent-2:#F9C80E; --accent-2-deep:#C28F00; --accent-2-soft:#FCEFC2;
     /* board look: espresso line-art on a soft-rose panel (page stays white) */
-    --board-bg:#FCF8E8; --arrow:#141210;
+    --board-bg:#fbf2e1; --arrow:#141210;
     --font-display:'Newsreader', Georgia, serif;
     --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif;
     --header-h:56px; --rank-top:66px;
@@ -374,7 +374,8 @@
   .landing .play { min-width:260px; margin-top:14px; background:var(--accent); border-color:var(--accent); color:#fff; }
   .landing .play.is-soon { background:transparent; color:var(--ink-soft); border:1.5px solid var(--ink-line); cursor:default; }
   .landing .sub-link { font-size:13px; color:var(--ink-soft); text-decoration:underline; cursor:pointer; margin-top:8px; }
-  .landing .credit { font-size:12px; color:var(--ink-soft); margin-top:18px; max-width:320px; }
+  .landing .credit { font-size:12px; color:var(--ink-soft); margin-top:18px; max-width:320px; line-height:1.5; }
+  .landing .credit-tagline { color:var(--accent); font-weight:700; }
   .landing .theme-toggle { position:absolute; top:16px; right:16px; width:38px; height:38px; border-radius:50%; z-index:2;
     border:1px solid var(--ink-line); background:transparent; color:var(--ink); cursor:pointer;
     display:inline-flex; align-items:center; justify-content:center; }
@@ -665,7 +666,7 @@
       <div class="reto" id="land-reto-row"><span class="lbl">Reto del día</span><span class="val" id="land-reto">—</span></div>
       <button class="btn primary play" id="play-btn">Jugar</button>
       <div class="sub-link" id="land-sub">Suscribirse al boletín</div>
-      <div class="credit">Un acertijo diario de <b>Cortadito News</b> · ¡Lo esencial en un sorbo!</div>
+      <div class="credit">Un acertijo diario de <b>Cortadito News</b><br><span class="credit-tagline">¡Lo esencial en un sorbo!</span></div>
     </div>
   </div>
 
