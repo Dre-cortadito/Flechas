@@ -2023,7 +2023,7 @@ function boot(){
     ['diff-pills','land-mode','land-arch','m-arch'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
     const rd=document.getElementById('rules-diff'); if(rd) rd.innerHTML='Borde es una carrera de <b>5 tableros</b> diarios, iguales para todo el mundo. Despeja un tablero y cae el siguiente — <b>los corazones, el reloj, el borde y el congelador siguen</b> de uno a otro. Lanza las flechas por su punta, <b>rápido y sin chocar</b>: tu rango es el <b>tiempo total</b> de los cinco, y si te quedas sin corazones se acaba la partida.';
     document.getElementById('play-btn').addEventListener('click',()=>{ const d=LAND_MODES[landMode]; if(!d||!d.ready) return;
-      if(d.href){ window.location.href=d.href; return; }
+      if(d.href){ location.replace(d.href); return; }   /* replace: keep El Recreo one Back away */
       document.body.classList.add('game-active'); applyGateState();
       if(window.maybeOpenTutorial) setTimeout(window.maybeOpenTutorial,260); });   // first visit: tutorial opens inside the game, not on the landing
     document.getElementById('start-btn').addEventListener('click',beginPuzzle);
