@@ -2005,9 +2005,10 @@ function boot(){
     document.getElementById('land-theme').innerHTML=(theme==='black')?ICON_SUN:ICON_MOON;
     document.getElementById('land-eyebrow').textContent=GAME_NAME;
     document.getElementById('land-date').textContent=longDate(ISO);
-    // El Recreo deep-link: ?modo=cascada|borde selects that mode's landing.
-    var _fm='cascada'; try{ var _q=new URLSearchParams(location.search).get('modo'); if(_q){ _q=_q.toLowerCase(); if(_q==='borde'||_q==='perimetro') _fm='perimetro'; else if(LAND_MODES[_q]&&LAND_MODES[_q].ready) _fm=_q; } }catch(e){}
+    // El Recreo deep-link: ?modo=cascada|borde selects that mode's landing y oculta las pestañas.
+    var _fm='cascada', _hasModo=false; try{ var _q=new URLSearchParams(location.search).get('modo'); if(_q){ _hasModo=true; _q=_q.toLowerCase(); if(_q==='borde'||_q==='perimetro') _fm='perimetro'; else if(LAND_MODES[_q]&&LAND_MODES[_q].ready) _fm=_q; } }catch(e){}
     setLandMode(_fm);
+    if(_hasModo){ var _lt=document.getElementById('land-tabs'); if(_lt) _lt.style.display='none'; }
     document.querySelectorAll('.land-tab').forEach(t=>t.addEventListener('click',()=>setLandMode(t.getAttribute('data-mode'))));
     { const _o=document.getElementById('flx-objetivo'); if(_o) _o.textContent='Objetivo de hoy · ≤ '+fmtTime(META); }
 

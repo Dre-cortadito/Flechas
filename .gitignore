@@ -24,6 +24,7 @@ _archive/
 # Local-only helper docs — not part of the deployable game.
 DEPLOY-GUIDE.md
 RULES.md
+*-DESIGN.md
 
 # Backups, Finder duplicates, and local shortcuts — never publish.
 *.backup-*.html
