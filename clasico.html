@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<!--
+  Flechas · Clásico — a Cortadito News daily game (the PURE mode).
+  One dense, STATIC board of winding arrow-snakes (connected orthogonal segments + rounded 90°
+  turns, each ending in a chevron head). MONOCHROME: dark forest-green paths on a pale sage board.
+  Nothing slides or flies. You TAP a snake to CLEAR it: a snake clears iff every cell from its
+  HEAD to the board edge, in the head's facing direction, is empty (no other snake in that lane).
+  On a valid tap it just DISAPPEARS (~150 ms fade + a brief green stroke flash) — no motion. A
+  blocked tap is a CHOQUE: red stroke flash + ½ heart. Clearing only ever removes cells, so it
+  can never soft-lock. Goal: empty the board. Scored by TIME (count-up clock starts on the first
+  tap; faster = higher rank), like Borde/Desvío, with a date-hashed Reto del día target time.
+  3 hearts, ½ per bump. First attempt is the official daily; afterwards → Entrenamiento.
+  No beam, no specials, no combo, no refresh, no freeze.
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clásico · Flechas · Cortadito News</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+<style>
+  * { touch-action:manipulation; box-sizing:border-box; }
+  :root {
+    --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
+    --accent:#2f7d46; --accent-deep:#1f5c33; --accent-soft:#dcedd9; --accent-2:#7a9b6f; --error:#EA3546;
+    --board-bg:#d8e8d2; --arrow:#2f4a34; --clear:#2fbf5a;
+    --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
+  }
+  body[data-theme="black"] {
+    --bg:#0b0f0c; --paper:#141a15; --ink:#eef3ee; --ink-soft:#7f8b81; --ink-line:#222a23; --box-edge:#7f8b81;
+    --accent:#4faa66; --accent-deep:#8fd3a0; --accent-soft:#123020; --accent-2:#5f7d55; --error:#EA3546;
+    --board-bg:#16241a; --arrow:#c9e6cf; --clear:#5fe089;
+  }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
+  html { overscroll-behavior:none; }
+  body { display:flex; flex-direction:column; align-items:center; overscroll-behavior:none; }
+
+  .page-header { position:fixed; top:0; left:0; right:0; z-index:40; height:var(--header-h); display:flex; align-items:center; justify-content:space-between; gap:24px; padding:0 18px; background:var(--bg); border-bottom:1px solid var(--ink-line); }
+  .title-block { display:flex; align-items:center; gap:11px; min-width:0; }
+  .page-logo { width:28px; height:28px; flex:none; }
+  .wordmark { margin:0; font-family:var(--font-display); font-weight:800; font-size:clamp(30px,5.2vw,44px); letter-spacing:-1px; color:var(--ink); line-height:.95; white-space:nowrap; }
+  .wordmark .dot { color:var(--accent); }
+  .wordmark .eb { font:700 9px var(--font-ui); letter-spacing:1.6px; text-transform:uppercase; color:var(--ink-soft); vertical-align:middle; margin-left:6px; }
+  .header-nav { display:flex; align-items:center; gap:20px; flex-shrink:0; }
+  .header-home { width:32px; height:32px; border-radius:50%; flex:none; border:1px solid var(--ink-line); background:transparent; color:var(--ink); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+  .header-home svg { width:17px; height:17px; }
+  .header-nav a { font-size:14px; font-weight:500; color:var(--ink); text-decoration:none; cursor:pointer; white-space:nowrap; }
+  .header-nav a.nav-rules { color:var(--accent); }
+  .more { width:36px; height:36px; border-radius:50%; background:transparent; border:none; padding:0; color:var(--ink); cursor:pointer; flex:none; display:inline-flex; align-items:center; justify-content:center; }
+  .more svg,.more *{ pointer-events:none; }
+  .nav-more-wrap { position:relative; display:inline-block; }
+  .more-menu { position:absolute; top:100%; right:0; margin-top:8px; z-index:1000; background:var(--paper); border:1.5px solid var(--ink-line); border-radius:12px; padding:6px; min-width:230px; display:none; flex-direction:column; box-shadow:0 14px 44px rgba(0,0,0,.2); }
+  .more-menu.open { display:flex; }
+  .more-item { padding:10px 14px; color:var(--ink); border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
+  .more-item.cta { color:var(--accent); font-weight:700; border-top:1px solid var(--ink-line); border-radius:0 0 8px 8px; margin-top:4px; padding-top:12px; }
+  .more-theme-name { color:var(--ink-soft); font-size:12px; font-weight:400; }
+  @media (max-width:620px){ .wordmark{ display:none; } .header-nav{ gap:18px; } }
+  @media (max-width:400px){ .header-nav{ gap:13px; } .header-nav a{ font-size:13px; } }
+
+  .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
+
+  /* ===== Rank bar (standard) — driven by finish TIME ===== */
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 14px; margin:0 auto 2px; cursor:pointer; user-select:none; }
+  .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
+  .rank-label.at-maestro { color:var(--accent); }
+  .rank-track { position:relative; flex:1; height:22px; }
+  .rank-track-line { position:absolute; top:50%; left:0; right:0; height:3px; transform:translateY(-50%); background:var(--ink-line); border-radius:2px; z-index:0; }
+  .rank-track-fill { position:absolute; top:50%; left:0; width:0; height:3px; transform:translateY(-50%); background:var(--accent); border-radius:2px; z-index:1; transition:width .35s ease; }
+  .rank-dot { position:absolute; top:50%; transform:translate(-50%,-50%); width:6px; height:6px; border-radius:50%; background:var(--ink-soft); z-index:3; }
+  .rank-dot.passed { background:var(--ink); }
+  .rank-dot.current { width:24px; height:24px; background:var(--accent); color:#fff; font:700 11px var(--font-ui); display:flex; align-items:center; justify-content:center; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .35s ease; }
+  .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; }
+
+  .meta { width:min(94vw,400px); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:0 auto 6px; }
+  .side { line-height:1.05; }
+  .side.is-left { justify-self:start; text-align:left; }
+  .side.is-right { justify-self:end; text-align:right; }
+  .side .n { font:800 24px var(--font-display); font-variant-numeric:tabular-nums; color:var(--accent); }
+  .side .l { font:700 9px var(--font-ui); letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-soft); }
+  .timer { font:800 clamp(32px,9vw,44px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; transition:color .15s linear; }
+
+  /* ===== Hearts ===== */
+  .lives-row { display:flex; align-items:center; gap:3px; }
+  .lives-row .heart { width:24px; height:23px; display:inline-flex; }
+  .lives-row .heart svg { width:100%; height:100%; }
+  .lives-row .heart .hon { fill:#ff6b6b; }
+  .lives-row .heart .hoff { fill:var(--ink-line); }
+  .lives-row.spill { animation:pshake .3s ease; }
+  @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
+
+  .board-wrap { width:min(94vw,400px); margin:0 auto 0; }
+  .board { position:relative; width:100%; aspect-ratio:1/1; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
+  #board-inner { position:absolute; inset:14px; }
+  #bsvg { display:block; width:100%; height:100%; overflow:hidden; }
+  .piece { cursor:pointer; }
+  .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:42; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
+  .piece .phit { fill:none; stroke:transparent; stroke-width:90; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
+  .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error) !important; }
+  .piece.firing .pline, .piece.firing .phead { stroke:var(--clear) !important; }
+  .piece.gone .pline, .piece.gone .phead { opacity:0; }
+  .board.clearflash { animation:boardclear .9s ease; }
+  @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:var(--accent-soft);} 100%{ background:var(--board-bg);} }
+
+  .toast { position:absolute; top:14px; left:50%; transform:translate(-50%,-8px); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:#fff; font:800 13px var(--font-ui); letter-spacing:.4px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .2s ease, transform .2s ease; }
+  .toast.show { opacity:1; transform:translate(-50%,0); }
+  .train-badge { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:17; background:var(--accent); color:#fff; font:800 10px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; padding:4px 12px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,.16); display:none; }
+  .train-badge.show { display:block; }
+
+  /* ===== Status box under the board ===== */
+  .statusbox { width:min(94vw,400px); margin:9px auto 0; display:grid; grid-template-columns:repeat(3,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
+  .stile { position:relative; padding:8px 6px 9px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }
+  .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
+  .stile .slbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
+  .stile.reto .sval { color:var(--accent); }
+  .stile.choques.dirty .sval { color:var(--error); }
+
+  .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; background:var(--board-bg); border-radius:18px; text-align:center; padding:26px; }
+  .gate.hidden { display:none; }
+  .gate h2 { font:800 28px var(--font-display); margin:0; }
+  .gate p { margin:0; color:var(--ink-soft); font-size:13.5px; max-width:265px; line-height:1.5; }
+  .gate .v { font:800 50px var(--font-display); color:var(--accent); line-height:1; }
+  .gate .vlbl { font:700 9px var(--font-ui); letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-soft); margin-top:-8px; }
+  .btn { font:800 16px var(--font-ui); letter-spacing:.4px; color:#fff; background:var(--accent); border:none; border-radius:999px; padding:13px 40px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.14); }
+  .btn.ghost { color:var(--ink-soft); background:transparent; border:1.5px solid var(--ink-line); box-shadow:none; padding:12px 26px; font-size:14px; }
+  .go-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+
+  .modal-ov { position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(20,18,14,.55); }
+  .modal-ov.open { display:flex; }
+  .modal { position:relative; background:var(--paper); border:1.5px solid var(--ink-line); border-radius:16px; padding:26px 28px; max-width:380px; width:100%; max-height:85vh; overflow:auto; }
+  .modal h2 { font:800 24px var(--font-display); margin:0 0 12px; }
+  .modal p { font-size:14px; line-height:1.6; color:var(--ink); margin:0 0 10px; }
+  .modal .x { position:absolute; top:12px; right:12px; width:32px; height:32px; border:none; background:transparent; color:var(--ink-soft); font-size:20px; cursor:pointer; }
+  .legend-row { display:flex; align-items:center; gap:12px; margin:11px 0; }
+  .legend-cell { width:54px; height:40px; flex:none; border-radius:8px; background:var(--board-bg); display:flex; align-items:center; justify-content:center; }
+  .legend-cell svg { width:90%; height:90%; }
+  .legend-cell svg path { fill:none; stroke:var(--arrow); stroke-width:8.5; stroke-linecap:round; stroke-linejoin:round; }
+  .legend-row .txt { font-size:14px; line-height:1.45; color:var(--ink); }
+  .rank-row { display:flex; justify-content:space-between; align-items:center; padding:7px 11px; border-radius:8px; font-size:14px; }
+  .rank-row .rname { font-weight:600; }
+  .rank-row .rband { color:var(--ink-soft); font-variant-numeric:tabular-nums; font-weight:600; }
+  .rank-row.current { background:var(--accent-soft); }
+  .rank-row.current .rname { color:var(--accent-deep); font-weight:800; }
+  .cstat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .cstat { background:var(--bg); border:1.5px solid var(--ink-line); border-radius:12px; padding:12px 10px; text-align:center; }
+  .cstat .cv { font:800 26px var(--font-display); color:var(--ink); line-height:1; }
+  .cstat .cl { font:700 10px var(--font-ui); letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); margin-top:5px; }
+  .cdist-row { display:flex; align-items:center; gap:8px; margin:3px 0; font-size:12px; }
+  .cdist-row .cdn { width:74px; color:var(--ink-soft); white-space:nowrap; }
+  .cdist-row.cur .cdn { color:var(--accent); font-weight:700; }
+  .cdist-row .cdbar { flex:1; height:12px; background:var(--ink-line); border-radius:6px; overflow:hidden; }
+  .cdist-row .cdfill { height:100%; background:var(--accent); border-radius:6px; }
+  .cdist-row .cdc { width:22px; text-align:right; color:var(--ink-soft); }
+
+  /* ===== Rotate-to-portrait lock ===== */
+  #rotate-lock { display:none; }
+  #rotate-lock .rotate-inner { max-width:480px; }
+  #rotate-lock .rotate-scene { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:16px; }
+  #rotate-lock .rotate-phone { width:42px; height:42px; color:var(--accent); flex:none; transform-origin:50% 50%; animation:rotate-tip 2.8s ease-in-out infinite; }
+  @keyframes rotate-tip { 0%,16%{ transform:rotate(-90deg);} 46%,72%{ transform:rotate(0deg);} 100%{ transform:rotate(-90deg);} }
+  @media (prefers-reduced-motion: reduce){ #rotate-lock .rotate-phone{ animation:none; transform:rotate(-45deg);} }
+  #rotate-lock .rotate-title { font-family:var(--font-display); font-size:23px; font-weight:800; line-height:1.22; color:var(--accent); margin:0 0 8px; }
+  #rotate-lock .rotate-sub { font-family:var(--font-ui); font-size:14.5px; line-height:1.5; color:var(--ink); opacity:.82; margin:0; }
+  @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+    #rotate-lock { display:flex; position:fixed; inset:0; z-index:2147483647; background:var(--bg); align-items:center; justify-content:center; padding:18px 22px; text-align:center; }
+  }
+
+  /* ===== Tutorial scaffold (kept, hidden — carried over from the family, disabled) ===== */
+  .tut-ov{ position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(20,18,14,.62); }
+  .tut-ov.open{ display:flex; }
+  .tut-card{ position:relative; background:var(--paper); border-radius:20px; width:100%; max-width:360px; padding:16px 0 16px; box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden; }
+  .tut-x{ position:absolute; top:9px; right:13px; z-index:3; border:none; background:transparent; font-size:20px; color:var(--ink-soft); cursor:pointer; }
+  .tut-track{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .tut-track::-webkit-scrollbar{ display:none; }
+  .tut-slide{ flex:0 0 100%; scroll-snap-align:center; padding:16px 26px 2px; box-sizing:border-box; text-align:center; }
+  .tut-anim{ height:128px; display:flex; align-items:center; justify-content:center; margin:2px 0 14px; }
+  .tut-anim svg{ width:232px; height:124px; overflow:visible; }
+  .tut-slide h3{ margin:0 0 7px; font-family:var(--font-display); font-size:21px; color:var(--ink); }
+  .tut-slide p{ margin:0; font-size:14px; line-height:1.55; color:var(--ink-soft); min-height:66px; }
+  .tut-dots{ display:flex; gap:7px; justify-content:center; margin:4px 0 12px; }
+  .tut-dot{ width:8px; height:8px; border-radius:50%; border:none; background:var(--ink-line); padding:0; cursor:pointer; }
+  .tut-dot.on{ background:var(--accent); }
+  .tut-next{ display:block; margin:0 auto; padding:11px 32px; border-radius:999px; border:none; background:var(--accent); color:#fff; font:700 15px var(--font-ui); cursor:pointer; }
+  .tut-open-btn{ display:inline-flex; align-items:center; gap:7px; margin:2px 0 12px; padding:9px 16px; border-radius:999px; border:2px solid var(--accent); background:transparent; color:var(--accent); font:700 14px var(--font-ui); cursor:pointer; }
+</style>
+</head>
+<body data-theme="light">
+
+  <header class="page-header">
+    <div class="title-block">
+      <svg class="page-logo" viewBox="0 0 120 120" aria-hidden="true"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M30 44 L54 44 L54 74 L84 74" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/><path d="M84 74 L74 66 M84 74 L74 82" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/><path d="M44 88 L44 60 L78 60" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M78 60 L70 52 M78 60 L70 68" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h1 class="wordmark"><span class="full">Clásico<span class="dot">.</span></span><span class="eb">Flechas</span></h1>
+    </div>
+    <nav class="header-nav" aria-label="Más">
+      <a class="header-home" href="./index.html?modo=clasico#landing" aria-label="Inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></a>
+      <a class="nav-rules" id="rules-link" role="button">Reglas ▾</a>
+      <a id="stats-link" role="button">Estadísticas ▾</a>
+      <a id="ranks-link" role="button">Rangos ▾</a>
+      <span class="nav-more-wrap">
+        <button class="more" id="menu-btn" type="button" aria-label="Más opciones"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+        <div class="more-menu" id="menu-pop">
+          <a class="more-item" id="m-theme" role="button"><span>Tema</span><span class="more-theme-name" id="m-theme-name">Claro</span></a>
+          <a class="more-item" id="m-share" role="button"><span>Compartir</span></a>
+          <a class="more-item cta" id="m-sub" role="button"><span>Suscribirse al boletín</span></a>
+        </div>
+      </span>
+    </nav>
+  </header>
+
+  <div class="stage">
+    <div class="rank-bar" id="rank-bar" role="button" tabindex="0" aria-label="Ver rangos">
+      <span class="rank-label" id="rank-label">Listo</span>
+      <div class="rank-track" id="rank-track"><div class="rank-track-line"></div></div>
+      <span class="rank-chev">▾</span>
+    </div>
+    <div class="meta">
+      <div class="side is-left"><div class="lives-row" id="lives-row" aria-label="Vidas"></div></div>
+      <div class="timer" id="timer">0:00</div>
+      <div class="side is-right"><div class="n" id="left-n">—</div><div class="l">Restantes</div></div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <div id="board-inner"></div>
+        <div class="train-badge" id="train-badge">Entrenamiento</div>
+        <div class="toast" id="toast"></div>
+        <div class="gate" id="gate">
+          <h2>Clásico</h2>
+          <p>Un tablero de flechas enredadas. Toca una para <b>despejarla</b> — solo sale si su <b>carril hasta el borde está libre</b>. Vacíalo entero, lo más rápido que puedas.</p>
+          <button class="btn" id="start-btn" type="button">Empezar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbox" id="statusbox">
+      <div class="stile"><div class="sval" id="fx-left">—</div><div class="slbl">Restantes</div></div>
+      <div class="stile choques" id="t-choques"><div class="sval" id="fx-choques">0</div><div class="slbl">Choques</div></div>
+      <div class="stile reto"><div class="sval" id="fx-reto">—</div><div class="slbl">Reto del día</div></div>
+    </div>
+  </div>
+
+  <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
+    <h2>Clásico</h2>
+    <button class="tut-open-btn" style="display:none" onclick="openTutorial()">▶ Ver tutorial animado</button>
+    <p>El modo puro: un solo tablero enredado. <b>Desenrédalo entero</b>, rápido y limpio.</p>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path style="stroke:var(--arrow)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta).</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--clear)" d="M14 20 L92 20"/><path style="stroke:var(--clear)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al despejarla <b style="color:var(--clear)">destella en verde</b> y desaparece — deja hueco para otras.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> tocar una flecha <b>tapada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">½ corazón</b>. 3 corazones = 6 choques.</div></div>
+    <div class="legend-row"><div class="legend-cell" style="font-size:22px;">🏁</div><div class="txt"><b>Meta:</b> vacía el tablero entero. Tu <b>rango es el tiempo</b> — el reloj empieza con tu primer toque. <b>Más rápido, mejor rango.</b></div></div>
+    <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Despejar solo <b>quita</b> flechas, nunca traba el tablero. Tu <b>primer intento</b> cuenta como el reto de hoy; después puedes <b>entrenar</b> con tableros nuevos.</p>
+  </div></div>
+
+  <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
+    <h2>Rangos</h2>
+    <p>Tu rango lo decide el <b>tiempo</b> en despejar todo el tablero — menos segundos, mejor rango. Mejor de hoy: <b id="ranks-best">—</b>.</p>
+    <div id="ranks-list"></div>
+  </div></div>
+
+  <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button">✕</button>
+    <h2>Estadísticas</h2>
+    <div class="cstat-grid" id="casc-stats"></div>
+    <h3 style="margin:18px 0 6px;font-size:15px;">Distribución de rangos</h3>
+    <div id="casc-dist"></div>
+    <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a ningún servidor.</p>
+  </div></div>
+
+<script>
+(function(){
+  "use strict";
+  // ================= helpers =================
+  function fnv(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
+  function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  const ISO=new Date().toISOString().slice(0,10);
+  const LS=(function(){ try{ return window.localStorage; }catch(e){ return null; } })();
+  function lsGet(k){ try{ return LS&&LS.getItem(k); }catch(e){ return null; } }
+  function lsSet(k,v){ try{ if(LS) LS.setItem(k,v); }catch(e){} }
+  const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
+
+  // ================= constants (tunable) =================
+  const U=100, W=12, H=12;                              // 12×12 board; U = SVG units per cell
+  const COVER_TARGET=0.80, LEN_MIN=3, LEN_MAX=9, TURN_BIAS=0.55;   // reverse-build knobs
+  const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
+  const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
+  // max SECONDS to EARN each rank (index aligns with RANK_NAMES; lower time = higher rank). Provisional — calibrate to real solves.
+  const TIME_MAX=[Infinity,300,230,185,150,125,105,88,72,58];
+  const TOP=RANK_NAMES.length-1;
+  const DR=[-1,0,1,0], DC=[0,1,0,-1];                  // 0=U 1=R 2=D 3=L
+
+  // ================= board generation (deterministic, guaranteed solvable) =================
+  // A board = { W, H, snakes:[ {id, cells:[{r,c} head..tail], dir} ] }.
+  // Reverse-build: place snakes so the reverse of placement order is a valid solve order. Because
+  // clearing only ever frees cells, ANY greedy clear order then fully solves it.
+  function rayClear(grid, r, c, d){ let rr=r+DR[d], cc=c+DC[d];
+    while(rr>=0&&rr<H&&cc>=0&&cc<W){ if(grid[rr*W+cc]!==-1) return false; rr+=DR[d]; cc+=DC[d]; } return true; }
+  function growBody(grid, r0, c0, d, rng, id){
+    const exit=new Set(); let rr=r0+DR[d], cc=c0+DC[d];
+    while(rr>=0&&rr<H&&cc>=0&&cc<W){ exit.add(rr*W+cc); rr+=DR[d]; cc+=DC[d]; }
+    const cells=[{r:r0,c:c0}]; grid[r0*W+c0]=id; let cur={r:r0,c:c0}, lastDir=-1;
+    const target=LEN_MIN+((rng()*(LEN_MAX-LEN_MIN+1))|0);
+    while(cells.length<target){ const opts=[];
+      for(let dd=0;dd<4;dd++){ const nr=cur.r+DR[dd], nc=cur.c+DC[dd];
+        if(nr<0||nr>=H||nc<0||nc>=W) continue; if(grid[nr*W+nc]!==-1) continue; if(exit.has(nr*W+nc)) continue; opts.push(dd); }
+      if(!opts.length) break; let d2;
+      if(lastDir<0){ d2=opts[(rng()*opts.length)|0]; }
+      else { const turns=opts.filter(x=>x!==lastDir), straight=opts.filter(x=>x===lastDir);
+        if(turns.length&&(straight.length===0||rng()<TURN_BIAS)) d2=turns[(rng()*turns.length)|0];
+        else if(straight.length) d2=straight[0]; else d2=turns[(rng()*turns.length)|0]; }
+      const nr2=cur.r+DR[d2], nc2=cur.c+DC[d2]; grid[nr2*W+nc2]=id; cells.push({r:nr2,c:nc2}); cur={r:nr2,c:nc2}; lastDir=d2; }
+    return { id:id, cells:cells, dir:d }; }
+  function buildOnce(rng){
+    const grid=new Int16Array(W*H).fill(-1); const snakes=[]; let id=0, budget=900;
+    while(budget-->0){ if(coverGrid(grid)>=COVER_TARGET) break;
+      const r0=(rng()*H)|0, c0=(rng()*W)|0; if(grid[r0*W+c0]!==-1) continue;
+      const d=(rng()*4)|0; if(!rayClear(grid,r0,c0,d)) continue;
+      const snake=growBody(grid,r0,c0,d,rng,id);
+      if(!snake||snake.cells.length<LEN_MIN){ if(snake) for(const cl of snake.cells) grid[cl.r*W+cl.c]=-1; continue; }
+      snakes.push(snake); id++; }
+    if(!snakes.length) return null; return { W:W, H:H, snakes:snakes }; }
+  function coverGrid(grid){ let n=0; for(let i=0;i<grid.length;i++) if(grid[i]!==-1) n++; return n/grid.length; }
+  function coverage(board){ let n=0; for(const s of board.snakes) n+=s.cells.length; return n/(board.W*board.H); }
+  function cloneBoard(b){ return { W:b.W, H:b.H, snakes:b.snakes.map(s=>({id:s.id,dir:s.dir,cells:s.cells.map(c=>({r:c.r,c:c.c}))})) }; }
+  function isTrivial(board){ let occ=new Int16Array(board.W*board.H).fill(-1);
+    for(const s of board.snakes) for(const c of s.cells) occ[c.r*board.W+c.c]=s.id;
+    const lc=s=>{ const h=s.cells[0],d=s.dir; let r=h.r+DR[d],c=h.c+DC[d]; while(r>=0&&r<board.H&&c>=0&&c<board.W){ const o=occ[r*board.W+c]; if(o!==-1&&o!==s.id) return false; r+=DR[d];c+=DC[d]; } return true; };
+    let open=0; for(const s of board.snakes) if(lc(s)) open++; return open>=board.snakes.length*0.75; }
+  // greedySolve(board) → true iff repeatedly clearing any snake with a clear head-lane empties the board.
+  function greedySolve(board){ const bw=board.W, bh=board.H; const occ=new Int16Array(bw*bh).fill(-1); const live={};
+    for(const s of board.snakes){ live[s.id]=s; for(const cl of s.cells) occ[cl.r*bw+cl.c]=s.id; }
+    const laneClear=s=>{ const h=s.cells[0],d=s.dir; let r=h.r+DR[d],c=h.c+DC[d];
+      while(r>=0&&r<bh&&c>=0&&c<bw){ const o=occ[r*bw+c]; if(o!==-1&&o!==s.id) return false; r+=DR[d];c+=DC[d]; } return true; };
+    let remaining=Object.keys(live).length, progress=true;
+    while(progress&&remaining>0){ progress=false;
+      for(const k in live){ const s=live[k]; if(laneClear(s)){ for(const cl of s.cells) occ[cl.r*bw+cl.c]=-1; delete live[k]; remaining--; progress=true; } } }
+    return remaining===0; }
+  // generateBoard(seed) → a dense, guaranteed-solvable board (self-checks with greedySolve; regenerates on failure/degenerate).
+  function generateBoard(seed){ const rng=(typeof seed==='function')?seed:mulberry32(seed>>>0); let best=null, bestScore=-1;
+    for(let attempt=0;attempt<60;attempt++){ const b=buildOnce(rng); if(!b) continue;
+      const cov=coverage(b), n=b.snakes.length;
+      if(greedySolve(cloneBoard(b))&&cov>=COVER_TARGET-0.06&&n>=8&&!isTrivial(b)) return b;
+      const sc=(greedySolve(cloneBoard(b))?1000:0)+cov*100+n; if(sc>bestScore){ bestScore=sc; best=b; } }
+    return best; }
+
+  // Reto del día: date-hashed target time in the 75–150 s window (1:15–2:30)
+  function retoTarget(){ const r=mulberry32(fnv('clasico-reto-'+ISO)); return 75+Math.round(r()*75); }
+
+  // ================= runtime state =================
+  let board=null, occ=null, snakes={}, remaining=0, choques=0;
+  let running=false, over=false, finished=false, training=false, started=false;
+  let totalMs=0, lastTick=0, rafId=null, lives=HEARTS_MAX, bestSecs=0;
+  let svg=null, layer=null;
+  const boardEl=$('board'), inner=$('board-inner');
+
+  // ================= geometry / rendering (SVG, monochrome) =================
+  function center(r,c){ return [(c+0.5)*U, (r+0.5)*U]; }
+  function polyD(pts){ return pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' '); }
+  // chevron head at the head cell, pointing in dir d
+  function headChevD(head, d){ const v=[DC[d],DR[d]]; const [x,y]=center(head.r,head.c);
+    const tx=x+v[0]*30, ty=y+v[1]*30;                 // tip pushed toward the edge
+    const px=-v[1], py=v[0], w=26, bk=28;
+    return 'M '+(tx-v[0]*bk+px*w).toFixed(1)+' '+(ty-v[1]*bk+py*w).toFixed(1)
+         +' L '+tx.toFixed(1)+' '+ty.toFixed(1)
+         +' L '+(tx-v[0]*bk-px*w).toFixed(1)+' '+(ty-v[1]*bk-py*w).toFixed(1); }
+  // body path: from TAIL to HEAD through cell centres, then a short stub toward the head chevron so line + head meet
+  function bodyD(s){ const v=[DC[s.dir],DR[s.dir]];
+    const order=s.cells.slice().reverse();            // draw tail→head (visual continuity; direction-agnostic for a line)
+    const pts=order.map(cl=>center(cl.r,cl.c));
+    const head=center(s.cells[0].r, s.cells[0].c);
+    pts.push([head[0]+v[0]*14, head[1]+v[1]*14]);      // stub into the arrowhead (no gap)
+    return polyD(pts); }
+  function makeEl(s){ const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','piece'); g.id='pc-'+s.id;
+    const bd=bodyD(s);
+    const hit=document.createElementNS(SVGNS,'path'); hit.setAttribute('class','phit'); hit.setAttribute('d',bd); g.appendChild(hit);
+    const ln=document.createElementNS(SVGNS,'path'); ln.setAttribute('class','pline'); ln.setAttribute('d',bd); g.appendChild(ln);
+    const hd=document.createElementNS(SVGNS,'path'); hd.setAttribute('class','phead'); hd.setAttribute('d',headChevD(s.cells[0],s.dir)); g.appendChild(hd);
+    g.addEventListener('click',()=>tapSnake(s.id)); layer.appendChild(g); s.el=g; }
+  function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(W*U)+' '+(H*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg);
+    layer=document.createElementNS(SVGNS,'g'); svg.appendChild(layer); }
+  function renderBoard(){ buildSVG(); for(const k in snakes) makeEl(snakes[k]); }
+
+  // ================= clear-lane rule =================
+  function laneClear(s){ const h=s.cells[0], d=s.dir; let r=h.r+DR[d], c=h.c+DC[d];
+    while(r>=0&&r<H&&c>=0&&c<W){ const o=occ[r*W+c]; if(o!==-1&&o!==s.id) return false; r+=DR[d]; c+=DC[d]; } return true; }
+
+  // ================= tap → clear or bump =================
+  function tapSnake(id){ if(!running||over) return; const s=snakes[id]; if(!s||!s.el) return;
+    if(!started){ started=true; lastTick=0; if(rafId) cancelAnimationFrame(rafId); rafId=requestAnimationFrame(loop); }   // clock starts on the FIRST tap
+    if(laneClear(s)){
+      // CLEAR — no motion: green flash + quick fade, then remove. Its cells free up.
+      for(const cl of s.cells) occ[cl.r*W+cl.c]=-1; delete snakes[id];
+      const g=s.el; g.classList.add('firing');
+      requestAnimationFrame(()=>{ try{ g.classList.add('gone'); }catch(e){} });   // fade out (~150ms via CSS opacity transition)
+      setTimeout(()=>{ try{ g.remove(); }catch(e){} }, 170);
+      remaining--; renderCounts();
+      if(remaining<=0) winGame();
+    } else {
+      // CHOQUE — red flash, NO motion, ½ heart.
+      const g=s.el; g.classList.add('blocked');
+      setTimeout(()=>{ try{ g.classList.remove('blocked'); }catch(e){} }, 180);
+      choques++; renderCounts(); loseHeart();
+    } }
+
+  // ================= hearts =================
+  const _HALFPATH='M16.884 5.116c-1.728-1.885-4.201-3.063-6.949-3.063-0.8 0-1.578 0.1-2.32 0.288l0.065-0.014c-3.276 0.931-5.804 3.458-6.718 6.666l-0.017 0.068c-0.175 0.678-0.276 1.457-0.276 2.259 0 2.724 1.161 5.178 3.015 6.892l0.006 0.006 11.381 12.619c0.23 0.253 0.561 0.412 0.929 0.412v0c0.69-0.002 1.248-0.56 1.25-1.25v-24c-0-0.345-0.14-0.658-0.366-0.884v0z';
+  function heartSVG(lOn,rOn){ return '<svg viewBox="0 0 34 32" aria-hidden="true">'
+    +'<path class="'+(lOn?'hon':'hoff')+'" transform="translate(-1.3 0)" d="'+_HALFPATH+'"/>'
+    +'<path class="'+(rOn?'hon':'hoff')+'" transform="translate(35.068 0) scale(-1 1)" d="'+_HALFPATH+'"/></svg>'; }
+  function renderLives(){ const el=$('lives-row'); if(!el) return; const full=Math.floor(lives+1e-9), half=(lives-full)>=0.5-1e-9; let h='';
+    for(let i=0;i<HEARTS_MAX;i++){ const s=(i<full)?heartSVG(true,true):(i===full&&half)?heartSVG(true,false):heartSVG(false,false); h+='<span class="heart">'+s+'</span>'; } el.innerHTML=h; }
+  function loseHeart(){ lives=Math.max(0,lives-HEART_BLOCK_COST); renderLives(); const lr=$('lives-row'); if(lr){ lr.classList.add('spill'); setTimeout(()=>{ try{lr.classList.remove('spill');}catch(e){} },320); } if(lives<=0) endGame('spill'); }
+
+  // ================= status / counts =================
+  function renderCounts(){ const a=$('fx-left'), b=$('left-n'); if(a) a.textContent=remaining; if(b) b.textContent=remaining;
+    const c=$('fx-choques'); if(c) c.textContent=choques; const t=$('t-choques'); if(t) t.classList.toggle('dirty', choques>0); }
+  function showToast(t){ const el=$('toast'); if(!el) return; el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>{ try{el.classList.remove('show');}catch(e){} },1300); }
+
+  // ================= rank bar (by finish time) =================
+  function rankFromTime(sec){ for(let i=TOP;i>=0;i--){ if(sec<=TIME_MAX[i]) return i; } return 0; }
+  function curRank(){ return (over&&finished)? rankFromTime(Math.round(totalMs/1000)) : -1; }
+  function renderRank(){ const track=$('rank-track'); if(!track) return; const idx=curRank();
+    const pos=idx>=0? idx/TOP*100 : (running? Math.max(0, (1-remaining/Math.max(1,board?board.snakes.length:1)))*100 : 0);
+    track.innerHTML='<div class="rank-track-line"></div><div class="rank-track-fill"></div>';
+    track.querySelector('.rank-track-fill').style.width=pos+'%';
+    for(let i=0;i<=TOP;i++){ const dot=document.createElement('div'); dot.className='rank-dot'+(idx>=0&&i<=idx?' passed':''); dot.style.left='clamp(3px, '+((i/TOP)*100)+'%, calc(100% - 3px))'; track.appendChild(dot); }
+    const bub=document.createElement('div'); bub.className='rank-dot current'+(idx===TOP?' at-maestro':''); bub.style.left='clamp(11px, '+pos+'%, calc(100% - 11px))'; track.appendChild(bub);
+    const lbl=$('rank-label'); if(lbl){ lbl.textContent=idx>=0?RANK_NAMES[idx]:(running?'Despejando…':'Listo'); lbl.classList.toggle('at-maestro',idx===TOP); } }
+  function band(i){ if(i===TOP) return '≤ '+fmtSec(TIME_MAX[TOP]); if(i===0) return '> '+fmtSec(TIME_MAX[1]); return fmtSec(TIME_MAX[i+1]+1)+'–'+fmtSec(TIME_MAX[i]); }
+  function renderRanks(){ const list=$('ranks-list'); if(!list) return; const cur=curRank(); let html='';
+    for(let i=TOP;i>=0;i--){ const on=(over&&finished)&&i===cur; html+='<div class="rank-row'+(on?' current':'')+'"><span class="rname">'+RANK_NAMES[i]+'</span><span class="rband">'+band(i)+'</span></div>'; }
+    list.innerHTML=html; const rb=$('ranks-best'); if(rb) rb.textContent=bestSecs>0?fmt(bestSecs*1000):'—'; }
+
+  // ================= loop / timer (count-up) =================
+  function fmt(ms){ const s=Math.max(0,Math.round(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+  function fmtSec(s){ if(!isFinite(s)) return '∞'; return Math.floor(s/60)+':'+String(Math.round(s)%60).padStart(2,'0'); }
+  function loop(ts){ if(!running) return; if(!lastTick) lastTick=ts; const dt=Math.min(64,ts-lastTick); lastTick=ts;
+    if(started) totalMs+=dt; $('timer').textContent=fmt(totalMs);
+    rafId=requestAnimationFrame(loop); }
+
+  // ================= start / end =================
+  function startGame(isTraining){ training=!!isTraining; over=false; finished=false; started=false; running=true;
+    totalMs=0; lastTick=0; lives=HEARTS_MAX; choques=0;
+    bestSecs=+(lsGet('clasico-best-'+ISO)||0);
+    const seed = training ? ('clasico-train-'+Date.now()+'-'+((Math.random()*1e9)|0)) : ('clasico-'+ISO);
+    let rng=mulberry32(fnv(seed)); board=generateBoard(rng);
+    if(!board || !greedySolve(cloneBoard(board))){ rng=mulberry32(fnv(seed+'-x')); board=generateBoard(rng); }   // ultra-defensive fallback
+    // build occupancy + live snake map
+    occ=new Int16Array(W*H).fill(-1); snakes={};
+    for(const s of board.snakes){ const cp={id:s.id, dir:s.dir, cells:s.cells.map(c=>({r:c.r,c:c.c}))}; snakes[s.id]=cp; for(const cl of cp.cells) occ[cl.r*W+cl.c]=cp.id; }
+    remaining=board.snakes.length;
+    renderBoard(); renderLives(); renderCounts(); renderRank();
+    $('timer').textContent='0:00'; $('fx-reto').textContent=fmtSec(retoTarget());
+    $('train-badge').classList.toggle('show', training);
+    $('gate').classList.add('hidden');
+    if(rafId) cancelAnimationFrame(rafId);   // clock only ticks after the first tap; loop starts then
+  }
+  function winGame(){ if(over) return; finished=true; over=true; running=false; if(rafId) cancelAnimationFrame(rafId);
+    const secs=Math.round(totalMs/1000); const idx=rankFromTime(secs); const reto=retoTarget();
+    if(!training){ const prev=+(lsGet('clasico-best-'+ISO)||0); if(prev===0||secs<prev){ bestSecs=secs; lsSet('clasico-best-'+ISO,String(secs)); } else bestSecs=prev;
+      lsSet('clasico-done-'+ISO,'1'); recordStats(secs,true); }
+    else { bestSecs=+(lsGet('clasico-best-'+ISO)||0); }
+    renderRank();
+    boardEl.classList.remove('clearflash'); void boardEl.offsetWidth; boardEl.classList.add('clearflash');
+    const isBest=!training && (bestSecs===secs);
+    const underReto=secs<=reto;
+    const g=$('gate'); g.classList.remove('hidden');
+    g.innerHTML='<h2>'+(training?'Entrenamiento':'¡Desenredado!')+'</h2><div class="v">'+fmt(totalMs)+'</div><div class="vlbl">'+(training?'tiempo':RANK_NAMES[idx])+'</div>'
+      +'<p>'+(choques===0?'Limpio, sin choques. ':choques+' choque'+(choques===1?'':'s')+'. ')
+      +(underReto?'<b style="color:var(--accent)">¡Buen sorbo!</b> ':'')
+      +(training?'':'<br>'+(isBest?'¡Tu mejor tiempo de hoy! 🎉':'Mejor de hoy: <b>'+fmt(bestSecs*1000)+'</b>'))+'</p>'
+      +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+    $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare); }
+  function endGame(reason){ if(over) return; over=true; finished=false; running=false; if(rafId) cancelAnimationFrame(rafId);
+    if(!training){ lsSet('clasico-done-'+ISO,'1'); recordStats(0,false); }
+    renderRank();
+    const g=$('gate'); g.classList.remove('hidden');
+    g.innerHTML='<h2>¡Sin corazones!</h2><div class="v">'+remaining+'</div><div class="vlbl">flechas sin despejar</div>'
+      +'<p>Se derramó el cortadito. Vuelve a intentarlo'+(training?'':' entrenando')+'.</p>'
+      +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+    $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare); }
+  function doShare(){ const secs=Math.round(totalMs/1000); const ok=finished;
+    const txt='🧩 Clásico · Flechas\n'+(ok?(fmt(totalMs)+' · '+RANK_NAMES[rankFromTime(secs)]+(choques===0?' · limpio':'')):(remaining+' flechas sin despejar'))+'\nhttps://cortadito.news';
+    if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); } else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>{ const b=$('share-btn'); if(b) b.textContent='Copiado'; }).catch(()=>{}); } }
+
+  // ================= theme + menu + stats =================
+  function applyTheme(t){ document.body.setAttribute('data-theme',t); $('m-theme-name').textContent=(t==='black')?'Oscuro':'Claro'; lsSet('clasico-theme',t); }
+  function toggleMenu(f){ $('menu-pop').classList.toggle('open', f); }
+  function openRules(o){ $('rules-ov').classList.toggle('open', o); }
+  function openRanks(o){ if(o) renderRanks(); $('ranks-ov').classList.toggle('open', o); }
+  function cPrevISO(iso){ const p=iso.split('-'); const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])-86400000); return d.toISOString().slice(0,10); }
+  function getStats(){ const d={played:0,best:0,ranks:[0,0,0,0,0,0,0,0,0,0],last:null,cur:0,max:0,solved:0}; try{ return Object.assign(d, JSON.parse(lsGet('clasico-stats'))||{}); }catch(e){ return d; } }
+  function recordStats(secs,ok){ const s=getStats(); s.played++; if(ok){ s.solved=(s.solved||0)+1; if(secs>0&&(s.best===0||secs<s.best)) s.best=secs; s.ranks[rankFromTime(secs)]=(s.ranks[rankFromTime(secs)]||0)+1; }
+    if(s.last!==ISO){ s.cur=(s.last===cPrevISO(ISO))?s.cur+1:1; s.last=ISO; if(s.cur>s.max) s.max=s.cur; }
+    lsSet('clasico-stats', JSON.stringify(s)); }
+  function openStats(o){ if(o) renderStats(); $('stats-ov').classList.toggle('open', o); }
+  function renderStats(){ const s=getStats(); const cell=(v,l)=>'<div class="cstat"><div class="cv">'+v+'</div><div class="cl">'+l+'</div></div>';
+    $('casc-stats').innerHTML = cell(s.played,'Jugadas')+cell(s.best?fmt(s.best*1000):'—','Mejor tiempo')+cell(s.cur,'Racha')+cell(s.max,'Racha máx.');
+    const tot=s.ranks.reduce((a,b)=>a+b,0)||1, cur=curRank(); let h='';
+    for(let i=RANK_NAMES.length-1;i>=0;i--){ const pct=Math.round(s.ranks[i]/tot*100);
+      h+='<div class="cdist-row'+(i===cur&&over&&finished?' cur':'')+'"><span class="cdn">'+RANK_NAMES[i]+'</span><span class="cdbar"><span class="cdfill" style="width:'+pct+'%"></span></span><span class="cdc">'+s.ranks[i]+'</span></div>'; }
+    $('casc-dist').innerHTML=h; }
+
+  // ================= wiring =================
+  $('start-btn').addEventListener('click', ()=>{ const done=lsGet('clasico-done-'+ISO); startGame(!!done); });
+  $('rules-link').addEventListener('click', ()=>openRules(true));
+  $('rules-x').addEventListener('click', ()=>openRules(false));
+  $('rules-ov').addEventListener('click', e=>{ if(e.target===$('rules-ov')) openRules(false); });
+  $('rank-bar').addEventListener('click', ()=>openRanks(true));
+  $('ranks-link').addEventListener('click', ()=>openRanks(true));
+  $('ranks-x').addEventListener('click', ()=>openRanks(false));
+  $('ranks-ov').addEventListener('click', e=>{ if(e.target===$('ranks-ov')) openRanks(false); });
+  $('stats-link').addEventListener('click', ()=>openStats(true));
+  $('stats-x').addEventListener('click', ()=>openStats(false));
+  $('stats-ov').addEventListener('click', e=>{ if(e.target===$('stats-ov')) openStats(false); });
+  $('menu-btn').addEventListener('click', e=>{ e.stopPropagation(); toggleMenu(); });
+  document.addEventListener('click', e=>{ if(!e.target.closest('.nav-more-wrap')) toggleMenu(false); });
+  $('m-theme').addEventListener('click', ()=>{ applyTheme(document.body.getAttribute('data-theme')==='black'?'light':'black'); toggleMenu(false); });
+  $('m-share').addEventListener('click', ()=>{ toggleMenu(false); doShare(); });
+  $('m-sub').addEventListener('click', ()=>{ toggleMenu(false); window.open('https://cortadito.news','_blank'); });
+
+  // ================= boot =================
+  applyTheme((lsGet('clasico-theme')==='black')?'black':'light');
+  bestSecs=+(lsGet('clasico-best-'+ISO)||0); lives=HEARTS_MAX; renderLives(); renderRank();
+  $('fx-reto').textContent=fmtSec(retoTarget());
+  if(lsGet('clasico-done-'+ISO)){ const bs=+(lsGet('clasico-best-'+ISO)||0); const gg=$('gate');
+    if(gg) gg.innerHTML='<h2>Clásico</h2><p>Ya completaste el reto de hoy'+(bs>0?' en <b>'+fmt(bs*1000)+'</b>':'')+'. Puedes <b>entrenar</b> con tableros nuevos.</p><button class="btn" id="start-btn2" type="button">Entrenar</button>';
+    const b2=$('start-btn2'); if(b2) b2.addEventListener('click', ()=>startGame(true)); }
+
+  // ================= test hook (Node/console self-checks) =================
+  try{ window.__cla={ generateBoard:generateBoard, greedySolve:greedySolve, cloneBoard:cloneBoard, coverage:coverage, isTrivial:isTrivial, mulberry32:mulberry32, fnv:fnv,
+    board:()=>board, remaining:()=>remaining, choques:()=>choques, lives:()=>lives, over:()=>over, finished:()=>finished, ms:()=>totalMs,
+    snakeIds:()=>Object.keys(snakes).map(Number), launchable:()=>Object.values(snakes).filter(laneClear).map(s=>s.id),
+    tap:(id)=>tapSnake(id), start:(t)=>startGame(!!t), reto:()=>retoTarget() }; }catch(e){}
+})();
+</script>
+
+<!-- Rotate-to-portrait lock — only shown on phones held in landscape. -->
+<div id="rotate-lock">
+  <div class="rotate-inner">
+    <div class="rotate-scene" aria-hidden="true">
+      <svg class="rotate-phone" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" stroke="currentColor" stroke-width="2"/>
+        <line x1="10" y1="18.5" x2="14" y2="18.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="rotate-title">Este sorbo se disfruta mejor de pie</p>
+    <p class="rotate-sub">Gira tu teléfono para seguir jugando.</p>
+  </div>
+</div>
+
+<!-- ===== Animated tutorial (kept, hidden — auto-open disabled) ===== -->
+<div class="tut-ov" id="tut-ov">
+  <div class="tut-card">
+    <button class="tut-x" id="tut-x" aria-label="Cerrar">&#10005;</button>
+    <div class="tut-track" id="tut-track">
+      <section class="tut-slide">
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="22" y1="55" x2="118" y2="55" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round"/><polyline points="102,38 126,55 102,72" fill="none" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div>
+        <h3>Despeja una flecha</h3>
+        <p>Toca una flecha con el <b style="color:var(--accent)">carril libre</b> hasta el borde — desaparece con un destello <b style="color:var(--clear)">verde</b>.</p>
+      </section>
+      <section class="tut-slide">
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="22" x2="150" y2="90" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round"/><polyline points="134,40 150,20 166,40" fill="none" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></g><g><line x1="22" y1="74" x2="96" y2="74" stroke="#EA3546" stroke-width="11" stroke-linecap="round"/><polyline points="82,58 106,74 82,90" fill="none" stroke="#EA3546" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div>
+        <h3>Choque</h3>
+        <p>Tocar una flecha <b>tapada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">&frac12; coraz&oacute;n</b>.</p>
+      </section>
+      <section class="tut-slide">
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><text x="116" y="72" text-anchor="middle" font-size="60">🏁</text></svg></div>
+        <h3>Vac&iacute;a el tablero</h3>
+        <p>Despeja <b>todas</b> las flechas. Tu <b>rango es el tiempo</b> — el reloj empieza con tu primer toque.</p>
+      </section>
+    </div>
+    <div class="tut-dots" id="tut-dots"></div>
+    <button class="tut-next" id="tut-next">Siguiente</button>
+  </div>
+</div>
+<script>
+(function(){
+  var ov=document.getElementById('tut-ov'); if(!ov) return;
+  var track=document.getElementById('tut-track'), dotbox=document.getElementById('tut-dots'), nextb=document.getElementById('tut-next');
+  var slides=track.children, n=slides.length, cur=0;
+  for(var i=0;i<n;i++){ var d=document.createElement('button'); d.className='tut-dot'; d.setAttribute('aria-label','Paso '+(i+1)); (function(k){ d.onclick=function(){ go(k); }; })(i); dotbox.appendChild(d); }
+  function upd(){ var dd=dotbox.children; for(var i=0;i<n;i++) dd[i].className='tut-dot'+(i===cur?' on':''); nextb.textContent=(cur>=n-1)?'¡A jugar!':'Siguiente'; }
+  function go(i){ cur=Math.max(0,Math.min(n-1,i)); track.scrollTo({left:cur*track.clientWidth, behavior:'smooth'}); upd(); }
+  var st; track.addEventListener('scroll',function(){ clearTimeout(st); st=setTimeout(function(){ var i=Math.round(track.scrollLeft/track.clientWidth); if(i!==cur){ cur=i; upd(); } },60); });
+  nextb.onclick=function(){ if(cur>=n-1) close(); else go(cur+1); };
+  document.getElementById('tut-x').onclick=close;
+  ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+  function open(){ ov.classList.add('open'); cur=0; track.scrollLeft=0; upd(); }
+  function close(){ ov.classList.remove('open'); try{ localStorage.setItem('clasico-tut-v1','1'); }catch(e){} }
+  window.openTutorial=open;
+  /* tutorial oculto por ahora — código conservado, auto-apertura desactivada:
+  try{ if(!localStorage.getItem('clasico-tut-v1')) setTimeout(open,800); }catch(e){} */
+})();
+</script>
+</body>
+</html>
