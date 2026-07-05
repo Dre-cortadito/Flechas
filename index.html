@@ -528,7 +528,7 @@
     <div class="modal">
       <button class="modal-close" data-close>✕</button>
       <h2>Cómo jugar</h2>
-      <button class="tut-open-btn" onclick="openTutorial()">▶ Ver tutorial animado</button>
+      <button class="tut-open-btn" style="display:none" onclick="openTutorial()">▶ Ver tutorial animado</button>
       <p><b>Borde</b> es una <b>carrera diaria de 5 tableros</b>, igual para todo el mundo. Despeja un tablero y <b>cae el siguiente</b> — el <b>reloj, los corazones, el borde y el congelador no se reinician</b>: siguen de un tablero al otro. El contador a la derecha del reloj marca <b>Tablero N/5</b>.</p>
       <p>Cada <b>flecha</b> es una forma de varias casillas (recta, en L, en zigzag) que termina en una <b>punta</b>. Tócala para <b>lanzarla</b>: la forma entera sale volando hacia donde apunta la punta y desaparece. Despeja <b>todas</b> las flechas de cada tablero para avanzar.</p>
       <p class="muted">La flecha sale <b>como un tren</b>: la punta primero, y el cuerpo la sigue por su propio camino. Solo importa lo que esté <b>delante de la punta</b> — si otra flecha está en ese carril, <b>choca</b> y rebota, y la flecha que estorba <b>parpadea en rojo</b>. Despeja el tablero lanzándolas en el orden correcto.</p>
@@ -2005,7 +2005,9 @@ function boot(){
     document.getElementById('land-theme').innerHTML=(theme==='black')?ICON_SUN:ICON_MOON;
     document.getElementById('land-eyebrow').textContent=GAME_NAME;
     document.getElementById('land-date').textContent=longDate(ISO);
-    setLandMode('cascada');
+    // El Recreo deep-link: ?modo=cascada|borde selects that mode's landing.
+    var _fm='cascada'; try{ var _q=new URLSearchParams(location.search).get('modo'); if(_q){ _q=_q.toLowerCase(); if(_q==='borde'||_q==='perimetro') _fm='perimetro'; else if(LAND_MODES[_q]&&LAND_MODES[_q].ready) _fm=_q; } }catch(e){}
+    setLandMode(_fm);
     document.querySelectorAll('.land-tab').forEach(t=>t.addEventListener('click',()=>setLandMode(t.getAttribute('data-mode'))));
     { const _o=document.getElementById('flx-objetivo'); if(_o) _o.textContent='Objetivo de hoy · ≤ '+fmtTime(META); }
 
@@ -2106,7 +2108,7 @@ boot();
   function close(){ ov.classList.remove('open'); try{ localStorage.setItem('flx-tut-v1','1'); }catch(e){} }
   window.openTutorial=open;
   // First-visit auto-open is triggered when the player ENTERS the game (not on the landing) — see play-btn.
-  window.maybeOpenTutorial=function(){ try{ if(!localStorage.getItem('flx-tut-v1')) open(); }catch(e){ open(); } };
+  window.maybeOpenTutorial=function(){ /* tutorial oculto por ahora — código conservado, auto-apertura desactivada */ };
 })();
 </script>
 </body>

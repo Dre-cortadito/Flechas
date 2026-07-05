@@ -315,7 +315,7 @@
 
   <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
     <h2>Desvío</h2>
-    <button class="tut-open-btn" onclick="openTutorial()">▶ Ver tutorial animado</button>
+    <button class="tut-open-btn" style="display:none" onclick="openTutorial()">▶ Ver tutorial animado</button>
     <p>Un atasco de flechas. <b>5 tableros</b> seguidos — tu rango es el <b>tiempo total</b> en resolverlos.</p>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="16" y1="20" x2="84" y2="20" style="stroke:var(--arrow);stroke-width:11;stroke-linecap:round"/><polyline points="76,9 100,20 76,31" style="fill:none;stroke:var(--arrow);stroke-width:11;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt"><b>Desliza</b> una flecha a lo largo de su carril. Las flechas <b>no salen</b> del tablero: solo se deslizan y se estorban.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="14" y1="20" x2="86" y2="20" style="stroke:var(--target);stroke-width:14;stroke-linecap:round"/><polyline points="78,9 102,20 78,31" style="fill:none;stroke:var(--target);stroke-width:7;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt">La flecha <b style="color:var(--target)">morada</b> es tu objetivo: deslízala hasta la <b>salida</b> en el borde derecho.</div></div>
@@ -661,7 +661,8 @@
   function open(){ ov.classList.add('open'); cur=0; track.scrollLeft=0; upd(); }
   function close(){ ov.classList.remove('open'); try{ localStorage.setItem('desvio-tut-v1','1'); }catch(e){} }
   window.openTutorial=open;
-  try{ if(!localStorage.getItem('desvio-tut-v1')) setTimeout(open,800); }catch(e){}
+  /* tutorial oculto por ahora — código conservado, auto-apertura desactivada:
+  try{ if(!localStorage.getItem('desvio-tut-v1')) setTimeout(open,800); }catch(e){} */
 })();
 </script>
 </body>
