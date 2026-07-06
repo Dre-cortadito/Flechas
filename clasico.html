@@ -91,12 +91,12 @@
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
 
   .board-wrap { width:min(94vw,400px); margin:0 auto 0; }
-  .board { position:relative; width:100%; aspect-ratio:1/1; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
+  .board { position:relative; width:100%; aspect-ratio:16/20; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }
   .piece { cursor:pointer; }
-  .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:42; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
-  .piece .phit { fill:none; stroke:transparent; stroke-width:90; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
+  .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:34; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
+  .piece .phit { fill:none; stroke:transparent; stroke-width:82; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error) !important; }
   .piece.firing .pline, .piece.firing .phead { stroke:var(--clear) !important; }
   .piece.gone .pline, .piece.gone .phead { opacity:0; }
@@ -279,8 +279,8 @@
   const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
 
   // ================= constants (tunable) =================
-  const U=100, W=12, H=12;                              // 12×12 board; U = SVG units per cell
-  const COVER_TARGET=0.80, LEN_MIN=3, LEN_MAX=9, TURN_BIAS=0.55;   // reverse-build knobs
+  const U=100, W=16, H=20;                              // 16×20 board (dense, portrait); U = SVG units per cell
+  const COVER_TARGET=0.90, LEN_MIN=4, LEN_MAX=26, TURN_BIAS=0.60;   // reverse-build knobs — super dense, long winders
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // max SECONDS to EARN each rank (index aligns with RANK_NAMES; lower time = higher rank). Provisional — calibrate to real solves.
@@ -310,7 +310,7 @@
       const nr2=cur.r+DR[d2], nc2=cur.c+DC[d2]; grid[nr2*W+nc2]=id; cells.push({r:nr2,c:nc2}); cur={r:nr2,c:nc2}; lastDir=d2; }
     return { id:id, cells:cells, dir:d }; }
   function buildOnce(rng){
-    const grid=new Int16Array(W*H).fill(-1); const snakes=[]; let id=0, budget=900;
+    const grid=new Int16Array(W*H).fill(-1); const snakes=[]; let id=0, budget=2200;
     while(budget-->0){ if(coverGrid(grid)>=COVER_TARGET) break;
       const r0=(rng()*H)|0, c0=(rng()*W)|0; if(grid[r0*W+c0]!==-1) continue;
       const d=(rng()*4)|0; if(!rayClear(grid,r0,c0,d)) continue;
@@ -335,11 +335,13 @@
       for(const k in live){ const s=live[k]; if(laneClear(s)){ for(const cl of s.cells) occ[cl.r*bw+cl.c]=-1; delete live[k]; remaining--; progress=true; } } }
     return remaining===0; }
   // generateBoard(seed) → a dense, guaranteed-solvable board (self-checks with greedySolve; regenerates on failure/degenerate).
-  function generateBoard(seed){ const rng=(typeof seed==='function')?seed:mulberry32(seed>>>0); let best=null, bestScore=-1;
-    for(let attempt=0;attempt<60;attempt++){ const b=buildOnce(rng); if(!b) continue;
-      const cov=coverage(b), n=b.snakes.length;
-      if(greedySolve(cloneBoard(b))&&cov>=COVER_TARGET-0.06&&n>=8&&!isTrivial(b)) return b;
-      const sc=(greedySolve(cloneBoard(b))?1000:0)+cov*100+n; if(sc>bestScore){ bestScore=sc; best=b; } }
+  // Keep the DENSEST solvable, non-trivial board over many attempts → matches the reference (~0.90 coverage, no holes).
+  function generateBoard(seed){ const rng=(typeof seed==='function')?seed:mulberry32(seed>>>0); let best=null;
+    for(let attempt=0;attempt<220;attempt++){ const b=buildOnce(rng); if(!b) continue;
+      if(!greedySolve(cloneBoard(b))||b.snakes.length<8||isTrivial(b)) continue;
+      if(!best||coverage(b)>coverage(best)) best=b; }
+    if(best) return best;
+    for(let attempt=0;attempt<40;attempt++){ const b=buildOnce(rng); if(b&&greedySolve(cloneBoard(b))&&(!best||coverage(b)>coverage(best))) best=b; }
     return best; }
 
   // Reto del día: date-hashed target time in the 75–150 s window (1:15–2:30)
