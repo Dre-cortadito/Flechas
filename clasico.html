@@ -91,7 +91,7 @@
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
 
   .board-wrap { width:min(94vw,400px); margin:0 auto 0; }
-  .board { position:relative; width:100%; aspect-ratio:19/24; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; touch-action:none; -webkit-user-select:none; user-select:none; }
+  .board { position:relative; width:100%; aspect-ratio:33/41; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; touch-action:none; -webkit-user-select:none; user-select:none; }
   .recenter-btn { position:absolute; top:10px; right:10px; z-index:5; width:34px; height:34px; border-radius:50%; border:1.5px solid var(--arrow); background:var(--board-bg); color:var(--arrow); display:none; align-items:center; justify-content:center; cursor:pointer; opacity:.85; padding:0; }
   .recenter-btn.show { display:flex; }
   .recenter-btn svg { width:18px; height:18px; }
@@ -285,13 +285,13 @@
   const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
 
   // ================= constants (tunable) =================
-  const U=100, W=19, H=24;                              // 19×24 board (v4: reference-density, portrait); U = SVG units per cell
+  const U=100, W=33, H=41;                              // 33×41 board (v9: 3× explorable canvas); U = SVG units per cell
   const COVER_TARGET=0.94, LEN_MIN=4, LEN_MAX=30;
   const TURN_BIAS_H=0.62, TURN_BIAS_V=0.40, VERT_PREF=0.65;      // v7: break horizontals sooner, let verticals run, prefer vertical turns
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // max SECONDS to EARN each rank (index aligns with RANK_NAMES; lower time = higher rank). Provisional — calibrate to real solves.
-  const TIME_MAX=[Infinity,405,310,250,200,170,140,120,95,80];   // v4: scaled ~+35% for the 19×24 board (provisional — calibrate to real solves)
+  const TIME_MAX=[Infinity,1215,930,750,600,510,420,360,285,240];   // v9: ×3 for the 33×41 board (provisional — calibrate to real solves)
   const TOP=RANK_NAMES.length-1;
   const DR=[-1,0,1,0], DC=[0,1,0,-1];                  // 0=U 1=R 2=D 3=L
 
@@ -323,10 +323,17 @@
       const nr2=cur.r+DR[d2], nc2=cur.c+DC[d2]; grid[nr2*W+nc2]=id; cells.push({r:nr2,c:nc2}); cur={r:nr2,c:nc2}; lastDir=d2; }
     return { id:id, cells:cells, dir:d }; }
   function buildOnce(rng){
-    const grid=new Int16Array(W*H).fill(-1); const snakes=[]; let id=0, budget=5000;
-    // main pass: long winders (pick only from directions whose exit lane is clear)
+    const grid=new Int16Array(W*H).fill(-1); const snakes=[]; let id=0, budget=W*H*8;
+    // v9: center-out seeding — interior cells first, while their outward exit
+    // lanes are still clear (fixes big-board interior starvation), then random.
+    const seedOrder=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) seedOrder.push([r,c]);
+    seedOrder.sort((a,b)=>(Math.abs(a[0]-H/2)+Math.abs(a[1]-W/2))-(Math.abs(b[0]-H/2)+Math.abs(b[1]-W/2)));
+    let si=0;
     while(budget-->0){
-      const r0=(rng()*H)|0, c0=(rng()*W)|0; if(grid[r0*W+c0]!==-1) continue;
+      let r0,c0;
+      if(si<seedOrder.length){ const p=seedOrder[si++]; r0=p[0]; c0=p[1]; }
+      else { r0=(rng()*H)|0; c0=(rng()*W)|0; }
+      if(grid[r0*W+c0]!==-1) continue;
       const dirs=[0,1,2,3].filter(d=>rayClear(grid,r0,c0,d)); if(!dirs.length) continue;
       const vd=dirs.filter(x=>x===0||x===2);                            // v7: lean vertical
       const d=(vd.length&&rng()<0.6)?vd[(rng()*vd.length)|0]:dirs[(rng()*dirs.length)|0];
@@ -390,7 +397,7 @@
   function generateBoard(seed){ const rng=(typeof seed==='function')?seed:mulberry32(seed>>>0); let best=null;
     for(let attempt=0;attempt<300;attempt++){ const b=buildOnce(rng); if(!b) continue;
       if(!greedySolve(cloneBoard(b))) continue;
-      if(!best||boardScore(b)>boardScore(best)) best=b; }
+      if(!best||boardScore(b)>boardScore(best)) best=b; if(best&&boardScore(best)>=0.90) break; }   // v9: good enough — stop early
     return best || buildOnce(rng); }
 
   // Reto del día: date-hashed target time in the 75–150 s window (1:15–2:30)
@@ -450,7 +457,9 @@
   const VIEW_RATIO=VIEW_FULL.h/VIEW_FULL.w;
   const VIEW_WMIN=520;                    // max zoom-in ≈ 5 columns visible
   const VIEW_WMAX=VIEW_FULL.w;            // max zoom-out = whole board
-  let view={...VIEW_FULL};
+  const VIEW_HOME=(()=>{ const w=2020, h=w*VIEW_RATIO;   // v9 default: ~20-column window, centered — invites panning
+    return {x:VIEW_FULL.x+(VIEW_FULL.w-w)/2, y:VIEW_FULL.y+(VIEW_FULL.h-h)/2, w:w, h:h}; })();
+  let view={...VIEW_HOME};
   function clampView(v){ const w=Math.min(VIEW_WMAX,Math.max(VIEW_WMIN,v.w)); const h=w*VIEW_RATIO;
     const x=Math.min(VIEW_FULL.x+VIEW_FULL.w-w, Math.max(VIEW_FULL.x, v.x));
     const y=Math.min(VIEW_FULL.y+VIEW_FULL.h-h, Math.max(VIEW_FULL.y, v.y));
@@ -461,10 +470,10 @@
     return clampView({x:bx-(px/boxW)*w, y:by-(py/boxH)*h, w:w, h:h}); }
   function panBy(v,dxPx,dyPx,boxW,boxH){ return clampView({x:v.x-dxPx*(v.w/boxW), y:v.y-dyPx*(v.h/boxH), w:v.w, h:v.h}); }
   function isTap(dtMs,distPx){ return dtMs<=400 && distPx<=9; }
-  function isFullView(v){ return Math.abs(v.w-VIEW_FULL.w)<1 && Math.abs(v.x-VIEW_FULL.x)<1 && Math.abs(v.y-VIEW_FULL.y)<1; }
+  function isHomeView(v){ return Math.abs(v.w-VIEW_HOME.w)<1 && Math.abs(v.x-VIEW_HOME.x)<1 && Math.abs(v.y-VIEW_HOME.y)<1; }
   function applyView(){ if(!svg) return; svg.setAttribute('viewBox', view.x.toFixed(1)+' '+view.y.toFixed(1)+' '+view.w.toFixed(1)+' '+view.h.toFixed(1));
-    const rb=$('recenter-btn'); if(rb) rb.classList.toggle('show', !isFullView(view)); }
-  function resetView(){ view={...VIEW_FULL}; applyView(); }
+    const rb=$('recenter-btn'); if(rb) rb.classList.toggle('show', !isHomeView(view)); }
+  function resetView(){ view={...VIEW_HOME}; applyView(); }
   function initGestures(){
     if(boardEl._gestured) return; boardEl._gestured=true;
     const rb=document.createElement('button'); rb.className='recenter-btn'; rb.id='recenter-btn'; rb.setAttribute('aria-label','Centrar tablero');

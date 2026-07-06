@@ -32,6 +32,8 @@ function grabFn(n) {
 }
 
 const lo = html.indexOf('const U=100,');
+const dims = html.match(/const U=100, W=(\d+), H=(\d+);/);
+const BW = +dims[1], BH = +dims[2], NCELLS = BW * BH;
 if (lo < 0) throw new Error('constants line not found');
 const gi = html.indexOf('function generateBoard');
 const geMark = 'return best || buildOnce(rng); }';
@@ -101,7 +103,7 @@ for (const seed of seeds) {
   }
   if (r.board.snakes.length < 20) probs.push('suspiciously few pieces: ' + r.board.snakes.length);
   const cells = r.board.snakes.reduce((a, s) => a + s.cells.length, 0);
-  if (cells / (19 * 24) < 0.80) probs.push('coverage too low: ' + (cells / 456 * 100).toFixed(1) + '%');
+  if (cells / NCELLS < 0.80) probs.push('coverage too low: ' + (cells / NCELLS * 100).toFixed(1) + '%');
   let mis = 0;
   for (const s of r.board.snakes) {
     if (s.cells.length < 2) { probs.push('1-cell nub piece'); continue; }
@@ -140,7 +142,7 @@ for (const seed of seeds) {
 
   if (probs.length) { console.error('✗ ' + seed + ' — ' + probs.join(' · ')); failed = true; }
   else console.log('✓ ' + seed + ' — ' + r.board.snakes.length + ' pieces · '
-                   + (cells / 456 * 100).toFixed(1) + '% · attached · heads aligned · fire/bounce OK');
+                   + (cells / NCELLS * 100).toFixed(1) + '% · attached · heads aligned · fire/bounce OK');
 }
 
 // ---------- viewport math (v8 zoom/pan) ----------
@@ -148,9 +150,9 @@ for (const seed of seeds) {
   const mi = html.indexOf('const VIEW_FULL=');
   const mj = html.indexOf('function initGestures', mi);
   if (mi < 0 || mj < 0) { console.error('✗ viewport: module not found'); failed = true; return; }
-  const mathSrc = 'const U=100,W=19,H=24; let svg=null; const $=()=>null;\n' + html.slice(mi, mj);
+  const mathSrc = 'const U=100,W='+BW+',H='+BH+'; let svg=null; const $=()=>null;\n' + html.slice(mi, mj);
   const V = new Function(mathSrc + `
-    return { VIEW_FULL, VIEW_WMIN, VIEW_WMAX, VIEW_RATIO, clampView, zoomAt, panBy, isTap, isFullView };`)();
+    return { VIEW_FULL, VIEW_HOME, VIEW_WMIN, VIEW_WMAX, VIEW_RATIO, clampView, zoomAt, panBy, isTap, isHomeView };`)();
   const probs = [];
   const boxW = 390, boxH = 390 * V.VIEW_RATIO;
   // 1) zoom keeps the point under the pointer fixed
@@ -171,8 +173,11 @@ for (const seed of seeds) {
   if (Math.abs(vr.x - (V.VIEW_FULL.x + V.VIEW_FULL.w - vr.w)) > 1e-6) probs.push('pan does not clamp right');
   // 5) tap discrimination
   if (!V.isTap(200, 5) || V.isTap(200, 20) || V.isTap(600, 2)) probs.push('tap/drag thresholds wrong');
-  // 6) full-view detection (recenter button visibility)
-  if (!V.isFullView({ ...V.VIEW_FULL }) || V.isFullView(v1)) probs.push('isFullView wrong');
+  // 6) home-view detection (recenter button visibility) + home window inside board
+  if (!V.isHomeView({ ...V.VIEW_HOME }) || V.isHomeView(v1)) probs.push('isHomeView wrong');
+  const hm = V.VIEW_HOME;
+  if (hm.x < V.VIEW_FULL.x || hm.y < V.VIEW_FULL.y || hm.x + hm.w > V.VIEW_FULL.x + V.VIEW_FULL.w + 1e-6
+      || hm.y + hm.h > V.VIEW_FULL.y + V.VIEW_FULL.h + 1e-6 || !(hm.w < V.VIEW_FULL.w)) probs.push('VIEW_HOME not a proper sub-window');
   if (probs.length) { console.error('✗ viewport math — ' + probs.join(' · ')); failed = true; }
   else console.log('✓ viewport math — anchor, limits, aspect, clamps, tap thresholds OK');
 })();
