@@ -177,7 +177,8 @@ for (const seed of seeds) {
   if (!V.isHomeView({ ...V.VIEW_HOME }) || V.isHomeView(v1)) probs.push('isHomeView wrong');
   const hm = V.VIEW_HOME;
   if (hm.x < V.VIEW_FULL.x || hm.y < V.VIEW_FULL.y || hm.x + hm.w > V.VIEW_FULL.x + V.VIEW_FULL.w + 1e-6
-      || hm.y + hm.h > V.VIEW_FULL.y + V.VIEW_FULL.h + 1e-6 || !(hm.w < V.VIEW_FULL.w)) probs.push('VIEW_HOME not a proper sub-window');
+      || hm.y + hm.h > V.VIEW_FULL.y + V.VIEW_FULL.h + 1e-6) probs.push('VIEW_HOME exceeds board bounds');
+  if (Math.abs(hm.w - V.VIEW_FULL.w) > 1e-6) probs.push('VIEW_HOME should be the FULL view (v9.1 default)');
   if (probs.length) { console.error('✗ viewport math — ' + probs.join(' · ')); failed = true; }
   else console.log('✓ viewport math — anchor, limits, aspect, clamps, tap thresholds OK');
 })();
