@@ -424,7 +424,7 @@
     const ln=document.createElementNS(SVGNS,'path'); ln.setAttribute('class','pline'); ln.setAttribute('d',bd); g.appendChild(ln);
     const hd=document.createElementNS(SVGNS,'path'); hd.setAttribute('class','phead'); hd.setAttribute('d',headChevD(s.cells[0],s.dir)); g.appendChild(hd);
     g.addEventListener('click',()=>tapSnake(s.id)); layer.appendChild(g); s.el=g; }
-  function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','-30 -30 '+(W*U+60)+' '+(H*U+60));   // v5: inner margin so paths don't crowd the card edge svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg);
+  function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','-30 -30 '+(W*U+60)+' '+(H*U+60)); /* v5: inner margin */ svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg);
     layer=document.createElementNS(SVGNS,'g'); svg.appendChild(layer); }
   function renderBoard(){ buildSVG(); for(const k in snakes) makeEl(snakes[k]); }
 
