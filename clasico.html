@@ -95,8 +95,8 @@
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }
   .piece { cursor:pointer; }
-  .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:34; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
-  .piece .phit { fill:none; stroke:transparent; stroke-width:82; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
+  .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:42; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
+  .piece .phit { fill:none; stroke:transparent; stroke-width:84; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error) !important; }
   .piece.firing .pline, .piece.firing .phead { stroke:var(--clear) !important; }
   .piece.gone .pline, .piece.gone .phead { opacity:0; }
@@ -294,11 +294,11 @@
   // clearing only ever frees cells, ANY greedy clear order then fully solves it.
   function rayClear(grid, r, c, d){ let rr=r+DR[d], cc=c+DC[d];
     while(rr>=0&&rr<H&&cc>=0&&cc<W){ if(grid[rr*W+cc]!==-1) return false; rr+=DR[d]; cc+=DC[d]; } return true; }
-  function growBody(grid, r0, c0, d, rng, id){
+  function growBody(grid, r0, c0, d, rng, id, lmin){ lmin=lmin||LEN_MIN;
     const exit=new Set(); let rr=r0+DR[d], cc=c0+DC[d];
     while(rr>=0&&rr<H&&cc>=0&&cc<W){ exit.add(rr*W+cc); rr+=DR[d]; cc+=DC[d]; }
     const cells=[{r:r0,c:c0}]; grid[r0*W+c0]=id; let cur={r:r0,c:c0}, lastDir=-1;
-    const target=LEN_MIN+((rng()*(LEN_MAX-LEN_MIN+1))|0);
+    const target=lmin+((rng()*(LEN_MAX-lmin+1))|0);
     while(cells.length<target){ const opts=[];
       for(let dd=0;dd<4;dd++){ const nr=cur.r+DR[dd], nc=cur.c+DC[dd];
         if(nr<0||nr>=H||nc<0||nc>=W) continue; if(grid[nr*W+nc]!==-1) continue; if(exit.has(nr*W+nc)) continue; opts.push(dd); }
@@ -310,13 +310,23 @@
       const nr2=cur.r+DR[d2], nc2=cur.c+DC[d2]; grid[nr2*W+nc2]=id; cells.push({r:nr2,c:nc2}); cur={r:nr2,c:nc2}; lastDir=d2; }
     return { id:id, cells:cells, dir:d }; }
   function buildOnce(rng){
-    const grid=new Int16Array(W*H).fill(-1); const snakes=[]; let id=0, budget=2200;
-    while(budget-->0){ if(coverGrid(grid)>=COVER_TARGET) break;
+    const grid=new Int16Array(W*H).fill(-1); const snakes=[]; let id=0, budget=5000;
+    // main pass: long winders (pick only from directions whose exit lane is clear)
+    while(budget-->0){
       const r0=(rng()*H)|0, c0=(rng()*W)|0; if(grid[r0*W+c0]!==-1) continue;
-      const d=(rng()*4)|0; if(!rayClear(grid,r0,c0,d)) continue;
+      const dirs=[0,1,2,3].filter(d=>rayClear(grid,r0,c0,d)); if(!dirs.length) continue;
+      const d=dirs[(rng()*dirs.length)|0];
       const snake=growBody(grid,r0,c0,d,rng,id);
       if(!snake||snake.cells.length<LEN_MIN){ if(snake) for(const cl of snake.cells) grid[cl.r*W+cl.c]=-1; continue; }
       snakes.push(snake); id++; }
+    // gap-fill pass: put a snake (min length 1) in every remaining empty cell that has a clear exit lane
+    // → packs the board to near-full coverage while staying solvable (each is cleared first, its lane clear).
+    let changed=true;
+    while(changed){ changed=false;
+      for(let r=0;r<H;r++) for(let c=0;c<W;c++){ if(grid[r*W+c]!==-1) continue;
+        const dirs=[0,1,2,3].filter(d=>rayClear(grid,r,c,d)); if(!dirs.length) continue;
+        const d=dirs[(rng()*dirs.length)|0];
+        snakes.push(growBody(grid,r,c,d,rng,id,1)); id++; changed=true; } }
     if(!snakes.length) return null; return { W:W, H:H, snakes:snakes }; }
   function coverGrid(grid){ let n=0; for(let i=0;i<grid.length;i++) if(grid[i]!==-1) n++; return n/grid.length; }
   function coverage(board){ let n=0; for(const s of board.snakes) n+=s.cells.length; return n/(board.W*board.H); }
@@ -335,14 +345,12 @@
       for(const k in live){ const s=live[k]; if(laneClear(s)){ for(const cl of s.cells) occ[cl.r*bw+cl.c]=-1; delete live[k]; remaining--; progress=true; } } }
     return remaining===0; }
   // generateBoard(seed) → a dense, guaranteed-solvable board (self-checks with greedySolve; regenerates on failure/degenerate).
-  // Keep the DENSEST solvable, non-trivial board over many attempts → matches the reference (~0.90 coverage, no holes).
+  // Keep the DENSEST solvable board over many attempts → matches the reference (~0.92 coverage, no holes).
   function generateBoard(seed){ const rng=(typeof seed==='function')?seed:mulberry32(seed>>>0); let best=null;
-    for(let attempt=0;attempt<220;attempt++){ const b=buildOnce(rng); if(!b) continue;
-      if(!greedySolve(cloneBoard(b))||b.snakes.length<8||isTrivial(b)) continue;
+    for(let attempt=0;attempt<150;attempt++){ const b=buildOnce(rng); if(!b) continue;
+      if(!greedySolve(cloneBoard(b))) continue;
       if(!best||coverage(b)>coverage(best)) best=b; }
-    if(best) return best;
-    for(let attempt=0;attempt<40;attempt++){ const b=buildOnce(rng); if(b&&greedySolve(cloneBoard(b))&&(!best||coverage(b)>coverage(best))) best=b; }
-    return best; }
+    return best || buildOnce(rng); }
 
   // Reto del día: date-hashed target time in the 75–150 s window (1:15–2:30)
   function retoTarget(){ const r=mulberry32(fnv('clasico-reto-'+ISO)); return 75+Math.round(r()*75); }
@@ -359,8 +367,8 @@
   function polyD(pts){ return pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' '); }
   // chevron head at the head cell, pointing in dir d
   function headChevD(head, d){ const v=[DC[d],DR[d]]; const [x,y]=center(head.r,head.c);
-    const tx=x+v[0]*30, ty=y+v[1]*30;                 // tip pushed toward the edge
-    const px=-v[1], py=v[0], w=26, bk=28;
+    const tx=x+v[0]*32, ty=y+v[1]*32;                 // tip toward the edge (within the head cell)
+    const px=-v[1], py=v[0], w=23, bk=22;
     return 'M '+(tx-v[0]*bk+px*w).toFixed(1)+' '+(ty-v[1]*bk+py*w).toFixed(1)
          +' L '+tx.toFixed(1)+' '+ty.toFixed(1)
          +' L '+(tx-v[0]*bk-px*w).toFixed(1)+' '+(ty-v[1]*bk-py*w).toFixed(1); }
@@ -369,7 +377,7 @@
     const order=s.cells.slice().reverse();            // draw tail→head (visual continuity; direction-agnostic for a line)
     const pts=order.map(cl=>center(cl.r,cl.c));
     const head=center(s.cells[0].r, s.cells[0].c);
-    pts.push([head[0]+v[0]*14, head[1]+v[1]*14]);      // stub into the arrowhead (no gap)
+    pts.push([head[0]+v[0]*20, head[1]+v[1]*20]);      // stub into the arrowhead (no gap)
     return polyD(pts); }
   function makeEl(s){ const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','piece'); g.id='pc-'+s.id;
     const bd=bodyD(s);
