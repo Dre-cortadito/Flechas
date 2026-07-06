@@ -25,13 +25,13 @@
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
     --accent:#2f7d46; --accent-deep:#1f5c33; --accent-soft:#dcedd9; --accent-2:#7a9b6f; --error:#EA3546;
-    --board-bg:#F3E9D2; --arrow:#3A2A1D; --clear:#2fbf5a;
+    --board-bg:#F3E9D2; --arrow:#3A2A1D; --clear:#157145;
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
     --bg:#0b0f0c; --paper:#141a15; --ink:#eef3ee; --ink-soft:#7f8b81; --ink-line:#222a23; --box-edge:#7f8b81;
     --accent:#4faa66; --accent-deep:#8fd3a0; --accent-soft:#123020; --accent-2:#5f7d55; --error:#EA3546;
-    --board-bg:#16241a; --arrow:#c9e6cf; --clear:#5fe089;
+    --board-bg:#16241a; --arrow:#c9e6cf; --clear:#157145;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { overscroll-behavior:none; }
@@ -126,6 +126,7 @@
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; background:var(--board-bg); border-radius:18px; text-align:center; padding:26px; }
   .gate.hidden { display:none; }
   .gate h2 { font:800 28px var(--font-display); margin:0; }
+  .gate p b { color:var(--accent); }
   .gate p { margin:0; color:var(--ink-soft); font-size:13.5px; max-width:265px; line-height:1.5; }
   .gate .v { font:800 50px var(--font-display); color:var(--accent); line-height:1; }
   .gate .vlbl { font:700 9px var(--font-ui); letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-soft); margin-top:-8px; }
