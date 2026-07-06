@@ -91,7 +91,10 @@
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
 
   .board-wrap { width:min(94vw,400px); margin:0 auto 0; }
-  .board { position:relative; width:100%; aspect-ratio:19/24; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
+  .board { position:relative; width:100%; aspect-ratio:19/24; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; touch-action:none; -webkit-user-select:none; user-select:none; }
+  .recenter-btn { position:absolute; top:10px; right:10px; z-index:5; width:34px; height:34px; border-radius:50%; border:1.5px solid var(--arrow); background:var(--board-bg); color:var(--arrow); display:none; align-items:center; justify-content:center; cursor:pointer; opacity:.85; padding:0; }
+  .recenter-btn.show { display:flex; }
+  .recenter-btn svg { width:18px; height:18px; }
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }
   .piece { cursor:pointer; }
@@ -434,8 +437,82 @@
     ln.setAttribute('stroke-dasharray', t.L.toFixed(1)+' '+(t.F+12).toFixed(1)); ln.setAttribute('stroke-dashoffset','0'); g.appendChild(ln);
     const hd=document.createElementNS(SVGNS,'path'); hd.setAttribute('class','phead'); hd.setAttribute('d',headChevD(s.cells[0],s.dir)); g.appendChild(hd);
     g.addEventListener('click',()=>tapSnake(s.id)); layer.appendChild(g); s.el=g; }
-  function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','-30 -30 '+(W*U+60)+' '+(H*U+60)); /* v5: inner margin */ svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg);
+  function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','-30 -30 '+(W*U+60)+' '+(H*U+60)); /* v5: inner margin */ svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg); resetView(); initGestures();
     layer=document.createElementNS(SVGNS,'g'); svg.appendChild(layer); }
+
+  /* ============== v8: zoom + pan viewport (board only) ==============
+     The board is a large canvas: pinch to zoom, drag to pan, double-tap
+     empty space or the ⌖ button to recenter. Pure math functions are
+     separated so _smoke-clasico.js can verify them. Tap accuracy is
+     native SVG hit-testing — the browser maps taps through the viewBox,
+     so piece hit areas scale with zoom automatically. */
+  const VIEW_FULL={x:-30,y:-30,w:(W*U+60),h:(H*U+60)};
+  const VIEW_RATIO=VIEW_FULL.h/VIEW_FULL.w;
+  const VIEW_WMIN=520;                    // max zoom-in ≈ 5 columns visible
+  const VIEW_WMAX=VIEW_FULL.w;            // max zoom-out = whole board
+  let view={...VIEW_FULL};
+  function clampView(v){ const w=Math.min(VIEW_WMAX,Math.max(VIEW_WMIN,v.w)); const h=w*VIEW_RATIO;
+    const x=Math.min(VIEW_FULL.x+VIEW_FULL.w-w, Math.max(VIEW_FULL.x, v.x));
+    const y=Math.min(VIEW_FULL.y+VIEW_FULL.h-h, Math.max(VIEW_FULL.y, v.y));
+    return {x:x,y:y,w:w,h:h}; }
+  function zoomAt(v,factor,px,py,boxW,boxH){ // px,py = pointer pos in board CSS px
+    const bx=v.x+(px/boxW)*v.w, by=v.y+(py/boxH)*v.h;      // board point under pointer
+    const w=Math.min(VIEW_WMAX,Math.max(VIEW_WMIN, v.w/factor)); const h=w*VIEW_RATIO;
+    return clampView({x:bx-(px/boxW)*w, y:by-(py/boxH)*h, w:w, h:h}); }
+  function panBy(v,dxPx,dyPx,boxW,boxH){ return clampView({x:v.x-dxPx*(v.w/boxW), y:v.y-dyPx*(v.h/boxH), w:v.w, h:v.h}); }
+  function isTap(dtMs,distPx){ return dtMs<=400 && distPx<=9; }
+  function isFullView(v){ return Math.abs(v.w-VIEW_FULL.w)<1 && Math.abs(v.x-VIEW_FULL.x)<1 && Math.abs(v.y-VIEW_FULL.y)<1; }
+  function applyView(){ if(!svg) return; svg.setAttribute('viewBox', view.x.toFixed(1)+' '+view.y.toFixed(1)+' '+view.w.toFixed(1)+' '+view.h.toFixed(1));
+    const rb=$('recenter-btn'); if(rb) rb.classList.toggle('show', !isFullView(view)); }
+  function resetView(){ view={...VIEW_FULL}; applyView(); }
+  function initGestures(){
+    if(boardEl._gestured) return; boardEl._gestured=true;
+    const rb=document.createElement('button'); rb.className='recenter-btn'; rb.id='recenter-btn'; rb.setAttribute('aria-label','Centrar tablero');
+    rb.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>';
+    rb.addEventListener('click',(e)=>{ e.stopPropagation(); resetView(); });
+    boardEl.appendChild(rb);
+    const ptrs=new Map(); let mode='idle';                 // idle | maybe-tap | pan | pinch
+    let start=null, pinch0=null, suppressUntil=0, lastTap=null;
+    const box=()=>boardEl.getBoundingClientRect();
+    boardEl.addEventListener('click',(e)=>{ if(Date.now()<suppressUntil){ e.stopPropagation(); e.preventDefault(); } }, true);
+    boardEl.addEventListener('pointerdown',(e)=>{ if(e.target.closest('.recenter-btn')) return;
+      ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      try{ boardEl.setPointerCapture(e.pointerId); }catch(err){}
+      if(ptrs.size===1){ mode='maybe-tap'; start={x:e.clientX,y:e.clientY,t:Date.now(),view:{...view},target:e.target}; }
+      else if(ptrs.size===2){ mode='pinch'; suppressUntil=Date.now()+600;
+        const a=[...ptrs.values()]; pinch0={d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1,
+          cx:(a[0].x+a[1].x)/2, cy:(a[0].y+a[1].y)/2, view:{...view}}; } });
+    boardEl.addEventListener('pointermove',(e)=>{ if(!ptrs.has(e.pointerId)) return;
+      ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      const r=box();
+      if(mode==='pinch'&&ptrs.size>=2&&pinch0){ const a=[...ptrs.values()];
+        const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1;
+        const cx=(a[0].x+a[1].x)/2-r.left, cy=(a[0].y+a[1].y)/2-r.top;
+        view=zoomAt(pinch0.view, d/pinch0.d, cx, cy, r.width, r.height);
+        // keep the pinch centre anchored while fingers drift
+        const mx=((a[0].x+a[1].x)/2)-(pinch0.cx), my=((a[0].y+a[1].y)/2)-(pinch0.cy);
+        view=panBy(view, mx, my, r.width, r.height);
+        applyView(); return; }
+      if((mode==='maybe-tap'||mode==='pan')&&start){ const dx=e.clientX-start.x, dy=e.clientY-start.y;
+        if(mode==='maybe-tap'&&Math.hypot(dx,dy)>9){ mode='pan'; suppressUntil=Date.now()+600; }
+        if(mode==='pan'){ view=panBy(start.view, dx, dy, r.width, r.height); applyView(); } } });
+    const up=(e)=>{ if(!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId);
+      if(mode==='pinch'){ if(ptrs.size<2){ mode=ptrs.size?'pan':'idle'; if(ptrs.size===1){ const p=[...ptrs.values()][0]; start={x:p.x,y:p.y,t:Date.now(),view:{...view}}; }
+        suppressUntil=Date.now()+400; } return; }
+      if(mode==='pan'){ mode='idle'; suppressUntil=Date.now()+250; return; }
+      if(mode==='maybe-tap'&&start){ mode='idle';
+        const dt=Date.now()-start.t, dist=Math.hypot(e.clientX-start.x,e.clientY-start.y);
+        if(isTap(dt,dist)){
+          const onPiece=!!(start.target&&start.target.closest&&start.target.closest('.piece'));
+          if(!onPiece){ const now=Date.now();
+            if(lastTap&&now-lastTap.t<300&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<40){ lastTap=null; resetView(); suppressUntil=now+250; }
+            else lastTap={x:e.clientX,y:e.clientY,t:now}; }
+        } } };
+    boardEl.addEventListener('pointerup',up); boardEl.addEventListener('pointercancel',up);
+    boardEl.addEventListener('wheel',(e)=>{ e.preventDefault(); const r=box();
+      view=zoomAt(view, Math.pow(1.0015,-e.deltaY), e.clientX-r.left, e.clientY-r.top, r.width, r.height); applyView(); },{passive:false});
+  }
+
   function renderBoard(){ buildSVG(); for(const k in snakes) makeEl(snakes[k]); }
 
   // ================= clear-lane rule =================
