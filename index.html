@@ -2050,7 +2050,7 @@ function boot(){
     document.getElementById('over-retry').addEventListener('click',()=>{ closeGoal('over-panel'); resetToday(); });
 
     if((firedCells()>0 || finished) && location.hash!=='#landing') document.body.classList.add('game-active');
-    if(location.hash==='#landing'){ try{ history.replaceState(null,'',location.pathname); }catch(e){} }
+    if(location.hash==='#landing'){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} }   /* keep ?modo — refresh must stay on this mode's landing */
     applyGateState();
   } finally { document.body.classList.add('ready'); }
 }
