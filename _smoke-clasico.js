@@ -152,7 +152,7 @@ for (const seed of seeds) {
   if (mi < 0 || mj < 0) { console.error('✗ viewport: module not found'); failed = true; return; }
   const mathSrc = 'const U=100,W='+BW+',H='+BH+'; let svg=null; const $=()=>null;\n' + html.slice(mi, mj);
   const V = new Function(mathSrc + `
-    return { VIEW_FULL, VIEW_HOME, VIEW_WMIN, VIEW_WMAX, VIEW_RATIO, clampView, zoomAt, panBy, isTap, isHomeView };`)();
+    return { VIEW_FULL, VIEW_HOME, VIEW_WMIN, VIEW_WMAX, VIEW_RATIO, clampView, zoomAt, panBy, isTap, isHomeView, hintViewAt };`)();
   const probs = [];
   const boxW = 390, boxH = 390 * V.VIEW_RATIO;
   // 1) zoom keeps the point under the pointer fixed
@@ -179,6 +179,12 @@ for (const seed of seeds) {
   if (hm.x < V.VIEW_FULL.x || hm.y < V.VIEW_FULL.y || hm.x + hm.w > V.VIEW_FULL.x + V.VIEW_FULL.w + 1e-6
       || hm.y + hm.h > V.VIEW_FULL.y + V.VIEW_FULL.h + 1e-6) probs.push('VIEW_HOME exceeds board bounds');
   if (Math.abs(hm.w - V.VIEW_FULL.w) > 1e-6) probs.push('VIEW_HOME should be the FULL view (v9.1 default)');
+  // 7) breathing-hint curve: exactly home at both ends, zoomed & clamped mid-way
+  const h0 = V.hintViewAt(0), h5 = V.hintViewAt(0.5), h1 = V.hintViewAt(1);
+  if (!V.isHomeView(h0) || !V.isHomeView(h1)) probs.push('hint does not start/end at home');
+  if (!(h5.w < V.VIEW_HOME.w * 0.95)) probs.push('hint mid-zoom too weak');
+  if (Math.abs(h5.h / h5.w - V.VIEW_RATIO) > 1e-9) probs.push('hint aspect drift');
+  if (h5.x < V.VIEW_FULL.x || h5.y < V.VIEW_FULL.y) probs.push('hint escapes bounds');
   if (probs.length) { console.error('✗ viewport math — ' + probs.join(' · ')); failed = true; }
   else console.log('✓ viewport math — anchor, limits, aspect, clamps, tap thresholds OK');
 })();

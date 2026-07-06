@@ -235,6 +235,7 @@
         <div class="gate" id="gate">
           <h2>Clásico</h2>
           <p>Un tablero de flechas enredadas. Toca una para <b>despejarla</b> — solo sale si su <b>carril hasta el borde está libre</b>. Vacíalo entero, lo más rápido que puedas.</p>
+          <p class="gate-zoom">El tablero es grande: <b>pellizca</b> para acercar, <b>arrastra</b> para recorrerlo y toca <b>⌖</b> (o doble toque) para volver a verlo entero.</p>
           <button class="btn" id="start-btn" type="button">Empezar</button>
         </div>
       </div>
@@ -251,7 +252,7 @@
     <h2>Clásico</h2>
     <button class="tut-open-btn" style="display:none" onclick="openTutorial()">▶ Ver tutorial animado</button>
     <p>El modo puro: un solo tablero enredado. <b>Desenrédalo entero</b>, rápido y limpio.</p>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path style="stroke:var(--arrow)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta).</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path style="stroke:var(--arrow)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta). El tablero es un lienzo grande: <b>pellizca</b> para acercar y <b>arrastra</b> para moverte.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--clear)" d="M14 20 L92 20"/><path style="stroke:var(--clear)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al despejarla <b style="color:var(--clear)">destella en verde</b> y desaparece — deja hueco para otras.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> tocar una flecha <b>tapada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">½ corazón</b>. 3 corazones = 6 choques.</div></div>
     <div class="legend-row"><div class="legend-cell" style="font-size:22px;">🏁</div><div class="txt"><b>Meta:</b> vacía el tablero entero. Tu <b>rango es el tiempo</b> — el reloj empieza con tu primer toque. <b>Más rápido, mejor rango.</b></div></div>
@@ -473,6 +474,12 @@
   function applyView(){ if(!svg) return; svg.setAttribute('viewBox', view.x.toFixed(1)+' '+view.y.toFixed(1)+' '+view.w.toFixed(1)+' '+view.h.toFixed(1));
     const rb=$('recenter-btn'); if(rb) rb.classList.toggle('show', !isHomeView(view)); }
   function resetView(){ view={...VIEW_HOME}; applyView(); }
+  // one-time "breathing" zoom hint (v9.2): board eases in ~10% and back —
+  // says "this board can move" on the very first game, then never again.
+  function hintViewAt(t){ t=Math.min(1,Math.max(0,t));
+    const k=1+0.10*Math.sin(Math.PI*t);                 // 1 → 1.10 → 1 (exactly home at both ends)
+    const w=VIEW_HOME.w/k, h=w*VIEW_RATIO;
+    return clampView({x:VIEW_HOME.x+(VIEW_HOME.w-w)/2, y:VIEW_HOME.y+(VIEW_HOME.h-h)/2, w:w, h:h}); }
   function initGestures(){
     if(boardEl._gestured) return; boardEl._gestured=true;
     const rb=document.createElement('button'); rb.className='recenter-btn'; rb.id='recenter-btn'; rb.setAttribute('aria-label','Centrar tablero');
@@ -520,6 +527,17 @@
     boardEl.addEventListener('wheel',(e)=>{ e.preventDefault(); const r=box();
       view=zoomAt(view, Math.pow(1.0015,-e.deltaY), e.clientX-r.left, e.clientY-r.top, r.width, r.height); applyView(); },{passive:false});
   }
+  function zoomHintMaybe(){
+    if(lsGet('clasico-zoomhint')) return; lsSet('clasico-zoomhint','1');
+    let raf=null; const t0=performance.now(), DUR=1700;
+    const cancel=()=>{ if(raf){ cancelAnimationFrame(raf); raf=null; }
+      boardEl.removeEventListener('pointerdown',cancel); boardEl.removeEventListener('wheel',cancel); };
+    boardEl.addEventListener('pointerdown',cancel); boardEl.addEventListener('wheel',cancel);
+    const step=(now)=>{ const t=(now-t0)/DUR;
+      if(t>=1){ view={...VIEW_HOME}; applyView(); cancel(); return; }
+      view=hintViewAt(t); applyView(); raf=requestAnimationFrame(step); };
+    raf=requestAnimationFrame(step); }
+
 
   function renderBoard(){ buildSVG(); for(const k in snakes) makeEl(snakes[k]); }
 
@@ -615,6 +633,7 @@
     $('timer').textContent='0:00'; $('fx-reto').textContent=fmtSec(retoTarget());
     $('train-badge').classList.toggle('show', training);
     $('gate').classList.add('hidden');
+    zoomHintMaybe();   // v9.2: first-ever game only — subtle breathing zoom, cancelled by any touch
     if(rafId) cancelAnimationFrame(rafId);   // clock only ticks after the first tap; loop starts then
   }
   function winGame(){ if(over) return; finished=true; over=true; running=false; if(rafId) cancelAnimationFrame(rafId);
