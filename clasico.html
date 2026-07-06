@@ -25,7 +25,7 @@
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
     --accent:#2f7d46; --accent-deep:#1f5c33; --accent-soft:#dcedd9; --accent-2:#7a9b6f; --error:#EA3546;
-    --board-bg:#d8e8d2; --arrow:#2f4a34; --clear:#2fbf5a;
+    --board-bg:#F3E9D2; --arrow:#3A2A1D; --clear:#2fbf5a;
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
@@ -91,14 +91,17 @@
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
 
   .board-wrap { width:min(94vw,400px); margin:0 auto 0; }
-  .board { position:relative; width:100%; aspect-ratio:16/20; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
+  .board { position:relative; width:100%; aspect-ratio:19/24; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }
   .piece { cursor:pointer; }
-  .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:42; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
-  .piece .phit { fill:none; stroke:transparent; stroke-width:84; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
-  .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error) !important; }
-  .piece.firing .pline, .piece.firing .phead { stroke:var(--clear) !important; }
+  .piece .pline { fill:none; stroke:var(--arrow); stroke-width:11; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
+  .piece .phead { fill:var(--arrow); stroke:var(--arrow); stroke-width:4; stroke-linejoin:round; transition:fill .12s, stroke .12s, opacity .15s; }   /* solid triangle + matching outline: uniform, rounded, connected */
+  .piece .phit { fill:none; stroke:transparent; stroke-width:96; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
+  .piece.blocked .pline { stroke:var(--error) !important; }
+  .piece.blocked .phead { fill:var(--error) !important; stroke:var(--error) !important; }
+  .piece.firing .pline { stroke:var(--clear) !important; }
+  .piece.firing .phead { fill:var(--clear) !important; stroke:var(--clear) !important; }
   .piece.gone .pline, .piece.gone .phead { opacity:0; }
   .board.clearflash { animation:boardclear .9s ease; }
   @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:var(--accent-soft);} 100%{ background:var(--board-bg);} }
@@ -279,12 +282,13 @@
   const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
 
   // ================= constants (tunable) =================
-  const U=100, W=16, H=20;                              // 16×20 board (dense, portrait); U = SVG units per cell
-  const COVER_TARGET=0.90, LEN_MIN=4, LEN_MAX=26, TURN_BIAS=0.60;   // reverse-build knobs — super dense, long winders
+  const U=100, W=19, H=24;                              // 19×24 board (v4: reference-density, portrait); U = SVG units per cell
+  const COVER_TARGET=0.94, LEN_MIN=4, LEN_MAX=30;
+  const TURN_BIAS_H=0.62, TURN_BIAS_V=0.40, VERT_PREF=0.65;      // v7: break horizontals sooner, let verticals run, prefer vertical turns
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // max SECONDS to EARN each rank (index aligns with RANK_NAMES; lower time = higher rank). Provisional — calibrate to real solves.
-  const TIME_MAX=[Infinity,300,230,185,150,125,105,88,72,58];
+  const TIME_MAX=[Infinity,405,310,250,200,170,140,120,95,80];   // v4: scaled ~+35% for the 19×24 board (provisional — calibrate to real solves)
   const TOP=RANK_NAMES.length-1;
   const DR=[-1,0,1,0], DC=[0,1,0,-1];                  // 0=U 1=R 2=D 3=L
 
@@ -303,9 +307,15 @@
       for(let dd=0;dd<4;dd++){ const nr=cur.r+DR[dd], nc=cur.c+DC[dd];
         if(nr<0||nr>=H||nc<0||nc>=W) continue; if(grid[nr*W+nc]!==-1) continue; if(exit.has(nr*W+nc)) continue; opts.push(dd); }
       if(!opts.length) break; let d2;
-      if(lastDir<0){ d2=opts[(rng()*opts.length)|0]; }
+      if(lastDir<0){ const back=(d+2)%4;                       // v6: head must sit on a straight run —
+        if(!opts.includes(back)) break;                        // first step goes straight back from the head
+        d2=back; }
       else { const turns=opts.filter(x=>x!==lastDir), straight=opts.filter(x=>x===lastDir);
-        if(turns.length&&(straight.length===0||rng()<TURN_BIAS)) d2=turns[(rng()*turns.length)|0];
+        const tb=(lastDir===1||lastDir===3)?TURN_BIAS_H:TURN_BIAS_V;    // v7: horizontals turn sooner
+        if(turns.length&&(straight.length===0||rng()<tb)){
+          const vert=turns.filter(x=>x===0||x===2);                     // v7: prefer vertical corridors
+          d2=(vert.length&&rng()<VERT_PREF)?vert[(rng()*vert.length)|0]:turns[(rng()*turns.length)|0];
+        }
         else if(straight.length) d2=straight[0]; else d2=turns[(rng()*turns.length)|0]; }
       const nr2=cur.r+DR[d2], nc2=cur.c+DC[d2]; grid[nr2*W+nc2]=id; cells.push({r:nr2,c:nc2}); cur={r:nr2,c:nc2}; lastDir=d2; }
     return { id:id, cells:cells, dir:d }; }
@@ -315,7 +325,8 @@
     while(budget-->0){
       const r0=(rng()*H)|0, c0=(rng()*W)|0; if(grid[r0*W+c0]!==-1) continue;
       const dirs=[0,1,2,3].filter(d=>rayClear(grid,r0,c0,d)); if(!dirs.length) continue;
-      const d=dirs[(rng()*dirs.length)|0];
+      const vd=dirs.filter(x=>x===0||x===2);                            // v7: lean vertical
+      const d=(vd.length&&rng()<0.6)?vd[(rng()*vd.length)|0]:dirs[(rng()*dirs.length)|0];
       const snake=growBody(grid,r0,c0,d,rng,id);
       if(!snake||snake.cells.length<LEN_MIN){ if(snake) for(const cl of snake.cells) grid[cl.r*W+cl.c]=-1; continue; }
       snakes.push(snake); id++; }
@@ -325,8 +336,24 @@
     while(changed){ changed=false;
       for(let r=0;r<H;r++) for(let c=0;c<W;c++){ if(grid[r*W+c]!==-1) continue;
         const dirs=[0,1,2,3].filter(d=>rayClear(grid,r,c,d)); if(!dirs.length) continue;
-        const d=dirs[(rng()*dirs.length)|0];
-        snakes.push(growBody(grid,r,c,d,rng,id,1)); id++; changed=true; } }
+        // v4: min 2 (no single-cell nubs) — try EVERY clear direction before giving up
+        for(let k=dirs.length-1;k>0;k--){ const j=(rng()*(k+1))|0; const t=dirs[k]; dirs[k]=dirs[j]; dirs[j]=t; }
+        for(const d of dirs){ const s2=growBody(grid,r,c,d,rng,id,2);
+          if(s2.cells.length<2){ for(const cl of s2.cells) grid[cl.r*W+cl.c]=-1; continue; }
+          snakes.push(s2); id++; changed=true; break; } } }
+    // v4: absorb leftover pockets — extend snake TAILS into adjacent empty
+    // cells (head + exit lane untouched, so each piece still fires clean;
+    // generateBoard re-verifies with greedySolve regardless).
+    const exitOf=(s)=>{ const e=new Set(); let rr=s.cells[0].r+DR[s.dir], cc=s.cells[0].c+DC[s.dir];
+      while(rr>=0&&rr<H&&cc>=0&&cc<W){ e.add(rr*W+cc); rr+=DR[s.dir]; cc+=DC[s.dir]; } return e; };
+    let grew=true;
+    while(grew){ grew=false;
+      for(const s of snakes){ if(s.cells.length>=LEN_MAX) continue;
+        const ex=exitOf(s); const t=s.cells[s.cells.length-1];
+        for(let d2=0;d2<4;d2++){ const nr=t.r+DR[d2], nc=t.c+DC[d2];
+          if(nr<0||nr>=H||nc<0||nc>=W) continue; const k=nr*W+nc;
+          if(grid[k]!==-1||ex.has(k)) continue;
+          s.cells.push({r:nr,c:nc}); grid[k]=s.id; grew=true; break; } } }
     if(!snakes.length) return null; return { W:W, H:H, snakes:snakes }; }
   function coverGrid(grid){ let n=0; for(let i=0;i<grid.length;i++) if(grid[i]!==-1) n++; return n/grid.length; }
   function coverage(board){ let n=0; for(const s of board.snakes) n+=s.cells.length; return n/(board.W*board.H); }
@@ -346,10 +373,21 @@
     return remaining===0; }
   // generateBoard(seed) → a dense, guaranteed-solvable board (self-checks with greedySolve; regenerates on failure/degenerate).
   // Keep the DENSEST solvable board over many attempts → matches the reference (~0.92 coverage, no holes).
+  function largestGap(b){ // biggest connected EMPTY pocket, in cells (v4: keeps boards evenly filled)
+    const g=new Int8Array(W*H); for(const s of b.snakes) for(const c of s.cells) g[c.r*W+c.c]=1;
+    let best=0; const seen=new Int8Array(W*H);
+    for(let i=0;i<W*H;i++){ if(g[i]||seen[i]) continue; let q=[i],n=0; seen[i]=1;
+      while(q.length){ const x=q.pop(); n++; const r=(x/W)|0,c=x%W;
+        if(r+1<H&&!g[x+W]&&!seen[x+W]){seen[x+W]=1;q.push(x+W);} if(r>0&&!g[x-W]&&!seen[x-W]){seen[x-W]=1;q.push(x-W);}
+        if(c+1<W&&!g[x+1]&&!seen[x+1]){seen[x+1]=1;q.push(x+1);} if(c>0&&!g[x-1]&&!seen[x-1]){seen[x-1]=1;q.push(x-1);} }
+      if(n>best) best=n; }
+    return best; }
+  function boardScore(b){ return coverage(b) - Math.max(0, largestGap(b)-4)*0.012
+         - b.snakes.filter(s=>s.cells.length<4).length*0.004; }   // v4: full AND even; v5: few stubby pieces
   function generateBoard(seed){ const rng=(typeof seed==='function')?seed:mulberry32(seed>>>0); let best=null;
-    for(let attempt=0;attempt<150;attempt++){ const b=buildOnce(rng); if(!b) continue;
+    for(let attempt=0;attempt<300;attempt++){ const b=buildOnce(rng); if(!b) continue;
       if(!greedySolve(cloneBoard(b))) continue;
-      if(!best||coverage(b)>coverage(best)) best=b; }
+      if(!best||boardScore(b)>boardScore(best)) best=b; }
     return best || buildOnce(rng); }
 
   // Reto del día: date-hashed target time in the 75–150 s window (1:15–2:30)
@@ -367,17 +405,18 @@
   function polyD(pts){ return pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' '); }
   // chevron head at the head cell, pointing in dir d
   function headChevD(head, d){ const v=[DC[d],DR[d]]; const [x,y]=center(head.r,head.c);
-    const tx=x+v[0]*32, ty=y+v[1]*32;                 // tip toward the edge (within the head cell)
-    const px=-v[1], py=v[0], w=23, bk=22;
-    return 'M '+(tx-v[0]*bk+px*w).toFixed(1)+' '+(ty-v[1]*bk+py*w).toFixed(1)
-         +' L '+tx.toFixed(1)+' '+ty.toFixed(1)
-         +' L '+(tx-v[0]*bk-px*w).toFixed(1)+' '+(ty-v[1]*bk-py*w).toFixed(1); }
+    const tx=x+v[0]*33, ty=y+v[1]*33;                 // tip near the cell edge — big, confident head
+    const bx=x+v[0]*6,  by=y+v[1]*6;                  // base ON the line end — head and line stay connected
+    const px=-v[1], py=v[0], w=12;
+    return 'M '+tx.toFixed(1)+' '+ty.toFixed(1)
+         +' L '+(bx+px*w).toFixed(1)+' '+(by+py*w).toFixed(1)
+         +' L '+(bx-px*w).toFixed(1)+' '+(by-py*w).toFixed(1)+' Z'; }
   // body path: from TAIL to HEAD through cell centres, then a short stub toward the head chevron so line + head meet
   function bodyD(s){ const v=[DC[s.dir],DR[s.dir]];
     const order=s.cells.slice().reverse();            // draw tail→head (visual continuity; direction-agnostic for a line)
     const pts=order.map(cl=>center(cl.r,cl.c));
     const head=center(s.cells[0].r, s.cells[0].c);
-    pts.push([head[0]+v[0]*20, head[1]+v[1]*20]);      // stub into the arrowhead (no gap)
+    pts.push([head[0]+v[0]*8, head[1]+v[1]*8]);       // tuck 2u under the head triangle base (base at +6) — connected, no gap
     return polyD(pts); }
   function makeEl(s){ const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','piece'); g.id='pc-'+s.id;
     const bd=bodyD(s);
@@ -385,7 +424,7 @@
     const ln=document.createElementNS(SVGNS,'path'); ln.setAttribute('class','pline'); ln.setAttribute('d',bd); g.appendChild(ln);
     const hd=document.createElementNS(SVGNS,'path'); hd.setAttribute('class','phead'); hd.setAttribute('d',headChevD(s.cells[0],s.dir)); g.appendChild(hd);
     g.addEventListener('click',()=>tapSnake(s.id)); layer.appendChild(g); s.el=g; }
-  function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(W*U)+' '+(H*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg);
+  function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','-30 -30 '+(W*U+60)+' '+(H*U+60));   // v5: inner margin so paths don't crowd the card edge svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg);
     layer=document.createElementNS(SVGNS,'g'); svg.appendChild(layer); }
   function renderBoard(){ buildSVG(); for(const k in snakes) makeEl(snakes[k]); }
 

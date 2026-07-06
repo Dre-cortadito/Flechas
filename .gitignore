@@ -31,3 +31,10 @@ RULES.md
 *backup*.html
 rumbo 2.html
 *.webloc
+
+# Design previews (Claude, 2026-07-05) — local review artifacts, never publish.
+Style Previews/
+
+# Local docs + source art folders — not part of the deployable game.
+_docs/
+_art/
