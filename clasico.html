@@ -111,8 +111,8 @@
 
   .toast { position:absolute; top:14px; left:50%; transform:translate(-50%,-8px); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:#fff; font:800 13px var(--font-ui); letter-spacing:.4px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .2s ease, transform .2s ease; }
   .toast.show { opacity:1; transform:translate(-50%,0); }
-  .train-badge { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:17; background:var(--accent); color:#fff; font:800 10px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; padding:4px 12px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,.16); display:none; }
-  .train-badge.show { display:block; }
+  .train-badge { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:17; background:var(--accent); color:#fff; font:800 10px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; padding:4px 12px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,.16); opacity:0; pointer-events:none; transition:opacity .4s; }
+  .train-badge.show { opacity:1; }
 
   /* ===== Status box under the board ===== */
   .statusbox { width:min(94vw,400px); margin:9px auto 0; display:grid; grid-template-columns:repeat(3,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
@@ -637,7 +637,8 @@
     remaining=board.snakes.length;
     renderBoard(); renderLives(); renderCounts(); renderRank();
     $('timer').textContent='0:00'; $('fx-reto').textContent=fmtSec(retoTarget());
-    $('train-badge').classList.toggle('show', training);
+    const _tb=$('train-badge'); clearTimeout(_tb._t); _tb.classList.toggle('show', training);
+    if(training) _tb._t=setTimeout(()=>{ try{ _tb.classList.remove('show'); }catch(e){} }, 2200);   // v9.6: brief tag while the board settles — hidden during play
     $('gate').classList.add('hidden');
     zoomHintMaybe();   // v9.2: first-ever game only — subtle breathing zoom, cancelled by any touch
     if(rafId) cancelAnimationFrame(rafId);   // v9.5: clock starts when the breathe settles (or on first touch if cancelled) — see startClock()
