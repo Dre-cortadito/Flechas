@@ -412,16 +412,26 @@
          +' L '+(bx+px*w).toFixed(1)+' '+(by+py*w).toFixed(1)
          +' L '+(bx-px*w).toFixed(1)+' '+(by-py*w).toFixed(1)+' Z'; }
   // body path: from TAIL to HEAD through cell centres, then a short stub toward the head chevron so line + head meet
-  function bodyD(s){ const v=[DC[s.dir],DR[s.dir]];
-    const order=s.cells.slice().reverse();            // draw tail→head (visual continuity; direction-agnostic for a line)
+  function polyLen(pts){ let n=0; for(let i=1;i<pts.length;i++) n+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return n; }
+  function distToBorder(pt,v){ if(v[1]>0) return H*U-pt[1]; if(v[1]<0) return pt[1]; if(v[0]>0) return W*U-pt[0]; return pt[0]; }
+  // track = body shape + straight run out of the board, so the dash window can
+  // slide the whole piece out TIP-FIRST with the tail following the shape
+  // (same pattern as Cascada/Rumbo — parity, 2026-07-06).
+  function trackData(s){ const v=[DC[s.dir],DR[s.dir]];
+    const order=s.cells.slice().reverse();            // tail→head
     const pts=order.map(cl=>center(cl.r,cl.c));
     const head=center(s.cells[0].r, s.cells[0].c);
     pts.push([head[0]+v[0]*8, head[1]+v[1]*8]);       // tuck 2u under the head triangle base (base at +6) — connected, no gap
-    return polyD(pts); }
+    const L=polyLen(pts);
+    const ext=distToBorder(head,v)+76;                // off the board + viewBox inset (30) + head reach (~46)
+    return { pts:pts, v:v, L:L, F:L+ext, move:ext }; }
   function makeEl(s){ const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','piece'); g.id='pc-'+s.id;
-    const bd=bodyD(s);
-    const hit=document.createElementNS(SVGNS,'path'); hit.setAttribute('class','phit'); hit.setAttribute('d',bd); g.appendChild(hit);
-    const ln=document.createElementNS(SVGNS,'path'); ln.setAttribute('class','pline'); ln.setAttribute('d',bd); g.appendChild(ln);
+    const t=trackData(s); s._F=t.F; s._move=t.move; s._v=t.v;
+    const shapeD=polyD(t.pts);
+    const fullD=polyD(t.pts.concat([[t.pts[t.pts.length-1][0]+t.v[0]*t.move, t.pts[t.pts.length-1][1]+t.v[1]*t.move]]));
+    const hit=document.createElementNS(SVGNS,'path'); hit.setAttribute('class','phit'); hit.setAttribute('d',shapeD); g.appendChild(hit);
+    const ln=document.createElementNS(SVGNS,'path'); ln.setAttribute('class','pline'); ln.setAttribute('d',fullD);
+    ln.setAttribute('stroke-dasharray', t.L.toFixed(1)+' '+(t.F+12).toFixed(1)); ln.setAttribute('stroke-dashoffset','0'); g.appendChild(ln);
     const hd=document.createElementNS(SVGNS,'path'); hd.setAttribute('class','phead'); hd.setAttribute('d',headChevD(s.cells[0],s.dir)); g.appendChild(hd);
     g.addEventListener('click',()=>tapSnake(s.id)); layer.appendChild(g); s.el=g; }
   function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','-30 -30 '+(W*U+60)+' '+(H*U+60)); /* v5: inner margin */ svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg);
@@ -433,20 +443,39 @@
     while(r>=0&&r<H&&c>=0&&c<W){ const o=occ[r*W+c]; if(o!==-1&&o!==s.id) return false; r+=DR[d]; c+=DC[d]; } return true; }
 
   // ================= tap → clear or bump =================
+  // fire/crash visuals — separated so the smoke test can exercise them (2026-07-06)
+  function fireVisual(g,F,mv,v){ const line=g.querySelector('.pline'), hd=g.querySelector('.phead');
+    const T=Math.max(200, Math.round(110+F*0.20));
+    try{ line.animate([{strokeDashoffset:'0'},{strokeDashoffset:(-F)+'px'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){}
+    try{ const Th=Math.max(1,Math.round(T*mv/F)); hd.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(mv*v[0])+'px,'+(mv*v[1])+'px)'}],{duration:Th,easing:'linear',fill:'forwards'}); }catch(e){}
+    return T; }
+  function bounceVisual(g,v,dist){ const line=g.querySelector('.pline'), hd=g.querySelector('.phead');
+    const T=Math.max(130, Math.round(110+dist*0.2));
+    const off='translate('+(v[0]*dist)+'px,'+(v[1]*dist)+'px)';
+    try{ line.animate([{strokeDashoffset:'0'},{strokeDashoffset:(-dist)+'px'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){}
+    try{ hd.animate([{transform:'translate(0px,0px)'},{transform:off}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){}
+    setTimeout(()=>{ try{ line.animate([{strokeDashoffset:(-dist)+'px'},{strokeDashoffset:'0'}],{duration:T,easing:'linear',fill:'forwards'});
+      hd.animate([{transform:off},{transform:'translate(0px,0px)'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){} }, T+50);
+    return T; }
+  function gapToBlocker(s){ let n=0, rr=s.cells[0].r+DR[s.dir], cc=s.cells[0].c+DC[s.dir];
+    while(rr>=0&&rr<H&&cc>=0&&cc<W && occ[rr*W+cc]===-1){ n++; rr+=DR[s.dir]; cc+=DC[s.dir]; }
+    return n*U + U*0.26; }
   function tapSnake(id){ if(!running||over) return; const s=snakes[id]; if(!s||!s.el) return;
     if(!started){ started=true; lastTick=0; if(rafId) cancelAnimationFrame(rafId); rafId=requestAnimationFrame(loop); }   // clock starts on the FIRST tap
     if(laneClear(s)){
-      // CLEAR — no motion: green flash + quick fade, then remove. Its cells free up.
+      // CLEAR — tip-first discharge: green, dash window slides the body out
+      // along its own shape, head leads (parity with Cascada/Rumbo).
       for(const cl of s.cells) occ[cl.r*W+cl.c]=-1; delete snakes[id];
       const g=s.el; g.classList.add('firing');
-      requestAnimationFrame(()=>{ try{ g.classList.add('gone'); }catch(e){} });   // fade out (~150ms via CSS opacity transition)
-      setTimeout(()=>{ try{ g.remove(); }catch(e){} }, 170);
+      const T=fireVisual(g, s._F, s._move, s._v);
+      setTimeout(()=>{ try{ g.remove(); }catch(e){} }, T);
       remaining--; renderCounts();
       if(remaining<=0) winGame();
     } else {
-      // CHOQUE — red flash, NO motion, ½ heart.
+      // CHOQUE — red, bumps out to the blocker and springs back, ½ heart.
       const g=s.el; g.classList.add('blocked');
-      setTimeout(()=>{ try{ g.classList.remove('blocked'); }catch(e){} }, 180);
+      const T=bounceVisual(g, s._v, gapToBlocker(s));
+      setTimeout(()=>{ try{ g.classList.remove('blocked'); }catch(e){} }, 2*T+140);
       choques++; renderCounts(); loseHeart();
     } }
 

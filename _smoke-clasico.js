@@ -37,19 +37,24 @@ const gi = html.indexOf('function generateBoard');
 const geMark = 'return best || buildOnce(rng); }';
 const ge = html.indexOf(geMark, gi) + geMark.length;
 const genSrc = grabFn('mulberry32') + '\n' + grabFn('fnv') + '\n' + html.slice(lo, ge);
-const drawSrc = [grabFn('center'), grabFn('polyD'), grabFn('headChevD'),
-                 grabFn('bodyD'), grabFn('makeEl'), grabFn('buildSVG')].join('\n');
+const drawSrc = [grabFn('center'), grabFn('polyD'), grabFn('polyLen'), grabFn('distToBorder'),
+                 grabFn('headChevD'), grabFn('trackData'), grabFn('makeEl'), grabFn('buildSVG'),
+                 grabFn('fireVisual'), grabFn('bounceVisual')].join('\n');
 
 function el(tag) {
   return {
-    tag, children: [], attrs: {},
+    tag, children: [], attrs: {}, animations: [],
     classList: { add() {}, toggle() {}, remove() {} },
     setAttribute(k, v) { this.attrs[k] = v; },
     appendChild(c) { this.children.push(c); return c; },
     addEventListener() {},
+    animate(kf, opts) { this.animations.push({ kf, opts }); return { cancel() {} }; },
     set innerHTML(v) { this.children = []; },
     get innerHTML() { return ''; },
-    querySelector() { return el('q'); },
+    querySelector(sel) {
+      const cls = sel.replace('.', '');
+      return this.children.find(c => (c.attrs.class || '') === cls) || el('q');
+    },
   };
 }
 
@@ -72,7 +77,13 @@ for (const seed of seeds) {
     const board=generateBoard(rng);
     buildSVG();
     for(const s of board.snakes) makeEl(s);
-    return { board, inner };`;
+    // exercise the firing visuals on the first piece (parity feature, 2026-07-06)
+    const s0=board.snakes[0], g0=s0.el||inner.children[0].children[0].children[0];
+    const fireT=fireVisual(g0, s0._F, s0._move, s0._v);
+    const g1=inner.children[0].children[0].children[1];
+    const s1=board.snakes[1];
+    const bounceT=bounceVisual(g1, s1._v, 126);
+    return { board, inner, s0, fireT, bounceT };`;
   let r;
   try { r = new Function('__el', '__inner', harness)(el, inner); }
   catch (e) { console.error('✗ ' + seed + ' — render path THREW: ' + e.message); failed = true; continue; }
@@ -97,9 +108,37 @@ for (const seed of seeds) {
   }
   if (mis) probs.push(mis + ' misaligned arrowhead(s)');
 
+  // firing visuals: tip-first discharge + trailing body + crash bounce
+  if (svg) {
+    const g0 = svg.children[0].children[0];
+    const line0 = g0.children.find(c => c.attrs.class === 'pline');
+    const head0 = g0.children.find(c => c.attrs.class === 'phead');
+    const dash = (line0.attrs['stroke-dasharray'] || '').split(/\s+/).map(Number);
+    if (dash.length !== 2 || !(dash[1] > dash[0])) probs.push('bad dasharray (track window): ' + line0.attrs['stroke-dasharray']);
+    const fa = line0.animations[0];
+    if (!fa) probs.push('fire: line never animated');
+    else {
+      const off = parseFloat(fa.kf[1].strokeDashoffset);
+      if (!(off < 0 && Math.abs(-off - r.s0._F) < 1)) probs.push('fire: dash slide ' + off + ' ≠ −F(' + r.s0._F.toFixed(1) + ') — not tip-first');
+    }
+    const ha = head0.animations[0];
+    if (!ha) probs.push('fire: head never animated');
+    else if (!ha.kf[1].transform.includes((r.s0._move * r.s0._v[0]) + 'px')) probs.push('fire: head travel ≠ move·v');
+    if (!(r.fireT >= 200)) probs.push('fire duration too short: ' + r.fireT);
+    const g1 = svg.children[0].children[1];
+    const line1 = g1.children.find(c => c.attrs.class === 'pline');
+    const ba = line1.animations[0];
+    if (!ba || parseFloat(ba.kf[1].strokeDashoffset) !== -126) probs.push('bounce: no −dist slide on crash');
+  }
+  // state colors present in CSS: green on clear, red on crash, for BOTH shaft and head
+  for (const rule of ['.piece.firing .pline', '.piece.firing .phead', '.piece.blocked .pline', '.piece.blocked .phead'])
+    if (!html.includes(rule)) probs.push('missing CSS state rule: ' + rule);
+  if (!/\.piece\.firing \.pline \{ stroke:var\(--clear\)/.test(html)) probs.push('firing pline not green');
+  if (!/\.piece\.blocked \.pline \{ stroke:var\(--error\)/.test(html)) probs.push('blocked pline not red');
+
   if (probs.length) { console.error('✗ ' + seed + ' — ' + probs.join(' · ')); failed = true; }
   else console.log('✓ ' + seed + ' — ' + r.board.snakes.length + ' pieces · '
-                   + (cells / 456 * 100).toFixed(1) + '% · attached · heads aligned');
+                   + (cells / 456 * 100).toFixed(1) + '% · attached · heads aligned · fire/bounce OK');
 }
 
 if (failed) { console.error('\nSMOKE TEST FAILED — do not deploy.'); process.exit(1); }
