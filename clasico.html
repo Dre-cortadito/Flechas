@@ -256,7 +256,7 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path style="stroke:var(--arrow)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta). El tablero es un lienzo grande: <b>pellizca</b> para acercar y <b>arrastra</b> para moverte.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--clear)" d="M14 20 L92 20"/><path style="stroke:var(--clear)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al despejarla <b style="color:var(--clear)">destella en verde</b> y desaparece — deja hueco para otras.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> tocar una flecha <b>tapada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">½ corazón</b>. 3 corazones = 6 choques.</div></div>
-    <div class="legend-row"><div class="legend-cell" style="font-size:22px;">🏁</div><div class="txt"><b>Meta:</b> vacía el tablero entero. Tu <b>rango es el tiempo</b> — el reloj corre desde que pulsas <b>Empezar</b>. <b>Más rápido, mejor rango.</b></div></div>
+    <div class="legend-row"><div class="legend-cell" style="font-size:22px;">🏁</div><div class="txt"><b>Meta:</b> vacía el tablero entero. Tu <b>rango es el tiempo</b> — el reloj arranca en cuanto el tablero <b>se asienta</b>, justo tras <b>Empezar</b>. <b>Más rápido, mejor rango.</b></div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Despejar solo <b>quita</b> flechas, nunca traba el tablero. Tu <b>primer intento</b> cuenta como el reto de hoy; después puedes <b>entrenar</b> con tableros nuevos.</p>
   </div></div>
 
@@ -293,7 +293,7 @@
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // max SECONDS to EARN each rank (index aligns with RANK_NAMES; lower time = higher rank). Provisional — calibrate to real solves.
-  const TIME_MAX=[Infinity,1230,945,765,615,525,435,375,300,255];   // v9.4: +15s flat — clock now runs from Empezar (scan+breathe counted); provisional
+  const TIME_MAX=[Infinity,1225,940,760,610,520,430,370,295,250];   // v9.5: +10s flat vs v9 — clock from board-settle (breathe off the clock); provisional
   const TOP=RANK_NAMES.length-1;
   const DR=[-1,0,1,0], DC=[0,1,0,-1];                  // 0=U 1=R 2=D 3=L
 
@@ -528,16 +528,19 @@
     boardEl.addEventListener('wheel',(e)=>{ e.preventDefault(); const r=box();
       view=zoomAt(view, Math.pow(1.0015,-e.deltaY), e.clientX-r.left, e.clientY-r.top, r.width, r.height); applyView(); },{passive:false});
   }
+  function startClock(){ if(started||!running||over) return;   // v9.5: single entry point for the stopwatch
+    started=true; lastTick=0; if(rafId) cancelAnimationFrame(rafId); rafId=requestAnimationFrame(loop); }
   function zoomHintMaybe(){
-    if(boardEl._hintCancel) boardEl._hintCancel();          // v9.4: plays on EVERY Empezar (subtle + cancellable); never stacks
+    if(boardEl._hintCancel) boardEl._hintCancel();          // plays on EVERY Empezar; never stacks (re-entry does NOT start the old game's clock)
     let raf=null; const t0=performance.now(), DUR=1700;
-    const cancel=()=>{ if(raf){ cancelAnimationFrame(raf); raf=null; }
+    const stop=()=>{ if(raf){ cancelAnimationFrame(raf); raf=null; }
       boardEl._hintCancel=null;
-      boardEl.removeEventListener('pointerdown',cancel); boardEl.removeEventListener('wheel',cancel); };
-    boardEl._hintCancel=cancel;
-    boardEl.addEventListener('pointerdown',cancel); boardEl.addEventListener('wheel',cancel);
+      boardEl.removeEventListener('pointerdown',onTouch); boardEl.removeEventListener('wheel',onTouch); };
+    const onTouch=()=>{ stop(); startClock(); };            // cancelled early → clock starts NOW
+    boardEl._hintCancel=stop;
+    boardEl.addEventListener('pointerdown',onTouch); boardEl.addEventListener('wheel',onTouch);
     const step=(now)=>{ const t=(now-t0)/DUR;
-      if(t>=1){ view={...VIEW_HOME}; applyView(); cancel(); return; }
+      if(t>=1){ view={...VIEW_HOME}; applyView(); stop(); startClock(); return; }   // settled → clock starts
       view=hintViewAt(t); applyView(); raf=requestAnimationFrame(step); };
     raf=requestAnimationFrame(step); }
 
@@ -637,7 +640,7 @@
     $('train-badge').classList.toggle('show', training);
     $('gate').classList.add('hidden');
     zoomHintMaybe();   // v9.2: first-ever game only — subtle breathing zoom, cancelled by any touch
-    if(rafId) cancelAnimationFrame(rafId); started=true; lastTick=0; rafId=requestAnimationFrame(loop);   // v9.4: stopwatch-from-play — el reloj corre desde Empezar
+    if(rafId) cancelAnimationFrame(rafId);   // v9.5: clock starts when the breathe settles (or on first touch if cancelled) — see startClock()
   }
   function winGame(){ if(over) return; finished=true; over=true; running=false; if(rafId) cancelAnimationFrame(rafId);
     const secs=Math.round(totalMs/1000); const idx=rankFromTime(secs); const reto=retoTarget();
@@ -751,7 +754,7 @@
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><text x="116" y="72" text-anchor="middle" font-size="60">🏁</text></svg></div>
         <h3>Vac&iacute;a el tablero</h3>
-        <p>Despeja <b>todas</b> las flechas. Tu <b>rango es el tiempo</b> — el reloj corre desde que pulsas <b>Empezar</b>.</p>
+        <p>Despeja <b>todas</b> las flechas. Tu <b>rango es el tiempo</b> — el reloj arranca en cuanto el tablero <b>se asienta</b>, justo tras <b>Empezar</b>.</p>
       </section>
     </div>
     <div class="tut-dots" id="tut-dots"></div>
