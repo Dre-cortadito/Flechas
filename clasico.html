@@ -62,7 +62,11 @@
   .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
 
   /* ===== Rank bar (standard) — driven by finish TIME ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 14px; margin:0 auto 2px; cursor:pointer; user-select:none; }
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 16px; margin:0 auto 2px; cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
+  @media (hover:hover){ .rank-bar:hover { background:var(--paper); } .rank-bar:hover .rank-label, .rank-bar:hover .rank-chev { color:var(--accent); } }
+  .rank-bar.open .rank-chev { transform:rotate(180deg); }
+  .rank-marker { position:absolute; top:50%; width:3px; height:26px; background:var(--accent); border-radius:2px; transform:translate(-50%,-50%); z-index:4; pointer-events:none; opacity:.95; transition:background .25s ease; }
+  .rank-marker.done { background:var(--clear); opacity:1; }
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
   .rank-label.at-maestro { color:var(--accent); }
   .rank-track { position:relative; flex:1; height:22px; }
@@ -71,7 +75,7 @@
   .rank-dot { position:absolute; top:50%; transform:translate(-50%,-50%); width:6px; height:6px; border-radius:50%; background:var(--ink-soft); z-index:3; }
   .rank-dot.passed { background:var(--ink); }
   .rank-dot.current { width:24px; height:24px; background:var(--accent); color:#fff; font:700 11px var(--font-ui); display:flex; align-items:center; justify-content:center; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .35s ease; }
-  .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; }
+  .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; transition:transform .2s, color .15s; }
 
   .meta { width:min(94vw,400px); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:0 auto 6px; }
   .side { line-height:1.05; }
@@ -95,10 +99,16 @@
   .recenter-btn { position:absolute; top:10px; right:10px; z-index:5; width:34px; height:34px; border-radius:50%; border:1.5px solid var(--arrow); background:var(--board-bg); color:var(--arrow); display:none; align-items:center; justify-content:center; cursor:pointer; opacity:.85; padding:0; }
   .recenter-btn.show { display:flex; }
   .recenter-btn svg { width:18px; height:18px; }
-  .enfoque-btn { position:absolute; top:10px; left:10px; z-index:5; height:34px; padding:0 13px; border-radius:999px; border:1.5px solid var(--arrow); background:var(--board-bg); color:var(--arrow); display:none; align-items:center; gap:6px; cursor:pointer; font:800 12.5px var(--font-ui); letter-spacing:.3px; opacity:.9; }
-  .enfoque-btn.show { display:flex; }
-  .enfoque-btn:disabled { opacity:.4; cursor:default; }
-  .enfoque-btn svg { width:15px; height:15px; }
+  /* Charge action bar BELOW the board — the family-standard power button (exact Cascada
+     freeze-btn dimensions). Clásico's verb: 👁 Enfoque — highlights every arrow whose lane
+     is clear for 3 s. Auto-charges (~20 s), one charge, green like the game. */
+  .freeze { width:min(94vw,400px); margin:10px auto 0; }
+  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:var(--accent); background:rgba(47,125,70,.05); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+  .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--accent-soft); transform-origin:left; transform:scaleX(0); z-index:0; }
+  .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:34px; }
+  .freeze-btn .ficon svg { width:34px; height:34px; display:block; }
+  .freeze-btn:not(.ready){ cursor:default; }
+  .freeze-btn:active { transform:scale(.98); }
   .piece.enfoque .pline, .piece.enfoque .phead { stroke:var(--clear) !important; animation:enfpulse 1s ease infinite; }
   @keyframes enfpulse { 0%,100%{ opacity:1; } 50%{ opacity:.5; } }
   #board-inner { position:absolute; inset:14px; }
@@ -238,7 +248,6 @@
       <div class="board" id="board">
         <div id="board-inner"></div>
         <div class="train-badge" id="train-badge">Entrenamiento</div>
-        <button class="enfoque-btn" id="enfoque-btn" type="button" aria-label="Enfoque: resalta las flechas libres, cuesta 12 segundos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="5.2"/><path d="M12 1.5v3.2M12 19.3v3.2M1.5 12h3.2M19.3 12h3.2"/></svg>Enfoque · +12 s</button>
         <div class="toast" id="toast"></div>
         <div class="gate" id="gate">
           <h2>Clásico</h2>
@@ -254,6 +263,13 @@
       <div class="stile choques" id="t-choques"><div class="sval" id="fx-choques">0</div><div class="slbl">Choques</div></div>
       <div class="stile reto"><div class="sval" id="fx-reto">—</div><div class="slbl">Reto del día</div></div>
     </div>
+
+    <div class="freeze">
+      <button class="freeze-btn" id="enfoque-btn" type="button" aria-label="Enfoque: resalta las flechas que pueden salir">
+        <span class="fill" id="enfoque-fill"></span>
+        <span class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.6-6.5 9.5-6.5S21.5 12 21.5 12s-3.6 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3.1"/></svg></span>
+      </button>
+    </div>
   </div>
 
   <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
@@ -263,7 +279,7 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path style="stroke:var(--arrow)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta). El tablero es un lienzo grande: <b>pellizca</b> para acercar y <b>arrastra</b> para moverte.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--clear)" d="M14 20 L92 20"/><path style="stroke:var(--clear)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al despejarla <b style="color:var(--clear)">destella en verde</b> y desaparece — deja hueco para otras.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> tocar una flecha <b>tapada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">½ corazón</b>. 3 corazones = 6 choques.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><circle cx="60" cy="20" r="11" fill="none" stroke="var(--accent)" stroke-width="5.5"/><path d="M60 2 V9 M60 31 V38 M42 20 H49 M71 20 H78" fill="none" stroke="var(--accent)" stroke-width="5.5" stroke-linecap="round"/></svg></div><div class="txt"><b>Enfoque:</b> resalta <b>3 s</b> las flechas que ya pueden salir. Cuesta <b>+12 s</b> de reloj — ayuda, pero pesa en tu rango. Úsalo solo cuando lo necesites.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M38 20s8-12 22-12 22 12 22 12-8 12-22 12-22-12-22-12z"/><circle cx="60" cy="20" r="6"/></svg></div><div class="txt"><b>👁 Enfoque:</b> el botón bajo el tablero se <b>llena solo</b> (~20 s). Úsalo para resaltar <b>3 s</b> las flechas que <b>ya pueden salir</b>. Una carga — el reloj no se detiene.</div></div>
     <div class="legend-row"><div class="legend-cell" style="font-size:22px;">🏁</div><div class="txt"><b>Meta:</b> vacía el tablero entero. Tu <b>rango es el tiempo</b> — el reloj arranca en cuanto el tablero <b>se asienta</b>, justo tras <b>Empezar</b>. <b>Más rápido, mejor rango.</b></div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Despejar solo <b>quita</b> flechas, nunca traba el tablero. Tu <b>primer intento</b> cuenta como el reto de hoy; después puedes <b>entrenar</b> con tableros nuevos.</p>
   </div></div>
@@ -532,7 +548,7 @@
     let start=null, pinch0=null, suppressUntil=0, lastTap=null;
     const box=()=>boardEl.getBoundingClientRect();
     boardEl.addEventListener('click',(e)=>{ if(Date.now()<suppressUntil){ e.stopPropagation(); e.preventDefault(); } }, true);
-    boardEl.addEventListener('pointerdown',(e)=>{ if(e.target.closest('.recenter-btn')||e.target.closest('.enfoque-btn')) return;
+    boardEl.addEventListener('pointerdown',(e)=>{ if(e.target.closest('.recenter-btn')) return;
       ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
       try{ boardEl.setPointerCapture(e.pointerId); }catch(err){}
       if(ptrs.size===1){ mode='maybe-tap'; start={x:e.clientX,y:e.clientY,t:Date.now(),view:{...view},target:e.target}; }
@@ -573,17 +589,20 @@
     started=true; lastTick=0; if(rafId) cancelAnimationFrame(rafId); rafId=requestAnimationFrame(loop); }
 
   // ================= Enfoque — Clásico's signature power =================
-  // Highlights every arrow whose lane is currently clear, for 3 s. Costs +12 s
-  // of clock (same currency as the rank). Unlimited uses, each one hurts.
-  const ENFOQUE_PEN=12, ENFOQUE_DUR=3000;
-  function doEnfoque(){ if(!running||over) return; const b=$('enfoque-btn'); if(b&&b.disabled) return;
-    if(!started) startClock();
-    totalMs+=ENFOQUE_PEN*1000; $('timer').textContent=fmt(totalMs);
-    showToast('Enfoque · +'+ENFOQUE_PEN+' s');
-    if(b) b.disabled=true;
+  // The family-standard charge button (Cascada freeze mechanics, green, eye icon):
+  // fills alone over ~20 s, one charge. Spend it to highlight every arrow whose
+  // lane is currently clear, for 3 s. The clock keeps running.
+  const ENF_FILL=20, ENFOQUE_DUR=3000;
+  let enfCharge=0, enfReady=false, enfVisual=0;
+  function updateEnfoque(){ const btn=$('enfoque-btn'), fill=$('enfoque-fill'); if(!btn||!fill) return;
+    if(enfReady){ enfVisual=1; fill.style.transform='scaleX(1)'; btn.classList.add('ready'); }
+    else { enfVisual += (enfCharge-enfVisual)*0.18; if(Math.abs(enfCharge-enfVisual)<0.002) enfVisual=enfCharge;
+      fill.style.transform='scaleX('+Math.max(0,enfVisual).toFixed(3)+')'; btn.classList.remove('ready'); } }
+  function doEnfoque(){ if(!enfReady||!running||over) return;
+    enfReady=false; enfCharge=0; enfVisual=0; updateEnfoque();
     const marked=[];
     for(const k in snakes){ const s=snakes[k]; if(s.el&&laneClear(s)){ s.el.classList.add('enfoque'); marked.push(s.el); } }
-    setTimeout(()=>{ marked.forEach(el=>{ try{ el.classList.remove('enfoque'); }catch(e){} }); if(b) b.disabled=false; }, ENFOQUE_DUR); }
+    setTimeout(()=>{ marked.forEach(el=>{ try{ el.classList.remove('enfoque'); }catch(e){} }); }, ENFOQUE_DUR); }
   function zoomHintMaybe(){
     if(boardEl._hintCancel) boardEl._hintCancel();          // plays on EVERY Empezar; never stacks (re-entry does NOT start the old game's clock)
     let raf=null; const t0=performance.now(), DUR=1700;
@@ -658,17 +677,30 @@
 
   // ================= rank bar (by finish time) =================
   function rankFromTime(sec){ for(let i=TOP;i>=0;i--){ if(sec<=TIME_MAX[i]) return i; } return 0; }
-  function curRank(){ return (over&&finished)? rankFromTime(Math.round(totalMs/1000)) : -1; }
+  function curRank(){ return (started||finished)? rankFromTime(Math.round(totalMs/1000)) : 0; }
+  // Continuous position along the track for a TIME t — the Racimo standard mapping:
+  // the bubble GLIDES between the bracketing rank dots (same mapping as the reto
+  // marker), instead of snapping dot to dot. Time ranks DECAY: you start at
+  // Maestro/a and slide left as the clock runs.
+  function timePos(t){ const idx=rankFromTime(t);
+    if(idx>=TOP) return 100;
+    if(idx<=0 && !isFinite(TIME_MAX[1])) return 0;
+    const hi=TIME_MAX[idx]; if(!isFinite(hi)) return 0;                       // slower than the bottom band
+    const lo=(idx===TOP)?0:TIME_MAX[idx+1];
+    const frac=Math.max(0,Math.min(1,(hi-t)/Math.max(1,hi-lo)));
+    return Math.min(100,(idx+frac)/TOP*100); }
   function renderRank(){ const track=$('rank-track'); if(!track) return; const idx=curRank();
-    const pos=idx>=0? idx/TOP*100 : (running? Math.max(0, (1-remaining/Math.max(1,board?board.snakes.length:1)))*100 : 0);
+    const secs=Math.round(totalMs/1000);
+    const pos=(started||finished)? timePos(secs) : 0;
     track.innerHTML='<div class="rank-track-line"></div><div class="rank-track-fill"></div>';
     track.querySelector('.rank-track-fill').style.width=pos+'%';
-    for(let i=0;i<=TOP;i++){ const dot=document.createElement('div'); dot.className='rank-dot'+(idx>=0&&i<=idx?' passed':''); dot.style.left='clamp(3px, '+((i/TOP)*100)+'%, calc(100% - 3px))'; track.appendChild(dot); }
-    const bub=document.createElement('div'); bub.className='rank-dot current'+(idx===TOP?' at-maestro':''); bub.style.left='clamp(11px, '+pos+'%, calc(100% - 11px))'; track.appendChild(bub);
-    const lbl=$('rank-label'); if(lbl){ lbl.textContent=idx>=0?RANK_NAMES[idx]:(running?'Despejando…':'Listo'); lbl.classList.toggle('at-maestro',idx===TOP); } }
+    for(let i=0;i<=TOP;i++){ const dot=document.createElement('div'); dot.className='rank-dot'+((started||finished)&&i<=idx?' passed':''); dot.style.left='clamp(3px, '+((i/TOP)*100)+'%, calc(100% - 3px))'; track.appendChild(dot); }
+    const bub=document.createElement('div'); bub.className='rank-dot current'+(idx===TOP?' at-maestro':''); bub.style.left='clamp(12px, '+pos+'%, calc(100% - 12px))'; bub.style.zIndex='5'; track.appendChild(bub);
+    const mk=document.createElement('div'); mk.className='rank-marker'+((finished&&secs<=retoTarget())?' done':''); mk.style.left='clamp(2px, '+timePos(retoTarget())+'%, calc(100% - 2px))'; track.appendChild(mk);
+    const lbl=$('rank-label'); if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); } }
   function band(i){ if(i===TOP) return '≤ '+fmtSec(TIME_MAX[TOP]); if(i===0) return '> '+fmtSec(TIME_MAX[1]); return fmtSec(TIME_MAX[i+1]+1)+'–'+fmtSec(TIME_MAX[i]); }
   function renderRanks(){ const list=$('ranks-list'); if(!list) return; const cur=curRank(); let html='';
-    for(let i=TOP;i>=0;i--){ const on=(over&&finished)&&i===cur; html+='<div class="rank-row'+(on?' current':'')+'"><span class="rname">'+RANK_NAMES[i]+'</span><span class="rband">'+band(i)+'</span></div>'; }
+    for(let i=TOP;i>=0;i--){ const on=(started||finished)&&i===cur; html+='<div class="rank-row'+(on?' current':'')+'"><span class="rname">'+RANK_NAMES[i]+'</span><span class="rband">'+band(i)+'</span></div>'; }
     list.innerHTML=html; const rb=$('ranks-best'); if(rb) rb.textContent=bestSecs>0?fmt(bestSecs*1000):'—'; }
 
   // ================= loop / timer (count-up) =================
@@ -676,6 +708,9 @@
   function fmtSec(s){ if(!isFinite(s)) return '∞'; return Math.floor(s/60)+':'+String(Math.round(s)%60).padStart(2,'0'); }
   function loop(ts){ if(!running) return; if(!lastTick) lastTick=ts; const dt=Math.min(64,ts-lastTick); lastTick=ts;
     if(started) totalMs+=dt; $('timer').textContent=fmt(totalMs);
+    if(started && !enfReady){ enfCharge=Math.min(1, enfCharge+(dt/1000)/ENF_FILL); if(enfCharge>=1){ enfCharge=1; enfReady=true; } }
+    updateEnfoque();
+    const _rs=Math.floor(totalMs/1000); if(_rs!==loop._lastRankS){ loop._lastRankS=_rs; renderRank(); }   // live rank decay, once per second (Racimo-standard glide)
     rafId=requestAnimationFrame(loop); }
 
   // ================= start / end =================
@@ -694,12 +729,11 @@
     const _tb=$('train-badge'); clearTimeout(_tb._t); _tb.classList.toggle('show', training);
     if(training) _tb._t=setTimeout(()=>{ try{ _tb.classList.remove('show'); }catch(e){} }, 2200);   // v9.6: brief tag while the board settles — hidden during play
     $('gate').classList.add('hidden');
-    const _eb=$('enfoque-btn'); if(_eb){ _eb.classList.add('show'); _eb.disabled=false; }
+    enfCharge=0; enfReady=false; enfVisual=0; updateEnfoque();   // Enfoque starts empty every run, charges alone (~20s)
     zoomHintMaybe();   // v9.2: first-ever game only — subtle breathing zoom, cancelled by any touch
     if(rafId) cancelAnimationFrame(rafId);   // v9.5: clock starts when the breathe settles (or on first touch if cancelled) — see startClock()
   }
   function winGame(){ if(over) return; finished=true; over=true; running=false; if(rafId) cancelAnimationFrame(rafId);
-    const _eb=$('enfoque-btn'); if(_eb) _eb.classList.remove('show');
     const secs=Math.round(totalMs/1000); const idx=rankFromTime(secs); const reto=retoTarget();
     if(!training){ const prev=+(lsGet('clasico-best-'+ISO)||0); if(prev===0||secs<prev){ bestSecs=secs; lsSet('clasico-best-'+ISO,String(secs)); } else bestSecs=prev;
       lsSet('clasico-done-'+ISO,'1'); recordStats(secs,true); }
@@ -716,7 +750,6 @@
       +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
     $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare); }
   function endGame(reason){ if(over) return; over=true; finished=false; running=false; if(rafId) cancelAnimationFrame(rafId);
-    const _eb=$('enfoque-btn'); if(_eb) _eb.classList.remove('show');
     if(!training){ lsSet('clasico-done-'+ISO,'1'); recordStats(0,false); }
     renderRank();
     const g=$('gate'); g.classList.remove('hidden');
@@ -732,7 +765,7 @@
   function applyTheme(t){ document.body.setAttribute('data-theme',t); $('m-theme-name').textContent=(t==='black')?'Oscuro':'Claro'; lsSet('clasico-theme',t); }
   function toggleMenu(f){ $('menu-pop').classList.toggle('open', f); }
   function openRules(o){ $('rules-ov').classList.toggle('open', o); }
-  function openRanks(o){ if(o) renderRanks(); $('ranks-ov').classList.toggle('open', o); }
+  function openRanks(o){ if(o) renderRanks(); $('ranks-ov').classList.toggle('open', o); const rb=$('rank-bar'); if(rb) rb.classList.toggle('open', o); }
   function cPrevISO(iso){ const p=iso.split('-'); const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])-86400000); return d.toISOString().slice(0,10); }
   function getStats(){ const d={played:0,best:0,ranks:[0,0,0,0,0,0,0,0,0,0],last:null,cur:0,max:0,solved:0}; try{ return Object.assign(d, JSON.parse(lsGet('clasico-stats'))||{}); }catch(e){ return d; } }
   function recordStats(secs,ok){ const s=getStats(); s.played++; if(ok){ s.solved=(s.solved||0)+1; if(secs>0&&(s.best===0||secs<s.best)) s.best=secs; s.ranks[rankFromTime(secs)]=(s.ranks[rankFromTime(secs)]||0)+1; }

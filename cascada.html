@@ -61,7 +61,9 @@
   .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
 
   /* ===== Rank bar (standard) — driven by points ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 14px; margin:0 auto 2px; cursor:pointer; user-select:none; }
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 16px; margin:0 auto 2px; cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
+  @media (hover:hover){ .rank-bar:hover { background:var(--paper); } .rank-bar:hover .rank-label, .rank-bar:hover .rank-chev { color:var(--accent); } }
+  .rank-bar.open .rank-chev { transform:rotate(180deg); }
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
   .rank-label.at-maestro { color:var(--accent); }
   .rank-track { position:relative; flex:1; height:22px; }
@@ -70,7 +72,7 @@
   .rank-dot { position:absolute; top:50%; transform:translate(-50%,-50%); width:6px; height:6px; border-radius:50%; background:var(--ink-soft); z-index:3; }
   .rank-dot.passed { background:var(--ink); }
   .rank-dot.current { width:24px; height:24px; background:var(--accent); color:#fff; font:700 11px var(--font-ui); display:flex; align-items:center; justify-content:center; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .35s ease; }
-  .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; }
+  .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; transition:transform .2s, color .15s; }
 
   .meta { width:min(94vw,400px); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:0 auto 6px; }
   .side { line-height:1.05; }
@@ -552,8 +554,8 @@
     track.innerHTML='<div class="rank-track-line"></div><div class="rank-track-fill"></div>';
     track.querySelector('.rank-track-fill').style.width=pos+'%';
     for(let i=0;i<=TOP;i++){ const dot=document.createElement('div'); dot.className='rank-dot'+(i<=idx?' passed':''); dot.style.left='clamp(3px, '+((i/TOP)*100)+'%, calc(100% - 3px))'; track.appendChild(dot); }
-    const bub=document.createElement('div'); bub.className='rank-dot current'+(idx===TOP?' at-maestro':''); bub.style.left='clamp(11px, '+pos+'%, calc(100% - 11px))'; track.appendChild(bub);
-    const lbl=$('rank-label'); if(lbl){ lbl.textContent=(!running&&!over)?'Listo':RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); }
+    const bub=document.createElement('div'); bub.className='rank-dot current'+(idx===TOP?' at-maestro':''); bub.textContent=points; bub.style.left='clamp(12px, '+pos+'%, calc(100% - 12px))'; bub.style.zIndex='5'; track.appendChild(bub);   // score lives INSIDE the bubble (Racimo standard)
+    const lbl=$('rank-label'); if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); }
   }
   function renderRanks(){ const list=$('ranks-list'); if(!list) return; const cur=rankNow(); let html='';
     for(let i=TOP;i>=0;i--){ const band=(i===TOP)?('≥ '+RANK_CUT[i]):(RANK_CUT[i]+'–'+(RANK_CUT[i+1]-1)); const on=(running||over)&&i===cur;
@@ -633,7 +635,7 @@
   function applyTheme(t){ document.body.setAttribute('data-theme',t); $('m-theme-name').textContent=(t==='black')?'Oscuro':'Claro'; lsSet('cascada-theme',t); }
   function toggleMenu(f){ $('menu-pop').classList.toggle('open', f); }
   function openRules(o){ $('rules-ov').classList.toggle('open', o); }
-  function openRanks(o){ if(o) renderRanks(); $('ranks-ov').classList.toggle('open', o); }
+  function openRanks(o){ if(o) renderRanks(); $('ranks-ov').classList.toggle('open', o); const rb=$('rank-bar'); if(rb) rb.classList.toggle('open', o); }
   // ===== Estadísticas (persisted locally) =====
   function cPrevISO(iso){ const p=iso.split('-'); const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])-86400000); return d.toISOString().slice(0,10); }
   function cGetStats(){ const d={played:0,best:0,ranks:[0,0,0,0,0,0,0,0,0,0],last:null,cur:0,max:0}; try{ return Object.assign(d, JSON.parse(lsGet('cascada-stats'))||{}); }catch(e){ return d; } }

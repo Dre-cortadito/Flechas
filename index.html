@@ -95,7 +95,9 @@
   .lower-spacer { flex:1 1 0; min-height:0; display:flex; align-items:center; justify-content:center; }
 
   /* ===== RANK BAR (standard) ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 14px; margin:0 auto 2px; cursor:pointer; user-select:none; }
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 16px; margin:0 auto 2px; cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
+  @media (hover:hover){ .rank-bar:hover { background:var(--paper); } .rank-bar:hover .rank-label, .rank-bar:hover .rank-chev { color:var(--accent); } }
+  .rank-bar.open .rank-chev { transform:rotate(180deg); }
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px;
     color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
   .rank-label.at-maestro { color:var(--accent); }
@@ -109,7 +111,7 @@
   /* Reto-del-día marker — matches Racimo exactly: a bold 3×26px vertical bar, accent (→ green when beaten) */
   .rank-marker { position:absolute; top:50%; width:3px; height:26px; background:var(--accent); border-radius:2px; transform:translate(-50%,-50%); z-index:4; pointer-events:none; opacity:.95; transition:background .25s ease; }
   .rank-marker.done { background:var(--success); opacity:1; }
-  .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; }
+  .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; transition:transform .2s, color .15s; }
 
   /* ===== feedback toast ===== */
   /* Discreet floating feedback — color-only text, no pill, absolutely positioned so
@@ -208,14 +210,14 @@
      One verb — ⇅ Desviar (jumps the purple border to the OPPOSITE side and restarts
      its 5s dwell). The clock does NOT pause — that's Cascada's power, not Borde's. */
   .flx-actions { display:flex; align-items:center; justify-content:center;
-    width:min(94vw,400px); margin:12px auto 0; }
+    width:min(94vw,400px); margin:10px auto 0; }
   .act-btn { position:relative; overflow:hidden; flex:1; display:inline-flex; align-items:center; justify-content:center;
-    padding:12px 10px; border-radius:14px;
+    padding:11px 12px; border-radius:14px;   /* exact Cascada freeze-btn dimensions — family standard */
     cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
     transition:opacity .15s, transform .08s, box-shadow .2s, background .15s; }
   .act-btn .act-fill { position:absolute; left:0; top:0; bottom:0; width:100%; transform-origin:left; transform:scaleX(0); z-index:0; transition:transform .35s linear; }
   .act-btn.dv .act-fill  { background:#d9c9ee; }   /* charge fill = soft border-purple, so button-full reads "border power ready" */
-  .act-btn .act-ico { position:relative; z-index:1; display:inline-flex; width:28px; height:28px; }   /* icon only, centred, large */
+  .act-btn .act-ico { position:relative; z-index:1; display:inline-flex; width:34px; height:34px; }   /* icon only, centred, large (Cascada parity) */
   .act-btn .act-ico svg { width:100%; height:100%; display:block; }
   .act-btn .act-num { position:relative; z-index:1; display:none; font:800 22px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; height:28px; align-items:center; }
   .act-btn.frozen .act-ico { display:none; }            /* during a freeze the ❄ icon is replaced by the countdown */
@@ -223,7 +225,7 @@
   .act-btn { cursor:default; }                          /* only the ready (glowing) button is clickable */
   .act-btn.ready { cursor:pointer; }
   .act-btn:not(.ready):active { transform:none; }
-  .act-btn.dv  { color:#662E9B; background:rgba(102,46,155,.10); border:2px solid #662E9B; }   /* Borde purple — the button controls the border; only the fill grows */
+  .act-btn.dv  { color:#662E9B; background:rgba(102,46,155,.05); border:2px solid #662E9B; }   /* Borde purple — the button controls the border; only the fill grows (Cascada bg alpha) */
   .act-btn:active { transform:scale(.96); }
   .act-btn:disabled { cursor:default; }   /* freeze button stays LIT before the game starts (like Cascada), just not clickable */
   body.frozen .act-btn.fz { color:#0049B0; background:rgba(0,98,227,.3); }
@@ -1859,16 +1861,24 @@ function buildRankTrack(track){                              // build the static
   track.innerHTML='<div class="rank-track-line"></div><div class="rank-track-fill"></div>';
   for(let i=0;i<=TOP;i++){ const dot=document.createElement('div'); dot.className='rank-dot'; dot.dataset.i=i; dot.style.left='clamp(3px, '+((i/slots)*100)+'%, calc(100% - 3px))'; track.appendChild(dot); }
   const bubble=document.createElement('div'); bubble.className='rank-dot current'; bubble.id='rank-bubble'; bubble.style.zIndex='5'; track.appendChild(bubble);
-  const mk=document.createElement('div'); mk.className='rank-marker'; mk.id='rank-marker'; mk.style.left='clamp(2px, '+((rankForTime(META)/slots)*100)+'%, calc(100% - 2px))'; track.appendChild(mk);
+  const mk=document.createElement('div'); mk.className='rank-marker'; mk.id='rank-marker'; mk.style.left='clamp(2px, '+timePos(META)+'%, calc(100% - 2px))'; track.appendChild(mk);   // continuous — same mapping as the bubble (Racimo standard)
   _rankBuilt=true;
 }
+// Continuous track position for a TIME t — the Racimo standard mapping: the bubble
+// GLIDES between the bracketing rank dots (same mapping as the reto marker), instead
+// of snapping dot to dot. Time ranks DECAY: you start at Maestro/a and slide left.
+function timePos(t){ const idx=rankForTime(t);
+  const hi=timeMaxFor(idx); if(!isFinite(hi)) return 0;                 // slower than the bottom band
+  const lo=(idx>=TOP)?0:timeMaxFor(idx+1);
+  const frac=Math.max(0,Math.min(1,(hi-t)/Math.max(1,hi-lo)));
+  return Math.min(100,(idx+frac)/TOP*100); }
 function renderRank(){
   const track=document.getElementById('rank-track'); if(!track) return;
   if(!_rankBuilt || !track.querySelector('.rank-track-fill')) buildRankTrack(track);   // (re)build only if missing
-  const slots=TOP, idx=(!started&&!finished)?0:rankNow(), pct=(idx/slots)*100;
-  const fill=track.querySelector('.rank-track-fill'); if(fill) fill.style.width=pct+'%';
-  track.querySelectorAll('.rank-dot:not(.current)').forEach(d=>d.classList.toggle('passed', (+d.dataset.i)<=idx));
-  const bubble=document.getElementById('rank-bubble'); if(bubble){ bubble.style.left='clamp(8px, '+pct+'%, calc(100% - 8px))'; bubble.classList.toggle('at-maestro',idx===TOP); }
+  const live=started||finished, idx=live?rankNow():0, pos=live?timePos(effTime()):0;
+  const fill=track.querySelector('.rank-track-fill'); if(fill) fill.style.width=pos+'%';
+  track.querySelectorAll('.rank-dot:not(.current)').forEach(d=>d.classList.toggle('passed', live&&(+d.dataset.i)<=idx));
+  const bubble=document.getElementById('rank-bubble'); if(bubble){ bubble.style.left='clamp(12px, '+pos+'%, calc(100% - 12px))'; bubble.classList.toggle('at-maestro',idx===TOP); }
   const mk=document.getElementById('rank-marker'); if(mk) mk.classList.toggle('done', finished&&effTime()<=META);
   const lbl=document.getElementById('rank-label'); if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); }
   const st=document.getElementById('stat-today'); if(st) st.textContent=(started||finished)?(fmtTime(elapsed)+' · '+RANK_NAMES[idx]):'Sin empezar';
@@ -1947,8 +1957,10 @@ function maybeCelebrate(){
 
 /* ============================ FEEDBACK / MODALS / THEME ============================ */
 function flash(text,kind){ /* text prompts removed on Borde — feedback is the hearts + the arrows-left counter */ }
-function openModal(id){ const ov=document.getElementById(id); if(!ov)return; ov.classList.add('open'); ov.scrollTop=0; document.body.style.overflow='hidden'; }
-function closeModals(){ document.querySelectorAll('.modal-overlay.open').forEach(o=>o.classList.remove('open')); document.body.style.overflow=''; }
+function openModal(id){ const ov=document.getElementById(id); if(!ov)return; ov.classList.add('open'); ov.scrollTop=0; document.body.style.overflow='hidden';
+  if(id==='rangos-modal'){ const rb=document.getElementById('rank-bar'); if(rb) rb.classList.add('open'); } }
+function closeModals(){ document.querySelectorAll('.modal-overlay.open').forEach(o=>o.classList.remove('open')); document.body.style.overflow='';
+  const rb=document.getElementById('rank-bar'); if(rb) rb.classList.remove('open'); }
 function openGoal(id){ const p=document.getElementById(id); if(p)p.classList.add('open'); }
 function closeGoal(id){ const p=document.getElementById(id); if(p)p.classList.remove('open'); }
 function toggleMenu(force){ document.getElementById('menu-pop').classList.toggle('open',force); }
