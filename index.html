@@ -1180,6 +1180,13 @@ function branchAvg(pieces){
     if(!c.length) break; sum+=c.length; steps++; fired[c[(rnd()*c.length)|0]]=true; }
   return steps?sum/steps:99;
 }
+function centerEmpty(pieces){   // v3: empty cells in the middle half of the board — Borde must feel TIGHT in the center
+  const filled=new Array(NCELLS).fill(false);
+  pieces.forEach(p=>p.cells.forEach(c=>filled[c]=true));
+  const r0=(GRID_R/4)|0, r1=GRID_R-r0, c0=(GRID_C/4)|0, c1=GRID_C-c0; let n=0;
+  for(let r=r0;r<r1;r++) for(let c=c0;c<c1;c++){ const i=r*GRID_C+c; if(MASK[i]&&!filled[i]) n++; }
+  return n;
+}
 function boardEmptyMax(pieces){
   const filled=new Array(NCELLS).fill(false);
   pieces.forEach(p=>p.cells.forEach(c=>filled[c]=true));
@@ -1265,7 +1272,7 @@ function genPuzzle(iso){
   for(let a=0;a<NC;a++){
     const rng=mulberry32((base+Math.imul(a,2654435761))>>>0);
     const got=genConstructive(rng);
-    if(got && boardSelfClean(got)){ got._br=branchAvg(got.pieces); got._occ=got.pieces.reduce((s,p)=>s+p.cells.length,0)/NCELLS; got._em=boardEmptyMax(got.pieces); got._blob=largestEmptyBlob(got.pieces); got._stair=longestStaircase(got.pieces); cands.push(got); }
+    if(got && boardSelfClean(got)){ got._br=branchAvg(got.pieces); got._occ=got.pieces.reduce((s,p)=>s+p.cells.length,0)/NCELLS; got._em=boardEmptyMax(got.pieces); got._blob=largestEmptyBlob(got.pieces); got._stair=longestStaircase(got.pieces); got._ce=centerEmpty(got.pieces); cands.push(got); }
   }
   if(cands.length){
     // Prefer DENSE boards (>=78% of the square filled) so the labyrinth stays
@@ -1284,6 +1291,8 @@ function genPuzzle(iso){
     if(noBackbone.length) pool=noBackbone;
     { const mx=Math.max.apply(null,pool.map(c=>c._occ));            // v2: compact-tactical — keep only boards within
       pool=pool.filter(c=>c._occ>=mx-0.03); }                       // 3 pts of the densest candidate, THEN pick by difficulty
+    { const mn=Math.min.apply(null,pool.map(c=>c._ce));             // v3: no relaxed middles — among the dense ones, keep the
+      pool=pool.filter(c=>c._ce<=mn+2); }                           // boards whose CENTER region has the fewest empty cells
     pool.sort((a,b)=>a._br-b._br);
     if(DCFG.pick==='low')  return pool[0];
     if(DCFG.pick==='high') return pool[pool.length-1];
