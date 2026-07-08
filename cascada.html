@@ -472,13 +472,13 @@
   function polyLen(pts){ let s=0; for(let i=1;i<pts.length;i++) s+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return s; }
   function polyD(pts){ return pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' '); }
   function distToBorder(tip,v){ if(v[1]>0) return ROWS*U-tip[1]; if(v[1]<0) return tip[1]; if(v[0]>0) return COLS*U-tip[0]; return tip[0]; }
-  function headChevD(tip,v){ const px=-v[1],py=v[0], w=21, bk=23; const tx=tip[0]+v[0]*20, ty=tip[1]+v[1]*20;
+  function headChevD(tip,v){ const px=-v[1],py=v[0], w=31, bk=31; const tx=tip[0]+v[0]*22, ty=tip[1]+v[1]*22;   /* Borde parity: vertex +22, 45° legs L=31 */
     return 'M '+(tx-v[0]*bk+px*w).toFixed(1)+' '+(ty-v[1]*bk+py*w).toFixed(1)+' L '+tx.toFixed(1)+' '+ty.toFixed(1)+' L '+(tx-v[0]*bk-px*w).toFixed(1)+' '+(ty-v[1]*bk-py*w).toFixed(1); }
   function trackData(p){ const v=[DXn[p.dir],DYn[p.dir]]; let pts;
     if(p.cells.length===1){ const [x,y]=center(p.head.r,p.head.c); pts=[[x-v[0]*32,y-v[1]*32],[x,y]]; }
     else { const isHead0=(p.head.r===p.cells[0].r && p.head.c===p.cells[0].c); const order=isHead0?p.cells.slice().reverse():p.cells; pts=order.map(cl=>center(cl.r,cl.c)); }
     const head=pts[pts.length-1];                                   // head cell centre = where the chevron sits
-    pts=pts.concat([[head[0]+v[0]*12, head[1]+v[1]*12]]);           // extend the shaft into the arrowhead so the line and head meet (no gap)
+    pts=pts.concat([[head[0]+v[0]*22, head[1]+v[1]*22]]);           // shaft runs to the chevron vertex (+22) — connected, no gap (Borde parity)
     const tip=head; const ext=distToBorder(head,v)+46; const L=polyLen(pts); return {pts, tip, v, L, F:L+ext, move:ext}; }
   function makeEl(p){ const t=trackData(p); p._F=t.F; p._move=t.move; p._v=t.v;
     const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','piece'); g.id='pc-'+p.id;
