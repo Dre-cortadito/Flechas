@@ -252,7 +252,7 @@
         <div class="gate" id="gate">
           <h2>Clásico</h2>
           <p>Un tablero de flechas enredadas. Toca una para <b>despejarla</b> — solo sale si su <b>carril hasta el borde está libre</b>. Vacíalo entero, lo más rápido que puedas.</p>
-          <p class="gate-zoom">El tablero es grande: <b>pellizca</b> para acercar, <b>arrastra</b> para recorrerlo y toca <b>⌖</b> (o doble toque) para volver a verlo entero.</p>
+          <p class="gate-zoom">El tablero es más grande que la pantalla: <b>arrastra</b> para recorrerlo, <b>pellizca</b> para acercar o alejar, y toca <b>⌖</b> (o doble toque) para centrar la vista.</p>
           <button class="btn" id="start-btn" type="button">Empezar</button>
         </div>
       </div>
@@ -516,7 +516,12 @@
   const VIEW_RATIO=VIEW_FULL.h/VIEW_FULL.w;
   const VIEW_WMIN=520;                    // max zoom-in ≈ 5 columns visible
   const VIEW_WMAX=VIEW_FULL.w;            // max zoom-out = whole board
-  const VIEW_HOME={...VIEW_FULL};   // v9.1 (Dre): open fully zoomed OUT — whole board visible; player zooms in to play
+  // v9.7 (Dre): open at FAMILY ARROW SCALE — a ~14-column window (Borde's board is 14 wide),
+  // so arrows render at the exact same on-screen size as Borde/Cascada. The player pans/zooms
+  // around the big 33×41 canvas; zooming OUT to the whole board is still allowed (VIEW_WMAX).
+  const _HOME_W=14*U+60;
+  const VIEW_HOME=(function(){ const w=_HOME_W, h=w*VIEW_RATIO;
+    return {x:VIEW_FULL.x+(VIEW_FULL.w-w)/2, y:VIEW_FULL.y+(VIEW_FULL.h-h)/2, w:w, h:h}; })();
   let view={...VIEW_HOME};
   function clampView(v){ const w=Math.min(VIEW_WMAX,Math.max(VIEW_WMIN,v.w)); const h=w*VIEW_RATIO;
     const x=Math.min(VIEW_FULL.x+VIEW_FULL.w-w, Math.max(VIEW_FULL.x, v.x));

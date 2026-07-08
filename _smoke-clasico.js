@@ -178,7 +178,8 @@ for (const seed of seeds) {
   const hm = V.VIEW_HOME;
   if (hm.x < V.VIEW_FULL.x || hm.y < V.VIEW_FULL.y || hm.x + hm.w > V.VIEW_FULL.x + V.VIEW_FULL.w + 1e-6
       || hm.y + hm.h > V.VIEW_FULL.y + V.VIEW_FULL.h + 1e-6) probs.push('VIEW_HOME exceeds board bounds');
-  if (Math.abs(hm.w - V.VIEW_FULL.w) > 1e-6) probs.push('VIEW_HOME should be the FULL view (v9.1 default)');
+  if (Math.abs(hm.w - (14 * 100 + 60)) > 1e-6) probs.push('VIEW_HOME should be the 14-column family-scale window (v9.7)');
+  if (Math.abs((hm.x - V.VIEW_FULL.x) - (V.VIEW_FULL.w - hm.w) / 2) > 1e-6) probs.push('VIEW_HOME should be horizontally centered');
   // 7) breathing-hint curve: exactly home at both ends, zoomed & clamped mid-way
   const h0 = V.hintViewAt(0), h5 = V.hintViewAt(0.5), h1 = V.hintViewAt(1);
   if (!V.isHomeView(h0) || !V.isHomeView(h1)) probs.push('hint does not start/end at home');

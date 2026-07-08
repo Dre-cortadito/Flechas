@@ -371,7 +371,7 @@
 
   const U=100, COLS=14, ROWS=16, GAME_SECS=120;   /* 14×16 — shorter board so the stack fits the phone */
   const REFRESH_MS=30000, WARN_MS=5000, FALL_MS=480, SLIDE_MS=2000, CASCADE_MS=2000;   // WARN_MS=5000 → countdown turns pink for the last 5 s   // board slides the full cascade, in sync with the waterfall (linear); CASCADE_MS = effect length + clock pause   // 2400 = exactly 3 expire pulses (0.8s each) before the board falls
-  const COVER=0.8, MIN_LAUNCH=7;
+  const COVER=0.92, MIN_LAUNCH=7;   // denser fill (v2: 0.8→0.92) — arcade busy, arrows stay full-size
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const COMBO_WINDOW=1800, COMBO_PER_TIER=4, MULT_MAX=3;   // capped at ×3 — keeps the combo rewarding but the score predictable enough to rank
   const FREEZE_FILL=60, FREEZE_DUR=5000;     // freeze auto-charges SLOWLY now; blue arrows do most of the charging
@@ -395,7 +395,7 @@
   let svg=null, layer=null; const board=$('board'), inner=$('board-inner');
 
   // ================= board generation =================
-  function growSnake(sr,sc){ const cells=[{r:sr,c:sc}]; ownerMap.set(key(sr,sc),pid); let cr=sr,cc=sc,last=-1; const len=4+(rng()*7|0);   // 4–10 — long winding shapes (family standard: Borde look, Clásico bends)
+  function growSnake(sr,sc){ const cells=[{r:sr,c:sc}]; ownerMap.set(key(sr,sc),pid); let cr=sr,cc=sc,last=-1; const len=3+(rng()*5|0);   // 3–7 — winding family shapes, shorter than Borde's 4–10 so MORE arrows fit (arcade density) without shrinking them
     for(let k=1;k<len;k++){ const opt=[];
       for(let d=0;d<4;d++){ const nr=cr+DYn[d],nc=cc+DXn[d];
         if(nr<0||nr>=ROWS||nc<0||nc>=COLS||occ(nr,nc)) continue;
