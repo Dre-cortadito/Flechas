@@ -187,8 +187,9 @@ for (const seed of seeds) {
   // 7) breathing-hint curve: exactly home at both ends, zoomed & clamped mid-way
   const h0 = V.hintViewAt(0), h5 = V.hintViewAt(0.5), h1 = V.hintViewAt(1);
   const atStart = (v) => Math.abs(v.w - st.w) < 1 && Math.abs(v.x - st.x) < 1 && Math.abs(v.y - st.y) < 1;
-  if (!atStart(h0) || !atStart(h1)) probs.push('hint does not start/end at VIEW_START');
-  if (!(h5.w < st.w * 0.95)) probs.push('hint mid-zoom too weak');
+  if (!atStart(h0)) probs.push('intro does not start at VIEW_START');
+  if (!V.isHomeView(h1)) probs.push('intro does not end at the FULL view');
+  if (!(h5.w > st.w && h5.w < V.VIEW_HOME.w)) probs.push('intro mid-zoom not between start and full');
   if (Math.abs(h5.h / h5.w - V.VIEW_RATIO) > 1e-9) probs.push('hint aspect drift');
   if (h5.x < V.VIEW_FULL.x || h5.y < V.VIEW_FULL.y) probs.push('hint escapes bounds');
   if (probs.length) { console.error('✗ viewport math — ' + probs.join(' · ')); failed = true; }

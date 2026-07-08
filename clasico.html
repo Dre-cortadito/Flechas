@@ -539,9 +539,13 @@
   // one-time "breathing" zoom hint (v9.2): board eases in ~10% and back —
   // says "this board can move" on the very first game, then never again.
   function hintViewAt(t){ t=Math.min(1,Math.max(0,t));
-    const k=1+0.10*Math.sin(Math.PI*t);                 // 1 → 1.10 → 1 (exactly at the START view at both ends)
-    const w=VIEW_START.w/k, h=w*VIEW_RATIO;
-    return clampView({x:VIEW_START.x+(VIEW_START.w-w)/2, y:VIEW_START.y+(VIEW_START.h-h)/2, w:w, h:h}); }
+    // Intro reveal: START (14-col family scale) → smooth zoom OUT to the FULL board.
+    // The game clock starts when the zoom-out lands (see zoomHintMaybe).
+    const k=0.5-0.5*Math.cos(Math.PI*t);                // easeInOut 0 → 1
+    const w=VIEW_START.w+(VIEW_HOME.w-VIEW_START.w)*k, h=w*VIEW_RATIO;
+    const cx=(VIEW_START.x+VIEW_START.w/2)+((VIEW_HOME.x+VIEW_HOME.w/2)-(VIEW_START.x+VIEW_START.w/2))*k;
+    const cy=(VIEW_START.y+VIEW_START.h/2)+((VIEW_HOME.y+VIEW_HOME.h/2)-(VIEW_START.y+VIEW_START.h/2))*k;
+    return clampView({x:cx-w/2, y:cy-h/2, w:w, h:h}); }
   function initGestures(){
     if(boardEl._gestured) return; boardEl._gestured=true;
     const rb=document.createElement('button'); rb.className='recenter-btn'; rb.id='recenter-btn'; rb.setAttribute('aria-label','Centrar tablero');
@@ -616,16 +620,20 @@
     for(const k in snakes){ const s=snakes[k]; if(s.el&&laneClear(s)){ s.el.classList.add('enfoque'); marked.push(s.el); } }
     setTimeout(()=>{ marked.forEach(el=>{ try{ el.classList.remove('enfoque'); }catch(e){} }); }, ENFOQUE_DUR); }
   function zoomHintMaybe(){
-    if(boardEl._hintCancel) boardEl._hintCancel();          // plays on EVERY Empezar; never stacks (re-entry does NOT start the old game's clock)
-    let raf=null; const t0=performance.now(), DUR=1700;
+    // Intro reveal (v10, Dre): open zoomed IN at family arrow scale, then zoom all the
+    // way OUT to the whole board — the clock starts when the zoom-out lands (or on the
+    // first touch, if the player skips the intro). Plays on EVERY Empezar; never stacks.
+    if(boardEl._hintCancel) boardEl._hintCancel();
+    view={...VIEW_START}; applyView();
+    let raf=null; const t0=performance.now(), DUR=1400;
     const stop=()=>{ if(raf){ cancelAnimationFrame(raf); raf=null; }
       boardEl._hintCancel=null;
       boardEl.removeEventListener('pointerdown',onTouch); boardEl.removeEventListener('wheel',onTouch); };
-    const onTouch=()=>{ stop(); startClock(); };            // cancelled early → clock starts NOW
+    const onTouch=()=>{ stop(); view={...VIEW_HOME}; applyView(); startClock(); };   // skipped → land at full view, clock starts NOW
     boardEl._hintCancel=stop;
     boardEl.addEventListener('pointerdown',onTouch); boardEl.addEventListener('wheel',onTouch);
     const step=(now)=>{ const t=(now-t0)/DUR;
-      if(t>=1){ view={...VIEW_START}; applyView(); stop(); startClock(); return; }   // settled → clock starts
+      if(t>=1){ view={...VIEW_HOME}; applyView(); stop(); startClock(); return; }   // fully zoomed out → clock starts
       view=hintViewAt(t); applyView(); raf=requestAnimationFrame(step); };
     raf=requestAnimationFrame(step); }
 
