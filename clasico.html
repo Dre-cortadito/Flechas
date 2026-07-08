@@ -348,6 +348,21 @@
         else if(straight.length) d2=straight[0]; else d2=turns[(rng()*turns.length)|0]; }
       const nr2=cur.r+DR[d2], nc2=cur.c+DC[d2]; grid[nr2*W+nc2]=id; cells.push({r:nr2,c:nc2}); cur={r:nr2,c:nc2}; lastDir=d2; }
     return { id:id, cells:cells, dir:d }; }
+  // Motion validity (2026-07-08): arrows fire tip-first and the body follows like a train,
+  // so a shape is only real if the launch is physically possible. The body can never hit
+  // itself (train on rails, distinct cells) — the ONLY fake case is the exit ray crossing
+  // the snake's own body at a cell that hasn't vacated when the tip arrives. Cell at body
+  // index j (j steps behind the head) vacates after the train advances L-1-j cells; the tip
+  // reaches ray distance r at step r. So a crossing is IMPOSSIBLE iff r <= L-1-j.
+  // Believable curls (r > L-1-j) stay — they're part of Clásico's personality.
+  function selfMotionOK(s){ const L=s.cells.length, d=s.dir;
+    const pos={}; for(let j=0;j<L;j++){ const c=s.cells[j]; pos[c.r*W+c.c]=j; }
+    let r=1, rr=s.cells[0].r+DR[d], cc=s.cells[0].c+DC[d];
+    while(rr>=0&&rr<H&&cc>=0&&cc<W){ const j=pos[rr*W+cc];
+      if(j!==undefined && r<=L-1-j) return false;
+      rr+=DR[d]; cc+=DC[d]; r++; }
+    return true; }
+  function motionTrim(s,grid){ while(s.cells.length>2 && !selfMotionOK(s)){ const t=s.cells.pop(); grid[t.r*W+t.c]=-1; } return selfMotionOK(s); }
   function buildOnce(rng){
     const grid=new Int16Array(W*H).fill(-1); const snakes=[]; let id=0, budget=W*H*8;
     // v10: intentional arrows — track placed heads so new arrows avoid repeating the
@@ -378,6 +393,7 @@
       const vd=pool.filter(x=>x===0||x===2);                            // v7: lean vertical (v10.2: softened 0.6→0.5 — the lean itself was stacking columns)
       const d=(vd.length&&rng()<0.5)?vd[(rng()*vd.length)|0]:pool[(rng()*pool.length)|0];
       const snake=growBody(grid,r0,c0,d,rng,id);
+      if(snake) motionTrim(snake,grid);                                          // kinematic check — trim impossible curls
       if(!snake||snake.cells.length<LEN_MIN){ if(snake) for(const cl of snake.cells) grid[cl.r*W+cl.c]=-1; continue; }
       snakes.push(snake); heads.push({r:r0,c:c0,d:d}); id++; }
     // gap-fill pass: put a snake (min length 1) in every remaining empty cell that has a clear exit lane
@@ -390,6 +406,7 @@
         for(let k=dirs.length-1;k>0;k--){ const j=(rng()*(k+1))|0; const t=dirs[k]; dirs[k]=dirs[j]; dirs[j]=t; }
         dirs.sort((a,b)=>sameDirNearby(r,c,a)-sameDirNearby(r,c,b));   // v10: least-redundant dir first
         for(const d of dirs){ const s2=growBody(grid,r,c,d,rng,id,2);
+          motionTrim(s2,grid);                                                   // kinematic check
           if(s2.cells.length<2){ for(const cl of s2.cells) grid[cl.r*W+cl.c]=-1; continue; }
           snakes.push(s2); heads.push({r:r,c:c,d:d}); id++; changed=true; break; } } }
     // v4: absorb leftover pockets — extend snake TAILS into adjacent empty
@@ -404,7 +421,9 @@
         for(let d2=0;d2<4;d2++){ const nr=t.r+DR[d2], nc=t.c+DC[d2];
           if(nr<0||nr>=H||nc<0||nc>=W) continue; const k=nr*W+nc;
           if(grid[k]!==-1||ex.has(k)) continue;
-          s.cells.push({r:nr,c:nc}); grid[k]=s.id; grew=true; break; } } }
+          s.cells.push({r:nr,c:nc});
+          if(!selfMotionOK(s)){ s.cells.pop(); continue; }                       // a longer body vacates slower — re-check the kinematics
+          grid[k]=s.id; grew=true; break; } } }
     if(!snakes.length) return null; return { W:W, H:H, snakes:snakes }; }
   function coverGrid(grid){ let n=0; for(let i=0;i<grid.length;i++) if(grid[i]!==-1) n++; return n/grid.length; }
   function coverage(board){ let n=0; for(const s of board.snakes) n+=s.cells.length; return n/(board.W*board.H); }
@@ -475,7 +494,7 @@
         let nd=-1; for(let d=0;d<4;d++) if(DR[d]===a.r-n.r&&DC[d]===a.c-n.c){ nd=d; break; }
         if(nd<0) continue;
         s.cells=cells; s.dir=nd;
-        if(rhythm()<before && greedySolve(cloneBoard(b))) improved=true;
+        if(rhythm()<before && selfMotionOK(s) && greedySolve(cloneBoard(b))) improved=true;   // flips get a NEW exit ray — kinematics must be re-checked
         else { s.cells=oldCells; s.dir=oldDir; } } }
     return b; }
   function generateBoard(seed){ const rng=(typeof seed==='function')?seed:mulberry32(seed>>>0); let best=null;
