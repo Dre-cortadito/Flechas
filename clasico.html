@@ -516,8 +516,12 @@
   const VIEW_RATIO=VIEW_FULL.h/VIEW_FULL.w;
   const VIEW_WMIN=520;                    // max zoom-in ≈ 5 columns visible
   const VIEW_WMAX=VIEW_FULL.w;            // max zoom-out = whole board
-  const VIEW_HOME={...VIEW_FULL};   // v9.8 (Dre): open fully zoomed OUT — whole board visible by default; player zooms in to play at family arrow scale
-  let view={...VIEW_HOME};
+  const VIEW_HOME={...VIEW_FULL};   // v9.9 (Dre): ⌖ / double-tap = fully zoomed OUT (whole board)
+  // …but every game STARTS zoomed IN at family arrow scale: a ~14-column window (Borde's
+  // board is 14 wide), so arrows open at the exact same on-screen size as Borde/Cascada.
+  const VIEW_START=(function(){ const w=14*U+60, h=w*VIEW_RATIO;
+    return {x:VIEW_FULL.x+(VIEW_FULL.w-w)/2, y:VIEW_FULL.y+(VIEW_FULL.h-h)/2, w:w, h:h}; })();
+  let view={...VIEW_START};
   function clampView(v){ const w=Math.min(VIEW_WMAX,Math.max(VIEW_WMIN,v.w)); const h=w*VIEW_RATIO;
     const x=Math.min(VIEW_FULL.x+VIEW_FULL.w-w, Math.max(VIEW_FULL.x, v.x));
     const y=Math.min(VIEW_FULL.y+VIEW_FULL.h-h, Math.max(VIEW_FULL.y, v.y));
@@ -535,9 +539,9 @@
   // one-time "breathing" zoom hint (v9.2): board eases in ~10% and back —
   // says "this board can move" on the very first game, then never again.
   function hintViewAt(t){ t=Math.min(1,Math.max(0,t));
-    const k=1+0.10*Math.sin(Math.PI*t);                 // 1 → 1.10 → 1 (exactly home at both ends)
-    const w=VIEW_HOME.w/k, h=w*VIEW_RATIO;
-    return clampView({x:VIEW_HOME.x+(VIEW_HOME.w-w)/2, y:VIEW_HOME.y+(VIEW_HOME.h-h)/2, w:w, h:h}); }
+    const k=1+0.10*Math.sin(Math.PI*t);                 // 1 → 1.10 → 1 (exactly at the START view at both ends)
+    const w=VIEW_START.w/k, h=w*VIEW_RATIO;
+    return clampView({x:VIEW_START.x+(VIEW_START.w-w)/2, y:VIEW_START.y+(VIEW_START.h-h)/2, w:w, h:h}); }
   function initGestures(){
     if(boardEl._gestured) return; boardEl._gestured=true;
     const rb=document.createElement('button'); rb.className='recenter-btn'; rb.id='recenter-btn'; rb.setAttribute('aria-label','Centrar tablero');
@@ -621,7 +625,7 @@
     boardEl._hintCancel=stop;
     boardEl.addEventListener('pointerdown',onTouch); boardEl.addEventListener('wheel',onTouch);
     const step=(now)=>{ const t=(now-t0)/DUR;
-      if(t>=1){ view={...VIEW_HOME}; applyView(); stop(); startClock(); return; }   // settled → clock starts
+      if(t>=1){ view={...VIEW_START}; applyView(); stop(); startClock(); return; }   // settled → clock starts
       view=hintViewAt(t); applyView(); raf=requestAnimationFrame(step); };
     raf=requestAnimationFrame(step); }
 
