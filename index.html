@@ -153,10 +153,10 @@
   @keyframes blocklinefade { 0%{opacity:.85;} 70%{opacity:.85;} 100%{opacity:0;} }
   .piece.hintpulse .pline, .piece.hintpulse .phead { stroke:var(--accent); animation:hintstroke 1s ease-in-out infinite; }
   /* ===== Special colored arrows — a touch thicker, SOLID colour (no glow). ===== */
-  .piece.role-freeze .pline, .piece.role-freeze .phead { stroke-width:15.5; stroke:#0062E3; }   /* blue — freeze */
-  .piece.role-racha .pline, .piece.role-racha .phead { stroke-width:15.5; stroke:#F9C80E; }   /* yellow — start a clean streak */
-  .piece.role-peligro .pline, .piece.role-peligro .phead { stroke-width:15.5; stroke:#EA3546; }  /* RED — Peligro / danger */
-  .piece.role-shield .pline, .piece.role-shield .phead { stroke-width:15.5; stroke:#4ECDC4; }   /* Cascada cyan — Escudo / shield */
+  .piece.role-freeze .pline, .piece.role-freeze .phead { stroke:#0062E3; }   /* blue — freeze. Same geometry as normal arrows, ONLY the color changes (family rule) */
+  .piece.role-racha .pline, .piece.role-racha .phead { stroke:#F9C80E; }   /* yellow — start a clean streak */
+  .piece.role-peligro .pline, .piece.role-peligro .phead { stroke:#EA3546; }  /* RED — Peligro / danger */
+  .piece.role-shield .pline, .piece.role-shield .phead { stroke:#4ECDC4; }   /* Cascada cyan — Escudo / shield */
   .piece.blocked-safe .pline, .piece.blocked-safe .phead { stroke:#4ECDC4; }   /* a bump under a shield flashes cyan, not red */
   /* Peligro danger window — a RED wash (red = danger). It's the only red on the board:
      the hot beam is now indigo, so the two never read as the same thing. */

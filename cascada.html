@@ -108,9 +108,9 @@
   .piece.blocked-safe .pline, .piece.blocked-safe .phead { stroke:#0E9DA8 !important; }   /* bump ABSORBED by the shield → cyan, no heart lost */
   /* combo live → arrows STAY black (the board ring is the racha indicator); specials keep their role colour */
   /* ===== Special arrows — solid role colour, a touch thicker (Borde style) ===== */
-  .piece.sp-shield .pline, .piece.sp-shield .phead { stroke:#0E9DA8; stroke-width:16; }   /* deep cyan — Escudo */
-  .piece.sp-frenzy .pline, .piece.sp-frenzy .phead { stroke:#F2711C; stroke-width:16; }   /* orange — Frenesí */
-  .piece.sp-freeze .pline, .piece.sp-freeze .phead { stroke:#0062E3; stroke-width:16; }   /* blue — Congelar */
+  .piece.sp-shield .pline, .piece.sp-shield .phead { stroke:#0E9DA8; }   /* deep cyan — Escudo. Same geometry as normal arrows, ONLY the color changes (family rule) */
+  .piece.sp-frenzy .pline, .piece.sp-frenzy .phead { stroke:#F2711C; }   /* orange — Frenesí */
+  .piece.sp-freeze .pline, .piece.sp-freeze .phead { stroke:#0062E3; }   /* blue — Congelar */
   .board.frenzy::before { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; z-index:17; box-shadow:inset 0 0 0 6px #F2711C; opacity:.85; }   /* Frenesí active → orange inset ring */
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
   /* combo live → a SOLID yellow ring around the board (the Borde yellow); fades in when the combo turns on. */
@@ -395,9 +395,20 @@
   let svg=null, layer=null; const board=$('board'), inner=$('board-inner');
 
   // ================= board generation =================
-  function growSnake(sr,sc){ const cells=[{r:sr,c:sc}]; ownerMap.set(key(sr,sc),pid); let cr=sr,cc=sc,last=-1; const len=3+(rng()*4|0);   // 3–6
-    for(let k=1;k<len;k++){ const opt=[]; for(let d=0;d<4;d++){ const nr=cr+DYn[d],nc=cc+DXn[d]; if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!occ(nr,nc)){ opt.push(d); if(d===last) opt.push(d,d); } }   // moderate straight bias → flowing shapes, balanced exits
+  function growSnake(sr,sc){ const cells=[{r:sr,c:sc}]; ownerMap.set(key(sr,sc),pid); let cr=sr,cc=sc,last=-1; const len=4+(rng()*7|0);   // 4–10 — long winding shapes (family standard: Borde look, Clásico bends)
+    for(let k=1;k<len;k++){ const opt=[];
+      for(let d=0;d<4;d++){ const nr=cr+DYn[d],nc=cc+DXn[d];
+        if(nr<0||nr>=ROWS||nc<0||nc>=COLS||occ(nr,nc)) continue;
+        // no-fold rule (from Borde's tileSnakes): the new cell may touch THIS snake only at
+        // the cell we extend from — forbids curls / 2x2 folds, keeps every body a clean line.
+        let folds=false;
+        for(let e=0;e<4;e++){ const ar=nr+DYn[e], ac=nc+DXn[e]; if(ar<0||ar>=ROWS||ac<0||ac>=COLS) continue;
+          if(ar===cr&&ac===cc) continue; if(ownerMap.get(key(ar,ac))===pid){ folds=true; break; } }
+        if(folds) continue;
+        opt.push(d); if(d===last) opt.push(d,d);   // moderate straight bias → flowing shapes, balanced exits
+      }
       if(!opt.length) break; const d=opt[(rng()*opt.length)|0]; cr+=DYn[d]; cc+=DXn[d]; ownerMap.set(key(cr,cc),pid); cells.push({r:cr,c:cc}); last=d; }
+    if(cells.length<2){ ownerMap.delete(key(sr,sc)); return null; }   // no 1-cell stub arrows — tiny icon-arrows are off-brand for the family
     const p={id:pid, cells, head:{r:cells[cells.length-1].r,c:cells[cells.length-1].c}, dir:2}; pieces[pid]=p; pid++; return p; }
   function segDir(a,b){ if(b.r<a.r) return 0; if(b.c>a.c) return 1; if(b.r>a.r) return 2; return 3; }
   function candList(p){ if(p.cells.length===1){ const h=p.cells[0]; return [0,1,2,3].map(d=>({head:{r:h.r,c:h.c},dir:d})); }
