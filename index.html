@@ -3,11 +3,12 @@
   Flechas — a Cortadito News daily game.
   Single self-contained file. Built from _kit/starter-template.html and follows
   _kit/DESIGN-SYSTEM.md + _kit/LANDING-STANDARD.md.
-  Mode: Clásico. Each arrow is a multi-cell SHAPE (straight / L / zig-zag) drawn
-  as one connected line ending in a head. Tap it to fly the whole shape off the
-  board in the head's direction; it can only launch if its swept lane is clear of
-  other arrows. The daily board is built by reverse-peeling pieces, so it is always
-  solvable and can never deadlock.
+  Mode: Borde — TURN-BASED. Each arrow is a multi-cell SHAPE (straight / L / zig-zag)
+  ending in a head. A purple BORDER closes one side of the board; every play (launch
+  or Esperar) rotates it one side clockwise, Desviar (×2/run) snaps it opposite. An
+  arrow launches only if its head lane is clear AND its exit side is not the border.
+  Score = total TURNS across 3 boards vs. the day's PAR. The daily board is built by
+  reverse-insertion, so it is always solvable and can never deadlock.
 -->
 <html lang="es">
 <head>
@@ -140,8 +141,8 @@
   /* exit animation driven by WAAPI (linear, synced tip+body); board-edge clip
      makes pieces vanish physically as they cross out. */
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }                       /* bump (blocked by another arrow) → red */
-  .piece.beam-blocked .pline, .piece.beam-blocked .phead { stroke:#662E9B !important; }       /* blocked by the beam → purple (matches the beam); wins over amber/red role colors */
-  .piece.beam-blocked .pline { filter:none !important; }
+  .piece.borderblocked .pline, .piece.borderblocked .phead { stroke:#662E9B !important; }     /* lane clear but exit side = border → purple (matches the border); wins over role colors */
+  .piece.borderblocked .pline { filter:none !important; }
   .piece.firing .pline, .piece.firing .phead { stroke:#157145 !important; }                               /* successful launch → green as it leaves; wins over role colors */
   .piece.firing .pline { filter:none !important; }
   .piece.freedpulse .pline, .piece.freedpulse .phead { animation:freedpulse .7s ease; }
@@ -153,30 +154,18 @@
   @keyframes blocklinefade { 0%{opacity:.85;} 70%{opacity:.85;} 100%{opacity:0;} }
   .piece.hintpulse .pline, .piece.hintpulse .phead { stroke:var(--accent); animation:hintstroke 1s ease-in-out infinite; }
   /* ===== Special colored arrows — a touch thicker, SOLID colour (no glow). ===== */
-  .piece.role-freeze .pline, .piece.role-freeze .phead { stroke:#0062E3; }   /* blue — freeze. Same geometry as normal arrows, ONLY the color changes (family rule) */
-  .piece.role-racha .pline, .piece.role-racha .phead { stroke:#F9C80E; }   /* yellow — start a clean streak */
-  .piece.role-peligro .pline, .piece.role-peligro .phead { stroke:#EA3546; }  /* RED — Peligro / danger */
+  .piece.role-racha .pline, .piece.role-racha .phead { stroke:#F9C80E; }   /* yellow — start a clean-launch streak */
   .piece.role-shield .pline, .piece.role-shield .phead { stroke:#4ECDC4; }   /* Cascada cyan — Escudo / shield */
-  .piece.blocked-safe .pline, .piece.blocked-safe .phead { stroke:#4ECDC4; }   /* a bump under a shield flashes cyan, not red */
-  /* Peligro danger window — a RED wash (red = danger). It's the only red on the board:
-     the hot beam is now indigo, so the two never read as the same thing. */
-  /* Board-state tints live in the BACKGROUND so they never collide with the purple beam on the edges.
-     One shows at a time, by priority (source order = later wins): racha < danger < shield. Freeze (set
-     inline by JS) sits on top of all of them. */
+  .piece.blocked-safe .pline, .piece.blocked-safe .phead { stroke:#4ECDC4; }   /* a fail absorbed by an escudo flashes cyan, not red */
+  /* Board-state tints live in the BACKGROUND so they never collide with the purple border on the edges. */
   body.racha-on .board-panel { background:#FBF1C9; }   /* soft yellow — streak (the ambient state) */
-  body.danger   .board-panel { background:#F9D4D5; }   /* soft red — Peligro */
-  body.shielded .board-panel { background:#D4F2EC; }   /* soft cyan — Escudo (overrides danger: you're safe) */
+  body.shielded .board-panel { background:#D4F2EC; }   /* soft cyan — Escudo banked (fails are free) */
   .board-panel.shield-hit { animation:shieldhit .3s ease; }
-  @keyframes shieldhit { 0%,100%{ background:#D4F2EC; } 45%{ background:#A6E8DD; } }   /* quick brighten when a bump is absorbed */
-  /* HOT BEAM: TWO purple gradient layers (background+opacity set by JS off the beam clock). The
-     outgoing edge fades out as the incoming fades in, so there's never a gap and the wall never
-     fully disappears between pulses — it only ever breathes from full to dim. */
-  .board-panel .wall { position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; z-index:5; }
-  .status-line .rch { color:#C77A1E; font-weight:700; }
-  .status-line .dng { color:var(--error); font-weight:700; }
-  /* FREEZE: the board + timer blue are driven from JS (smooth dark→light pulse). Keep a steady inset glow. */
+  @keyframes shieldhit { 0%,100%{ background:#D4F2EC; } 45%{ background:#A6E8DD; } }   /* quick brighten when a fail is absorbed */
+  /* BORDER: two static purple layers — wall0 = the closed side (solid bar), wall1 = a faint
+     hint on the NEXT clockwise side. Both driven from borderSide by renderBorder(); no clock. */
+  .board-panel .wall { position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; z-index:5; transition:opacity .18s ease; }
   #flx-timer { transition:color .15s linear; }
-  @keyframes redpulse { 0%,100%{ opacity:1; } 50%{ opacity:.5; } }
   .board-panel.ks-shake { animation:ksshake .5s ease; }
   @keyframes ksshake { 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(-6px); } 40%{ transform:translateX(6px); } 60%{ transform:translateX(-4px); } 80%{ transform:translateX(4px); } }
   @keyframes hintstroke { 0%,100%{ stroke-width:8.5; } 50%{ stroke-width:13; } }
@@ -206,58 +195,43 @@
   .lives-row .heart svg { width:100%; height:100%; }
   .lives-row .heart .hon { fill:#ff6b6b; }                 /* default heart colour (shared with Cascada) */
   .lives-row .heart .hoff { fill:var(--ink-line); }              /* empty half */
-  /* Charge action bar BELOW the board: the Desviar resource (auto-charges ~20s).
-     One verb — ⇅ Desviar (jumps the purple border to the OPPOSITE side and restarts
-     its 5s dwell). The clock does NOT pause — that's Cascada's power, not Borde's. */
-  .flx-actions { display:flex; align-items:center; justify-content:center;
+  /* Action bar BELOW the board: TWO turn verbs. Esperar (ink) rotates the border one side;
+     Desviar (purple, ×2 per run) snaps it to the opposite side. Both cost a turn. */
+  .flx-actions { display:flex; align-items:center; justify-content:center; gap:10px;
     width:min(94vw,400px); margin:10px auto 0; }
   .act-btn { position:relative; overflow:hidden; flex:1; display:inline-flex; align-items:center; justify-content:center;
     padding:7px 12px; border-radius:14px;   /* exact Cascada freeze-btn dimensions — family standard; padding 11→7: icon box grew 34→42 for the ring */
     cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
     transition:opacity .15s, transform .08s, box-shadow .2s, background .15s; }
-  .act-btn .act-fill { position:absolute; left:0; top:0; bottom:0; width:100%; transform-origin:left; transform:scaleX(0); z-index:0; transition:transform .35s linear; }
-  .act-btn.dv .act-fill  { background:#d9c9ee; }   /* charge fill = soft border-purple, so button-full reads "border power ready" */
   .act-btn .act-ico { position:relative; z-index:1; display:inline-flex; width:42px; height:42px; }   /* icon at original scale + surrounding ring (Cascada parity) */
   .act-btn .act-ico svg { width:100%; height:100%; display:block; }
-  .act-btn .act-num { position:relative; z-index:1; display:none; font:800 22px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; height:28px; align-items:center; }
-  .act-btn.frozen .act-ico { display:none; }            /* during a freeze the ❄ icon is replaced by the countdown */
-  .act-btn.frozen .act-num { display:inline-flex; }
-  .act-btn { cursor:default; }                          /* only the ready (glowing) button is clickable */
+  .act-btn .act-count { position:relative; z-index:1; margin-left:6px; font:800 16px var(--font-ui); font-variant-numeric:tabular-nums; line-height:1; }
+  .act-btn { cursor:default; }                          /* only the ready button is clickable */
   .act-btn.ready { cursor:pointer; }
   .act-btn:not(.ready):active { transform:none; }
-  .act-btn.dv  { color:#662E9B; background:rgba(102,46,155,.05); border:2px solid #662E9B; }   /* Borde purple — the button controls the border; only the fill grows (Cascada bg alpha) */
+  .act-btn.dv  { color:#662E9B; background:rgba(102,46,155,.05); border:2px solid #662E9B; }   /* Borde purple — snaps the border to the opposite side */
+  .act-btn.ew  { color:var(--ink); background:var(--paper); border:2px solid var(--ink-soft); }   /* ink/gray — Esperar: pass the turn, border rotates one side */
+  .act-btn.spent { opacity:.35; }                       /* Desviar out of charges — dim */
   .act-btn:active { transform:scale(.96); }
-  .act-btn:disabled { cursor:default; }   /* freeze button stays LIT before the game starts (like Cascada), just not clickable */
-  body.frozen .act-btn.fz { color:#0049B0; background:rgba(0,98,227,.3); }
-  /* bar under the board — three segments (racha · peligro · escudo); each fills its colour on activation and drains as its timer runs */
-  .flx-bar-box { width:min(94vw,400px); margin:9px auto 0; padding:5px; background:var(--bg); border:2px solid var(--ink-soft); border-radius:10px; display:flex; gap:5px; }
-  .flx-seg { flex:1; height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
-  .flx-seg-fill { display:block; height:100%; width:100%; transform-origin:left; transform:scaleX(0); transition:transform .12s linear; }
-  .s-racha   .flx-seg-fill { background:#F9C80E; }
-  .s-peligro .flx-seg-fill { background:#EA3546; }
-  .s-shield  .flx-seg-fill { background:#4ECDC4; }
-  .s-borde   .flx-seg-fill { background:#662E9B; }   /* beam-countdown bar → beam purple */
-  /* ===== Status box — Cascada-style: three number tiles (big value + uppercase label) ===== */
+  .act-btn:disabled { cursor:default; }
+  /* ===== Status box — Cascada-style: number tiles (big value + uppercase label) ===== */
   .flx-box { width:min(94vw,400px); margin:10px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--ink-soft); border-radius:14px; overflow:hidden; }
-  .t-borde .fbox-val { color:#662E9B; }   /* beam countdown → beam purple */
+  .t-borde .fbox-val { color:#662E9B; }   /* closed side glyph → border purple */
   .fbox-tile { position:relative; padding:8px 6px 9px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
   .fbox-tile + .fbox-tile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--ink-soft); }
   .fbox-val { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
   .fbox-lbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
   .t-racha   .fbox-val { color:#F9C80E; }
-  .t-peligro .fbox-val { color:#EA3546; }
   .t-shield  .fbox-val { color:#4ECDC4; }
-  /* beans tile goes urgent (red, pulsing) when the soonest bean is about to vanish */
-  .t-beans.urgent { opacity:1; }
-  .t-beans.urgent .hud-ico { color:#EA3546; animation:beanpulse .8s ease-in-out infinite; }
-  .t-beans.urgent .hud-val { color:#EA3546; }
-  @keyframes beanpulse { 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+  .t-par     .fbox-val { color:var(--ink); }
   /* heart-change delta (right of the hearts) — +½ / −1 / +2, green gain, red loss */
   .heart-delta { font:900 14px var(--font-ui); white-space:nowrap; opacity:0; transition:opacity .15s; }
   .heart-delta.show { opacity:1; }
   .heart-delta.gain { color:#2f9e54; }
   .heart-delta.loss { color:#EA3546; }
-  .flx-timer { font:800 clamp(34px,9vw,46px) var(--font-display); font-style:italic; letter-spacing:.5px; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1; }
+  .flx-turns { display:flex; flex-direction:column; align-items:center; line-height:1; }
+  .flx-timer { font:800 clamp(34px,9vw,46px) var(--font-display); letter-spacing:.5px; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1; }
+  .flx-turns .l { font:700 9px var(--font-ui); letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-soft); margin-top:2px; }
   .start-gate { position:absolute; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; border-radius:inherit;
     background:var(--board-bg);
     background-image:repeating-linear-gradient(45deg, var(--board-bg), var(--board-bg) 7px, color-mix(in oklab, var(--board-bg) 82%, var(--ink) 18%) 7px, color-mix(in oklab, var(--board-bg) 82%, var(--ink) 18%) 14px); }
@@ -500,21 +474,20 @@
         <div class="lives-row" id="lives-row" aria-label="Vidas"></div>
         <span class="heart-delta" id="heart-delta"></span>
       </div>
-      <div class="flx-timer" id="flx-timer">0:00</div>
-      <div class="flx-meta-slot is-right" aria-label="Tablero"><div class="flx-count" id="flx-count"><div class="n" id="flx-left">1/5</div><div class="l">Tablero</div></div><span class="word-feedback" id="word-feedback"></span></div>
+      <div class="flx-turns" aria-label="Turnos"><div class="flx-timer" id="flx-timer">0</div><div class="l">Turnos</div></div>
+      <div class="flx-meta-slot is-right" aria-label="Tablero"><div class="flx-count" id="flx-count"><div class="n" id="flx-left">1/3</div><div class="l">Tablero</div></div><span class="word-feedback" id="word-feedback"></span></div>
     </div>
-    <div class="board-wrap"><div class="board-panel" id="board-panel"><div id="board"></div><i class="wall" id="wall0"></i><i class="wall" id="wall1"></i><div class="start-gate" id="start-gate" hidden><div class="start-target" id="flx-objetivo">Objetivo de hoy · —</div><button class="start-btn" id="start-btn" type="button">Empezar</button></div></div></div>
-    <div class="flx-bar-box"><div class="flx-seg s-racha"><i class="flx-seg-fill" id="seg-racha"></i></div><div class="flx-seg s-peligro"><i class="flx-seg-fill" id="seg-peligro"></i></div><div class="flx-seg s-shield"><i class="flx-seg-fill" id="seg-shield"></i></div><div class="flx-seg s-borde"><i class="flx-seg-fill" id="seg-borde"></i></div></div>
-    <!-- Always-on status box: one panel holding every effect (icon in its arrow colour + live
-         counter/timer). Each lights up as it activates; dividers, not separate button-tiles. -->
+    <div class="board-wrap"><div class="board-panel" id="board-panel"><div id="board"></div><i class="wall" id="wall0"></i><i class="wall" id="wall1"></i><i class="wall" id="wall2"></i><div class="start-gate" id="start-gate" hidden><div class="start-target" id="flx-objetivo">Objetivo de hoy · —</div><button class="start-btn" id="start-btn" type="button">Empezar</button></div></div></div>
+    <!-- Always-on status box: Racha · Escudo · Par · Borde (which side is closed). -->
     <div class="flx-box" id="flx-box" aria-label="Estado">
       <div class="fbox-tile t-racha" id="fb-racha"><div class="fbox-val">—</div><div class="fbox-lbl">Racha</div></div>
-      <div class="fbox-tile t-peligro" id="fb-peligro"><div class="fbox-val">—</div><div class="fbox-lbl">Peligro</div></div>
       <div class="fbox-tile t-shield" id="fb-shield"><div class="fbox-val">—</div><div class="fbox-lbl">Escudo</div></div>
+      <div class="fbox-tile t-par" id="fb-par"><div class="fbox-val">—</div><div class="fbox-lbl">Par</div></div>
       <div class="fbox-tile t-borde" id="fb-borde"><div class="fbox-val">—</div><div class="fbox-lbl">Borde</div></div>
     </div>
-    <div class="flx-actions" id="flx-actions" aria-label="Cargas">
-      <button class="act-btn dv" id="flx-desviar" type="button" aria-label="Desviar el borde al lado opuesto" disabled><span class="act-fill"></span><span class="act-ico"><svg viewBox="-3 -3 30 30" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="13.4" stroke-width="2.2"/><g stroke-width="2.2"><line x1="5" y1="3.5" x2="19" y2="3.5"/><line x1="5" y1="20.5" x2="19" y2="20.5"/><path d="M12 16.5v-8"/><path d="m8.5 11.5 3.5-4 3.5 4"/></g></svg></span></button>
+    <div class="flx-actions" id="flx-actions" aria-label="Acciones">
+      <button class="act-btn ew" id="flx-esperar" type="button" aria-label="Esperar: pasar el turno, el borde gira un lado" disabled><span class="act-ico"><svg viewBox="-3 -3 30 30" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="13.4" stroke-width="2.2"/><g stroke-width="2.2"><line x1="7.5" y1="4.5" x2="16.5" y2="4.5"/><line x1="7.5" y1="19.5" x2="16.5" y2="19.5"/><path d="M8.5 4.5c0 3.6 7 3.6 7 7.5s-7 3.9-7 7.5"/><path d="M15.5 4.5c0 3.6-7 3.6-7 7.5s7 3.9 7 7.5"/></g></svg></span></button>
+      <button class="act-btn dv" id="flx-desviar" type="button" aria-label="Desviar el borde al lado opuesto" disabled><span class="act-ico"><svg viewBox="-3 -3 30 30" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="13.4" stroke-width="2.2"/><g stroke-width="2.2"><line x1="5" y1="3.5" x2="19" y2="3.5"/><line x1="5" y1="20.5" x2="19" y2="20.5"/><path d="M12 16.5v-8"/><path d="m8.5 11.5 3.5-4 3.5 4"/></g></svg></span><span class="act-count" id="dv-count">×2</span></button>
     </div>
     <div class="train-badge" id="train-badge">⟳ Entrenamiento</div>
     <div class="lower-spacer">
@@ -533,53 +506,31 @@
       <button class="modal-close" data-close>✕</button>
       <h2>Cómo jugar</h2>
       <button class="tut-open-btn" style="display:none" onclick="openTutorial()">▶ Ver tutorial animado</button>
-      <p><b>Borde</b> es una <b>carrera diaria de 5 tableros</b>, igual para todo el mundo. Despeja un tablero y <b>cae el siguiente</b> — el <b>reloj, los corazones, el borde y el desviador no se reinician</b>: siguen de un tablero al otro. El contador a la derecha del reloj marca <b>Tablero N/5</b>.</p>
-      <p>Cada <b>flecha</b> es una forma de varias casillas (recta, en L, en zigzag) que termina en una <b>punta</b>. Tócala para <b>lanzarla</b>: la forma entera sale volando hacia donde apunta la punta y desaparece. Despeja <b>todas</b> las flechas de cada tablero para avanzar.</p>
-      <p class="muted">La flecha sale <b>como un tren</b>: la punta primero, y el cuerpo la sigue por su propio camino. Solo importa lo que esté <b>delante de la punta</b> — si otra flecha está en ese carril, <b>choca</b> y rebota, y la flecha que estorba <b>parpadea en rojo</b>. Despeja el tablero lanzándolas en el orden correcto.</p>
-      <h3>Las flechas</h3>
+      <p><b>Borde</b> es un rompecabezas <b>por turnos</b>, sin reloj. El <b style="color:var(--accent)">borde morado</b> bloquea <b>dos lados contiguos</b> del tablero, y <b>cada jugada lo gira al siguiente lado</b> (sentido reloj). Limpia los <b>3 tableros</b> en la <b>menor cantidad de turnos</b>.</p>
+      <h3>Lanzar</h3>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><path d="M10 20 L95 20"/><path d="M80 8 L98 20 L80 32"/></svg></div>
-        <div class="txt">Una flecha <b>lista</b> — su carril a la orilla está libre. <b>Tócala para lanzarla.</b></div>
+        <div class="txt">Una flecha sale si su <b>carril está libre</b> Y su lado de salida <b>no es el borde</b>. Lanzarla cuesta <b>1 turno</b> y el borde <b>gira un lado</b>.</div>
       </div>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path d="M14 32 L14 14 L70 14"/><path d="M58 4 L78 14 L58 24"/></svg></div>
-        <div class="txt">Tienen <b>distintas formas</b> (recta, en L, zigzag) y salen por su <b>punta</b>.</div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#662E9B" d="M14 20 L92 20"/><path style="stroke:#662E9B" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="txt"><b>Fallo:</b> tocar una flecha bloqueada cuesta <b>½ corazón</b> y <b>1 turno</b>, y el borde <b>no gira</b>. Rebota en <b style="color:#EA3546">rojo</b> (otra flecha) o <b style="color:#662E9B">morado</b> (el borde).</div>
       </div>
-      <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path style="stroke:#157145" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt">Al salir, la flecha <b style="color:#157145">destella en verde</b> y abandona el tablero.</div>
-      </div>
-      <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt"><b>Choque:</b> si el carril está bloqueado, <b>rebota</b> y ambas <b style="color:#EA3546">parpadean en rojo</b> — cuesta <b>½ corazón</b>.</div>
-      </div>
-      <h3>Corazones = tus vidas</h3>
-      <p class="muted"><b>3 corazones</b> (a la izquierda del reloj). Cada <b>choque</b> cuesta <b>½</b>; a <b>0 se derrama la taza</b> y se acaba la partida. Los corazones <b>no son tu puntuación</b> (lo es el <b>tiempo</b>) — son tu vida, guárdalos. Tu <b>primer intento del día</b> es el que cuenta; luego puedes <b>entrenar</b> el mismo tablero sin que cuente.</p>
+      <h3>Esperar y Desviar</h3>
+      <p class="muted"><b>Esperar</b> pasa el turno: el borde <b>gira un lado</b>. Siempre disponible. <b style="color:var(--accent)">⇅ Desviar</b> salta el borde al <b>lado opuesto</b> — solo <b>2 cargas</b> para toda la partida. Ambos cuestan <b>1 turno</b>.</p>
+      <h3>Par y rango</h3>
+      <p class="muted">Cada día tiene un <b style="color:var(--accent)">Par</b>: los turnos de una solución casi óptima de los 3 tableros. Tu <b>rango</b> lo decide cuánto te pasas del par — igualarlo es <b style="color:var(--accent)">Maestro/a</b>. El <b style="color:var(--accent)">Reto del día</b>: termina a pocos turnos del par y celebra con un <b style="color:var(--accent)">¡Buen sorbo!</b></p>
+      <h3>Corazones</h3>
+      <p class="muted"><b>3 corazones</b> para toda la partida; cada <b>fallo</b> cuesta <b>½</b>. A <b>0 se derrama la taza</b> y se acaba. Tu <b>primer intento del día</b> es el que cuenta; después puedes <b>entrenar</b>.</p>
       <h3>Flechas especiales</h3>
-      <p class="muted">Cada tablero trae unas pocas, <b>repartidas por todo el tablero</b>. Tú decides <b>cuándo</b> despejarlas.</p>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#F9C80E" d="M14 20 L92 20"/><path style="stroke:#F9C80E" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt"><b style="color:#C99700">Amarilla · Racha.</b> Empieza una racha de <b>6 lanzamientos limpios → +½ corazón</b>. Se apila. Un choque la rompe y cuesta <b>½ extra</b>.</div>
-      </div>
-      <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt"><b style="color:#EA3546">Roja · Peligro.</b> Abre <b>6 s</b> en que cada choque cuesta el <b>doble (1 corazón)</b>; sobrevive limpio → <b>+½</b>. Se apila (más tiempo, más premio).</div>
+        <div class="txt"><b style="color:#C99700">Amarilla · Racha.</b> Lánzala y consigue <b>4 lanzamientos limpios seguidos → +½ corazón</b>. Esperar y Desviar no la rompen; un fallo sí.</div>
       </div>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#4ECDC4" d="M14 20 L92 20"/><path style="stroke:#4ECDC4" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt"><b style="color:#3BB6AE">Cian · Escudo.</b> <b>6 s</b> en que los choques <b>no cuestan corazones</b> — ve a tope. Protege tu <b>vida, no tus bonos</b>, y al acabar sueles seguir embalado.</div>
+        <div class="txt"><b style="color:#3BB6AE">Cian · Escudo.</b> Guarda <b>+1 escudo</b> (hasta 3). El próximo <b>fallo</b> gasta un escudo <b>en vez de ½ corazón</b> (el turno y la racha se pierden igual).</div>
       </div>
-      <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40" fill="none" stroke="#662E9B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><line x1="40" y1="5" x2="80" y2="5"/><line x1="40" y1="35" x2="80" y2="35"/><path d="M60 28 V14"/><path d="M52 19 L60 10 L68 19"/></svg></div>
-        <div class="txt"><b style="color:#662E9B">⇅ Desviar.</b> El botón bajo el tablero se <b>llena solo</b> (~20 s); úsalo para <b>saltar el borde al lado opuesto</b> (y su ronda de 5 s empieza de nuevo). El <b>reloj no se detiene</b>. Una carga.</div>
-      </div>
-      <h3>El borde</h3>
-      <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="98" y="4" width="11" height="32" rx="4" fill="#662E9B"/><path style="stroke:var(--arrow)" d="M14 20 L72 20"/><path style="stroke:var(--arrow)" d="M58 9 L78 20 L58 31"/></svg></div>
-        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> y salta de lado cada <b>5 s</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera a que pase o <b>desvíala</b> al lado opuesto.</div>
-      </div>
-      <h3>Rango y puntuación</h3>
-      <p class="muted">Tu puntuación es <b>el tiempo total</b> de despejar los <b>5 tableros</b>, sin trucos: el <b>⏱ reloj</b> con el que terminas el quinto. <b>No hay puntos</b> — solo el reloj. Más <b>rápido</b> = mejor rango, y como un choque puede acabar la partida (a 0 corazones), hay que ir <b>rápido pero limpio</b>. Diez rangos, de <b>Debutante</b> (más de 8:40) a <b style="color:var(--accent)">Maestro/a</b> (por debajo de ~1:52). Hay un <b style="color:var(--accent)">Reto del día</b>: termina por debajo del tiempo objetivo y celebra con un <b style="color:var(--accent)">¡Buen sorbo!</b></p>
     </div>
   </div>
 
@@ -604,7 +555,7 @@
     <div class="modal">
       <button class="modal-close" data-close>✕</button>
       <h2>Rangos</h2>
-      <p class="muted">Sube de rango acumulando puntos. <span id="rangos-reto"></span></p>
+      <p class="muted"><span id="rangos-reto"></span></p>
       <div id="rangos-list"></div>
     </div>
   </div>
@@ -627,7 +578,7 @@
       <button class="goal-close" data-close-goal="maestro-panel">✕</button>
       <svg class="goal-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="8" fill="var(--accent)"/><path d="M16 6l2.6 5.6L24 12l-4 3.9 1 5.6L16 19l-5 2.5 1-5.6L8 12l5.4-.4z" fill="#fff"/></svg>
       <h2 class="goal-headline maestro">¡Maestro/a!</h2>
-      <p class="goal-subhead">Despejaste el tablero sin un solo choque.</p>
+      <p class="goal-subhead">Despejaste los tableros sin un solo fallo.</p>
       <div class="goal-actions">
         <button class="btn accent" id="maestro-share">Compartir</button>
         <button class="btn" data-close-goal="maestro-panel">Cerrar</button>
@@ -639,7 +590,7 @@
       <button class="goal-close" data-close-goal="over-panel">✕</button>
       <svg class="goal-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="8" fill="var(--error)"/><path d="M11 11 L21 21 M21 11 L11 21" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
       <h2 class="goal-headline">¡Se derramó la taza!</h2>
-      <p class="goal-subhead">Te quedaste sin corazones. Tu tiempo solo cuenta si terminas — vuelve a intentarlo.</p>
+      <p class="goal-subhead">Te quedaste sin corazones. Tus turnos solo cuentan si terminas — vuelve a intentarlo.</p>
       <div class="goal-actions">
         <button class="btn accent" id="over-retry"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="vertical-align:-2px;margin-right:5px"><path d="M12 5V2L6 7l6 5V8.5c3 0 5.5 2.5 5.5 5.5S15 19.5 12 19.5 6.5 17 6.5 14H4c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8z"/></svg>Reintentar</button>
         <button class="btn" data-close-goal="over-panel">Cerrar</button>
@@ -694,25 +645,21 @@ const ARCH=(_arch==='network')?'network':'maze';   // solver assigns heads -> ev
 // easier-to-tap board against the live 26×26. Default (no param) is unchanged. Its
 // save-state is namespaced so the prototype never clobbers the real daily.
 let _gridOv=0; try{ const g=new URLSearchParams(location.search).get('grid'); if(g){ const n=parseInt(g,10); if(n>=12&&n<=32) _gridOv=n; } }catch(e){}   // 0 → use the cuadro shape (14×18, Cascada-sized arrows); ?grid=N forces a square N×N
-const DSCOPE=GAME+'-diario-v2'+(ARCH==='network'?'-net':'')+(_gridOv!==20?('-g'+_gridOv):'');
+const DSCOPE=GAME+'-turnos-v1'+(ARCH==='network'?'-net':'')+(_gridOv!==20?('-g'+_gridOv):'');
 const HINT_MAX=0;                                   // no hints on the daily
 const RETO_MIN=0, RETO_MAX=0;
-// Rank is awarded by SOLVE TIME (faster = higher). Cutoffs = max seconds.
-// A run is 5 boards; rank = TOTAL time across all five, so the cutoffs are scaled up
-// for a full run (≈3× a single board). Tune after playtesting a real run.
-// Total time across the 5-board run. Tightened to realistic run lengths (a full run is
-// roughly 4–12 min); the bottom rank is now "slower than 13:00", not the old 20-min nonsense.
-// Total time across the 5-board run. Recalibrated: a ~2:00 casual run lands at Eminente,
-// Maestro now demands a near-optimal sub-1:52. (Tune with real run times.)
-const TIME_CUTOFFS=[{i:9,max:112},{i:8,max:130},{i:7,max:155},{i:6,max:185},{i:5,max:225},{i:4,max:275},{i:3,max:340},{i:2,max:420},{i:1,max:520},{i:0,max:Infinity}];
-function rankForTime(t){ for(const c of TIME_CUTOFFS) if(t<=c.max) return c.i; return 0; }
-function timeMaxFor(idx){ for(const c of TIME_CUTOFFS) if(c.i===idx) return c.max; return Infinity; }
+// Rank is awarded by GAP TO PAR (turns over the day's par across the 3-board run).
+// gap<=0 → Maestro/a; each band widens as you drift from par.
+// Calibrated against 200 simulated random-policy runs under the TWO-SIDED border (gap
+// min 1 / median 5 / max 12): casual play lands ~Admirable, Maestro/a demands par-perfect
+// sequencing (random play hit gap 0 exactly 0 times in 200 runs).
+const GAP_CUTOFFS=[{i:9,max:0},{i:8,max:1},{i:7,max:2},{i:6,max:3},{i:5,max:4},{i:4,max:6},{i:3,max:8},{i:2,max:11},{i:1,max:15},{i:0,max:Infinity}];
+function rankForGap(g){ for(const c of GAP_CUTOFFS) if(g<=c.max) return c.i; return 0; }
+function gapMaxFor(idx){ for(const c of GAP_CUTOFFS) if(c.i===idx) return c.max; return Infinity; }
+const GAP_BAND_LABELS=['+16 o más','+12–15','+9–11','+7–8','+5–6','+4','+3','+2','+1','Par o mejor'];   // indexed by rank
 // "Flechas #N" — daily number from a fixed epoch
 const FLECHAS_EPOCH='2026-01-01';
 function dayNumber(iso){ const a=new Date(iso+'T00:00:00'), b=new Date(FLECHAS_EPOCH+'T00:00:00'); return Math.floor((a-b)/86400000)+1; }
-// Meta del día — a date-hashed target TIME; beating it earns ¡Buen sorbo! + a streak.
-const META_MIN=150, META_MAX=210;   // daily target for the full 5-board run: 2:30–3:30 window (30s steps) — a real goal, not trivial
-function metaForDate(iso){ let x=2166136261>>>0; for(let i=0;i<iso.length;i++){ x^=iso.charCodeAt(i); x=Math.imul(x,16777619)>>>0; } const b=(META_MAX-META_MIN)/30+1; return META_MIN+(x%b)*30; }
 const U=100;   // svg units per cell
 
 /* ============================ STORAGE GUARD ============================ */
@@ -1335,13 +1282,25 @@ function genPuzzle(iso){
 /* ============================ STATE ============================ */
 const ISO=todayISO();
 const RETO=retoForDate(ISO);
-const META=metaForDate(ISO);
 
 /* ============================ FIGURAS (board shapes) ============================
    Each board is a silhouette mask: '#' = playable cell, '.' = empty space the
    arrows fly across. The daily figure is picked from the date (override for
    testing/preview with ?figura=trofeo). */
 const SHAPES={
+  sala:{ label:'Sala', rows:[
+    '##########',
+    '##########',
+    '##########',
+    '##########',
+    '##########',
+    '##########',
+    '##########',
+    '##########',
+    '##########',
+    '##########',
+    '##########',
+    '##########' ] },   /* 10×12 — the turn-based board: ~20 arrows, reads at a glance */
   cuadro:{ label:'Cuadro', rows:[
     '##############',
     '##############',
@@ -1374,12 +1333,10 @@ const SHAPES={
     '....#########....' ] }
 };
 const SHAPE_KEYS=Object.keys(SHAPES);
-let _sq=null; try{ _sq=new URLSearchParams(location.search).get('figura'); }catch(e){}
-/* Always build the dense SQUARE maze (75–90% occupancy, one connected
-   labyrinth). The decorative figures (trofeo/mariposa/taza) are kept only
-   for ?figura= preview / future use — they are no longer picked by date,
-   because their negative space made boards feel scattered and half-empty. */
-const SHAPE_KEY=(_sq && SHAPES[_sq]) ? _sq : 'cuadro';
+let _sq=null; try{ const _p=new URLSearchParams(location.search); _sq=_p.get('figura')||_p.get('fig'); }catch(e){}
+/* Turn-based Borde plays on the small 'sala' 10×12 room (~20 arrows). The other
+   figures are kept only for ?figura=/?fig= preview / future use. */
+const SHAPE_KEY=(_sq && SHAPES[_sq]) ? _sq : 'sala';
 const SHAPE=SHAPES[SHAPE_KEY], SHAPE_LABEL=SHAPE.label;
 const GRID_R=_gridOv||SHAPE.rows.length, GRID_C=_gridOv||SHAPE.rows[0].length, NCELLS=GRID_R*GRID_C;
 const MASK=new Array(NCELLS).fill(false);
@@ -1387,66 +1344,59 @@ if(_gridOv){ for(let i=0;i<NCELLS;i++) MASK[i]=true; }        // full dense N×N
 else SHAPE.rows.forEach((row,r)=>{ for(let c=0;c<GRID_C;c++) if(row[c]==='#') MASK[r*GRID_C+c]=true; });
 const MASKCOUNT=MASK.filter(Boolean).length;
 
-let PUZ=genPuzzle(ISO);
-let PIECES=PUZ.pieces, FIRE_ORDER=PUZ.fireOrder;
-// ---- RUN = 5 boards. You clear one → the next falls in; the timer, hearts, beam and
-// freeze all carry over. Your rank is the TOTAL time across all five. Board 1 keeps the
-// original daily seed (ISO) so it's the same for everyone; boards 2–5 are seeded ISO#n.
-const RUN_BOARDS=5; let boardNum=1;
+// ---- RUN = 3 boards, TURN-BASED (no clock). Clear one → the next falls in; hearts,
+// escudos and the Desviar charges carry over. Your score is the TOTAL TURNS across all
+// three. Board 1 keeps the daily seed (ISO); boards 2–3 are seeded ISO#n.
+const RUN_BOARDS=3; let boardNum=1;
 const seedFor=n=>(n>1?ISO+'#'+n:ISO);
-// ---- COFFEE BEANS — the day's GOAL is to collect them all (clearing the whole
-// board is optional). An arrow sweeps its lane (its cells + head->edge ray) and
-// grabs any bean on it. So WHICH arrows you fire and in what ORDER is the real
-// decision; the unfired arrows can stay. Win = every bean collected.
-const SWEEP=PIECES.map(p=>{ const s=new Set(p.cells); let [r,c]=rc(headCellOf(p)); let nr=r+DR[p.dir],nc=c+DC[p.dir]; while(inb(nr,nc)){ s.add(nr*GRID_C+nc); nr+=DR[p.dir]; nc+=DC[p.dir]; } return s; });
-const _OCC=new Set(); PIECES.forEach(p=>p.cells.forEach(c=>_OCC.add(c)));
-const _COVER=new Set(); SWEEP.forEach(s=>s.forEach(c=>{ if(!_OCC.has(c)) _COVER.add(c); }));
-// DISTRICTS: beans cluster into a few POCKETS (not an even scatter), so the board has
-// regions of different value and "which area do I work first?" becomes a real question.
-let BEAN_CENTERS=[];
-const BEAN_CELLS=[];   // beans removed — Borde streamlined (all bean fns below become no-ops)
-const _edist=bc=>{ const r=(bc/GRID_C)|0, c=bc%GRID_C; return Math.min(r,c,GRID_R-1-r,GRID_C-1-c); };
-// BIG beans = the deepest picked cells (slow, worth more, you must dig for them);
-// the rest are SMALL edge beans (fast, cheap, grabbed on your way out).
-const BEAN_COVER=BEAN_CELLS.map(bc=>{ const ids=[]; SWEEP.forEach((s,pid)=>{ if(s.has(bc)) ids.push(pid); }); return ids; });
-const BEANS_TOTAL=BEAN_CELLS.length;
-// Beans DON'T wait for you: each one fades and then VANISHES on its own clock
-// (seeded + staggered so a pocket doesn't all pop at once). A vanished bean is gone
-// for good and can't count toward the cosecha — so grabbing them is a race.
-const BEAN_FADE=14;                                            // seconds of visible fade before it disappears
-const BEAN_LIFE_OF=(function(){ const r=mulberry32(fnv('flx-beanlife-'+ISO));
-  const glen=Math.round(PIECES.length*1.1);                    // ~clear time in s — scales with board size
-  return BEAN_CELLS.map(()=> Math.round(glen*0.4 + r()*glen*0.55)); })();   // staggered across most of the run (~0:55–2:10 on 28×28)
-function beanGone(i){ return !BEAN_TAKEN[i] && started && elapsed>=BEAN_LIFE_OF[i]; }
-// All beans are EQUAL now — one size, one job: collect them before they vanish to earn a life.
-// Grabbing one fresh (green) shaves a few seconds off your time; it cools from the
-// START, reachable or not, so collecting beans fresh is a RACE — dig to the cooling
-// pockets fast or you only get the heart, not the seconds.
-const BEAN_FRESH=6, BEAN_STEP=5;   // up to 6s off when green; −1 every 5s (cold after ~30s)
-let BEAN_TAKEN=new Array(BEAN_CELLS.length).fill(false), BEAN_BANKED=new Array(BEAN_CELLS.length).fill(0), BEAN_ARMED=new Array(BEAN_CELLS.length).fill(-1), beanBonus=0;
-function beanCovered(i){ for(const pid of BEAN_COVER[i]) if(firedP[pid]) return true; return false; }
-function beansGot(){ let n=0; for(let i=0;i<BEAN_CELLS.length;i++) if(BEAN_TAKEN[i]) n++; return n; }
-function armBeans(){}   // beans no longer cool — kept as a no-op so existing call sites are harmless
-function collectBeans(silent){ let got=0;
-  for(let i=0;i<BEAN_CELLS.length;i++){ if(!BEAN_TAKEN[i] && !beanGone(i) && beanCovered(i)){ BEAN_TAKEN[i]=true; got++; } }
-  if(got>0 && !silent) flash('+'+got+' grano'+(got===1?'':'s'),'success');
-  // COSECHA in halves: half the beans → +½ heart, all of them → +½ more.
-  if(BEANS_TOTAL>0){ const halfBeans=Math.ceil(BEANS_TOTAL/2);
-    if(beanLifeGiven<1 && beansGot()>=halfBeans){ beanLifeGiven=1; addLife(0.5); if(!silent) flash('Media cosecha · +½ vida','success'); }
-    if(beanLifeGiven<2 && beansGot()===BEANS_TOTAL){ beanLifeGiven=2; addLife(0.5); if(!silent) flash('¡Cosecha! +½ vida','success'); } } }
-// HEARTS are the only currency: each heart you finish with shaves 8s off your time.
-function effTime(){ return elapsed; }   // score is pure TIME now — hearts are lives, not a bonus
-function renderBeans(){ for(let i=0;i<BEAN_CELLS.length;i++){ const el=document.getElementById('bean-'+i); if(!el) continue;
-  if(BEAN_TAKEN[i] || beanGone(i)){ el.style.display='none'; continue; }
-  el.style.display='';
-  const rem=BEAN_LIFE_OF[i]-elapsed;                          // seconds left before it vanishes
-  if(started && rem<=BEAN_FADE){ const f=Math.max(0,rem/BEAN_FADE);
-    el.style.opacity=(0.2+0.8*f).toFixed(2);                  // fades out as its time runs down
-    el.style.fill=f>0.5?'#3F7D3F':'#C8932E';                  // and warns amber in its final seconds
-  } else { el.style.opacity='1'; el.style.fill='#3F7D3F'; } } }
-// ===== SPECIAL ARROWS (date-seeded). Tension lives in your HEARTS, so specials
-// only HELP: blue = breathe (freeze), amber = racha (earn a heart), crimson = gamble.
-const R_NONE=0,R_FREEZE=1,R_RACHA=2,R_PELIGRO=3,R_SHIELD=4;
+// All boards are generated UP FRONT (cheap on 10×12) so the day's PAR is known at boot.
+const PUZZLES=[]; for(let _b=1;_b<=RUN_BOARDS;_b++) PUZZLES.push(genPuzzle(seedFor(_b)));
+let PUZ=PUZZLES[0];
+let PIECES=PUZ.pieces, FIRE_ORDER=PUZ.fireOrder;
+// ---- THE BORDER (turn-based): borderSide 0=arriba 1=derecha 2=abajo 3=izquierda (matches
+// dir/DR/DC). It does NOT move on its own: it rotates ONE side clockwise after a successful
+// launch or Esperar; Desviar REPLACES that rotation with a snap to the OPPOSITE side. A
+// FAILED launch does NOT rotate it. Each board's starting side is seeded from its board seed.
+function startSideFor(n){ const r=mulberry32(fnv('flx-borde-'+seedFor(n))); return (r()*4)|0; }
+let borderSide=startSideFor(1);
+const BORDER_GLYPH=['▲','▶','▼','◀'];
+// ---- PAR: per board, deterministic — the MINIMUM turns over PAR_ROLLOUTS seeded greedy
+// rollouts (each turn: fire a uniformly random launchable piece under the turn rules, else
+// Esperar; no Desviar). Removal is monotone (firing never blocks others), so rollouts
+// always terminate.
+const PAR_ROLLOUTS=320;
+function parFor(pieces, startSide, seedStr){
+  const n=pieces.length, dirs=pieces.map(p=>p.dir);
+  const lanes=pieces.map(p=>{ const out=[]; let [r,c]=rc(headCellOf(p)); r+=DR[p.dir]; c+=DC[p.dir];
+    while(inb(r,c)){ out.push(r*GRID_C+c); r+=DR[p.dir]; c+=DC[p.dir]; } return out; });
+  const owner0=new Array(NCELLS).fill(-1); pieces.forEach((p,i)=>p.cells.forEach(c=>owner0[c]=i));
+  const base=fnv('flx-par-'+seedStr);
+  let best=Infinity;
+  for(let ri=0;ri<PAR_ROLLOUTS;ri++){
+    const rng=mulberry32((base+ri)>>>0);
+    const owner=owner0.slice(), alive=new Array(n).fill(true);
+    let left=n, side=startSide, t=0;
+    while(left>0 && t<=n*9){
+      const cand=[];
+      for(let i=0;i<n;i++){ if(!alive[i]||dirs[i]===side||dirs[i]===((side+1)%4)) continue;   // two-sided border (v2)
+        let ok=true; const L=lanes[i]; for(let k=0;k<L.length;k++){ const o=owner[L[k]]; if(o!==-1&&o!==i){ ok=false; break; } }
+        if(ok) cand.push(i); }
+      if(cand.length){ const pick=cand[(rng()*cand.length)|0]; alive[pick]=false; pieces[pick].cells.forEach(c=>owner[c]=-1); left--; }
+      t++; side=(side+1)%4;
+    }
+    if(left===0 && t<best) best=t;
+    if(best===n) break;                                       // can't beat one turn per piece
+  }
+  return best;
+}
+const PARS=PUZZLES.map((pz,i)=>parFor(pz.pieces, startSideFor(i+1), seedFor(i+1)));
+const PAR_TOTAL=PARS.reduce((a,b)=>a+b,0);
+// Reto del día: finish within a couple of turns of par → ¡Buen sorbo!  META = TURN target.
+const RETO_DELTA=2+(fnv('flx-reto-'+ISO)%4);   // par+2 .. par+5
+const META=PAR_TOTAL+RETO_DELTA;
+// ===== SPECIAL ARROWS (date-seeded). Both only HELP: amber = racha (earn back a half
+// heart with clean launches), cyan = escudo (bank a fail-absorber).
+const R_NONE=0,R_RACHA=1,R_SHIELD=2;
 let ROLE=new Array(PIECES.length).fill(0);
 let _fr=new Array(PIECES.length); FIRE_ORDER.forEach((pid,i)=>_fr[pid]=i);
 const _pcCenter=kid=>{ const cs=PIECES[kid].cells; let r=0,c=0; for(const x of cs){ r+=(x/GRID_C|0); c+=x%GRID_C; } return [r/cs.length,c/cs.length]; };
@@ -1465,31 +1415,26 @@ function assignRoles(seedBase){
       md+=rnd()*0.01;                                             // tiny tiebreak so equal spots vary by day
       if(md>bd){ bd=md; best=cand; } }
     return best; };
-  // Original counts (the mix the user liked). The fix for clustering/zoning is placement, not count.
-  const nAmber=Math.max(2, Math.round(PIECES.length*0.035));   // FEWER heart-givers — healing was too easy, hearts came back fast
-  const nRed=Math.max(4, Math.round(PIECES.length*0.06));      // MORE danger windows — mistakes actually bite now
-  const nShield=Math.max(2, Math.round(PIECES.length*0.03));
+  // Turn-based deal: only racha + escudo, 2 of each per board.
+  const nAmber=2, nShield=2;
   // STEP 1 — pick N evenly-spread pieces COLOUR-BLIND (farthest-point), so the slots themselves are
   // distributed across the whole board.
-  const TOTAL=nAmber+nRed+nShield, slots=[];
+  const TOTAL=nAmber+nShield, slots=[];
   for(let k=0;k<TOTAL;k++){ const id=pickSpread(free()); if(id<0) break; ROLE[id]=99; placed.push(id); slots.push(id); }
-  // STEP 2 — deal the colours across those slots in board order, cycling amber→red→shield. This keeps
-  // every colour spread over the whole board and stops one colour zoning to a side (the old bug:
-  // farthest-point seeded each colour in its own region — orange left, red right, cyan bottom).
+  // STEP 2 — deal the colours across those slots in board order, cycling amber→shield, so
+  // neither colour zones to one side of the board.
   slots.sort((x,y)=>{ const a=_pcCenter(x), b=_pcCenter(y); return (a[0]-b[0])||(a[1]-b[1]); });
-  const cnt=[nAmber,nRed,nShield], rol=[R_RACHA,R_PELIGRO,R_SHIELD], deal=[];
-  for(let i=0; deal.length<slots.length; i++){ const c=i%3; if(cnt[c]>0){ deal.push(rol[c]); cnt[c]--; } }
+  const cnt=[nAmber,nShield], rol=[R_RACHA,R_SHIELD], deal=[];
+  for(let i=0; deal.length<slots.length; i++){ const c=i%2; if(cnt[c]>0){ deal.push(rol[c]); cnt[c]--; } }
   slots.forEach((id,k)=>{ ROLE[id]=deal[k]; });
 }
 assignRoles(ISO);   // board 1's specials
-const HEARTS_MAX=3, HEART_CAP=3, HEART_BONUS=8;          // 3 hearts = LIVES (lose all → game over). NO banking past 3 — save heart-givers for when you're hurt. (HEART_BONUS kept only for legacy share math, unused in scoring)
-const RACHA_NEED=6;                                      // clear this many in a row clean after a racha arrow → +1 heart
-const PEL_WINDOW=6000, PEL_COST=1, BUMP_COST=0.5;        // a bump costs ½ heart (Cascada parity); during a 6s Peligro window it DOUBLES to 1; survive → +½ heart
-const SHIELD_WINDOW=6000;                                // Escudo: bumps cost 0 hearts for 6s (grace). Stacks (extends the window). Go aggressive — but don't overstay the welcome.
-const FREEZE_MAX=1, FREEZE_FILL=20;                       // single charge like Cascada: earn one, use it, wait ~20s for it to recharge
-let lives=HEARTS_MAX, beanLifeGiven=0, rachaLeft=-1, peligroEnd=0, freezeEnd=0, freezeCharges=0, freezeFill=0, peligroPending=false, shieldEnd=0, shieldCount=0;
-let rachaTotal=0, rachaCount=0, peligroCount=0;   // amber/red STACK: each extra arrow lengthens the requirement AND the reward
-function roleClass(id){ return ['','role-freeze','role-racha','role-peligro','role-shield'][ROLE[id]]; }
+const HEARTS_MAX=3, HEART_CAP=3;                         // 3 hearts = LIVES for the whole run (lose all → run over)
+const RACHA_NEED=4;                                      // after a yellow arrow: 4 clean launches in a row → +½ heart
+const ESCUDO_CAP=3, DESVIAR_MAX=2;                       // escudos stack to 3; Desviar has 2 charges per FULL run (no recharge)
+let lives=HEARTS_MAX, rachaLeft=-1, rachaTotal=0, rachaCount=0, escudos=0;
+let turns=0, desviarCharges=DESVIAR_MAX, turnsHist=[], runWon=false;   // turnsHist = cumulative turns at each board clear
+function roleClass(id){ return ['','role-racha','role-shield'][ROLE[id]]; }
 // ===== LIVES (the core tension) =====
 // Heart built from the shared half-heart icon: one half + its mirror = a full heart,
 // so a half-life is literally one half filled (left rose, right grey).
@@ -1515,174 +1460,88 @@ function pulseLives(dir){ const el=document.getElementById('lives-row'); if(!el)
 function showHeartDelta(){ /* removed — hearts animate instead */ }
 // Gain hearts through ONE path so the pop + cap are always handled together.
 function addLife(a){ const b=lives; lives=Math.min(HEART_CAP, lives+a); renderLives(); if(lives>b) pulseLives(1); }
-function peligroOn(){ return Date.now()<peligroEnd; }
-function shieldOn(){ return Date.now()<shieldEnd; }
-// Bumping (a choque) costs a heart — TWO during an espresso window — and breaking an
-// active racha costs an extra HALF on top. Touching a HOT WALL costs HALF a heart.
-function loseLife(n, fromWall){ n=n||1; if(lives<=0) return;
-  if(peligroOn() && peligroPending) peligroPending=false;                               // a bump during the window FORFEITS the Peligro reward (even under shield)
-  let broke=false; if(rachaLeft>0 && !fromWall){ rachaLeft=-1; rachaTotal=0; rachaCount=0; broke=true; }   // a bump breaks the racha (even under shield); a rush (fromWall) is clean play
-  if(shieldOn()){ pulseShield(); return; }                                              // SHIELD: the bump costs 0 hearts (the racha/peligro side-effects above still apply)
-  if(broke) n+=0.5;                                                                     // breaking a racha costs ½ extra
-  const _pl=lives; lives=Math.max(0, lives-n); renderLives(); if(lives<_pl) pulseLives(-1);
-  let msg;
-  if(lives<=0) msg='¡Se derramó!';
-  else if(fromWall) msg='Rebote · −½ vida';
-  else if(broke) msg='Racha rota · −'+n;
-  else if(n>=2) msg='Choque doble · −'+n;
-  else msg='−'+n+' vida';
-  flash(msg,'error');
-  if(lives<=0){ const bp=document.getElementById('board-panel'); if(bp){ bp.classList.add('ks-shake'); setTimeout(()=>{ try{bp.classList.remove('ks-shake');}catch(e){} },500); } gameOver(); } }
-// 0 hearts = the cup spills → GAME OVER. The run ends; your time only counts if you FINISH. Retry is allowed.
-function gameOver(){ if(finished) return; finished=true; stopTimer(); document.body.classList.add('over');
+// FAILED LAUNCH: +1 turn, the border does NOT rotate, the racha breaks, and it costs
+// ½ heart — unless an escudo is banked, which absorbs the cost (turn + racha still lost).
+function failLaunch(){
+  mistakes++; turns++;
+  if(rachaLeft>0){ rachaLeft=-1; rachaTotal=0; rachaCount=0; }
+  if(escudos>0){ escudos--; pulseShield(); flash('Escudo usado','bonus'); }
+  else { const _pl=lives; lives=Math.max(0, lives-0.5); renderLives(); if(lives<_pl) pulseLives(-1);
+    flash(lives<=0?'¡Se derramó!':'−½ vida','error');
+    if(lives<=0){ const bp=document.getElementById('board-panel'); if(bp){ bp.classList.add('ks-shake'); setTimeout(()=>{ try{bp.classList.remove('ks-shake');}catch(e){} },500); } gameOver(); } }
+  computeScore(); saveState(); renderStatus(); renderRank(); }
+// 0 hearts = the cup spills → RUN OVER. Your turns only count if you FINISH. Retry is allowed.
+function gameOver(){ if(finished) return; finished=true; document.body.classList.add('over');
   if(!training) recordResult(false);   // the first-attempt spill IS your daily result (locked)
   const sub=document.querySelector('#over-panel .goal-subhead');
   if(sub) sub.textContent = training ? 'Entrenamiento — no cuenta para hoy. Vuelve a intentarlo.' : 'Te quedaste sin corazones. Hoy se queda así — pero puedes entrenar para mañana.';
-  saveState(); renderFreeze(); renderStatus(); renderRank();
+  saveState(); renderActions(); renderBorder(); renderStatus(); renderRank();
   const key=DSCOPE+'-result-shown-'+ISO, fresh=!LS.getItem(key); LS.setItem(key,'1');
   if(fresh) setTimeout(()=>openGoal('over-panel'), 600); }
-// Racha: after a racha arrow, every CLEAN launch ticks it down; reach 0 → +1 heart.
+// Racha: after a racha arrow, every CLEAN launch ticks it down; each 4 clean → +½ heart.
+// Esperar/Desviar are NEUTRAL (they neither tick nor break it); a failed launch breaks it.
 function rachaTick(){ if(rachaLeft<0) return; rachaLeft--;
   const cleared=rachaTotal-rachaLeft;
-  if(cleared>0 && cleared%RACHA_NEED===0){ addLife(0.5); flash('+½ vida','success'); }   // +½ heart per full 6 clean → 6=+½, 12=+1, 18=+1½ (one bump bought back per amber)
+  if(cleared>0 && cleared%RACHA_NEED===0){ addLife(0.5); flash('+½ vida','success'); }
   if(rachaLeft===0){ rachaLeft=-1; rachaTotal=0; rachaCount=0; } }
-// ===== HOT BEAM — one edge is ALWAYS hot and it SWEEPS around the board, advancing to
-// the next edge every HOT_DWELL seconds (seeded start + direction per day, same for
-// everyone). After a short grace, something is always hot, so every tap means checking
-// the beam: fire the cool sides now, wait ~HOT_DWELL for it to pass, or rush it for ½. =====
-const HOT_DWELL=5, HOT_GRACE=0;   // each edge sits STATIC for 5s (the countdown)…
-const MOVE_DUR=0.8, PERIOD=HOT_DWELL+MOVE_DUR;   // …then a separate ~0.8s MOVE to the next edge. One full cycle = PERIOD.
+// ===== THE BORDER (render + rules). One side is CLOSED (solid purple bar); a faint thin
+// tick previews the NEXT clockwise side. Everything is driven from borderSide — no clock,
+// no sliding, no rAF loop. =====
 const WALL_UNITS=40;              // the 11px purple bar ≈ 0.4 cells; arrows bounce this far before the board edge (at the bar's face)
-const _hr=mulberry32(fnv('flx-walls-'+ISO));
-const HOT_START=(_hr()*4)|0, HOT_DIR=(_hr(),1);          // always 1 = clockwise (still consume the rng draw so the daily board sequence is unchanged)
-// The beam index normally just ticks up with the clock, but a player can SHOVE it forward
-// (spend a charge) — beamBaseIndex/beamBaseTime let us jump a side AND restart that side's
-// dwell from "now", so an advanced edge still gets a clean ~5s before it moves on.
-let beamBaseIndex=0, beamBaseTime=0;
-function hotIndex(){ return beamBaseIndex + Math.floor((elapsed-beamBaseTime-HOT_GRACE)/PERIOD); }
-function hotSideNow(){ if(!started||finished||elapsed<HOT_GRACE) return -1; return (HOT_START + HOT_DIR*hotIndex())%4; }
-// An edge blocks if it's the lit one — OR, during the ~0.5s wall handoff, the incoming edge too (it's
-// already visibly rising, so an arrow can't slip through it).
-function beamBlocksDir(dir){ const s=hotSideNow(); if(s<0) return false; if(dir===s) return true;
-  if(started && !finished){ const frac=Math.max(0,Math.min(0.999,(Date.now()-startedAt)/1000-elapsed));
-    const x=elapsed+frac-beamBaseTime-HOT_GRACE, into=x-Math.floor(x/PERIOD)*PERIOD;
-    if(into>=HOT_DWELL){ const k=beamBaseIndex+Math.floor(x/PERIOD); if(dir===((HOT_START+HOT_DIR*(k+1))%4+4)%4) return true; } }   // while it MOVES, the incoming edge also blocks
-  return false; }
-// POSITIONAL beam: the bar is a real object. While it sits, the whole edge blocks; as it SLIDES to the
-// next edge, only the cells still under the bar block — the freed area opens — and the incoming bar
-// blocks the cells it has covered so far. An arrow exiting a still-covered cell bounces at the bar's face.
-function beamState(){ if(!started||finished||elapsed<HOT_GRACE) return null;
-  const frac=Math.max(0,Math.min(0.999,(Date.now()-startedAt)/1000-elapsed));
-  const bx=elapsed+frac-beamBaseTime-HOT_GRACE; const kf=Math.floor(bx/PERIOD), into=bx-kf*PERIOD; const k=beamBaseIndex+kf;
-  const eK=((HOT_START+HOT_DIR*k)%4+4)%4, eN=((HOT_START+HOT_DIR*(k+1))%4+4)%4;
-  const sliding=into>=HOT_DWELL; return { eK, eN, sliding, p: sliding?(into-HOT_DWELL)/MOVE_DUR:0 }; }   // static for 5s, then slides over MOVE_DUR
-function beamExitFrac(e, headIdx){ const [r,c]=rc(headIdx);   // forward-normalised position of the exit along edge e (0..1)
-  const horiz=(e===0||e===2); let frac = horiz ? (GRID_C>1?c/(GRID_C-1):0.5) : (GRID_R>1?r/(GRID_R-1):0.5);
-  const f=beamFwd(e); const sgn = horiz ? f[0] : f[1]; if(sgn<0) frac=1-frac; return frac; }
-function beamBlocks(pid){ const st=beamState(); if(!st) return false;
-  const dir=PIECES[pid].dir;
-  if(!st.sliding) return dir===st.eK;                                  // sitting: the whole hot edge blocks
-  const fr=beamExitFrac(dir, headCellOf(PIECES[pid]));
-  if(dir===st.eK) return fr>=st.p;                                     // outgoing bar still covers [p,1]
-  if(dir===st.eN) return fr<=st.p;                                     // incoming bar covers [0,p]
-  return false; }
-// Spend a charge to push the beam to the next edge right now (offensive use of the resource).
-function renderHot(){ const bp=document.getElementById('board-panel'); if(!bp) return; const s=hotSideNow();
-  // Just pick which edge is lit; its brightness/pulse is driven by pulseLoop() in sync with the beam clock.
-  for(let d=0;d<4;d++) bp.classList.toggle('hot-'+d, s===d); }
-// Drive the wall's pulse from the SAME clock as the beam: one cosine cycle per second, bright on
-// each whole second (so the 5th beat lands exactly as the beam moves). Held bright while frozen.
-function lerpHex(a,b,t){ a=a.trim();b=b.trim(); const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16); const r=Math.round((pa>>16)+((pb>>16)-(pa>>16))*t),g=Math.round(((pa>>8)&255)+(((pb>>8)&255)-((pa>>8)&255))*t),bl=Math.round((pa&255)+((pb&255)-(pa&255))*t); return 'rgb('+r+','+g+','+bl+')'; }
-function wallGrad(e){ const d=['to bottom','to left','to top','to right'][e]||'to bottom'; return 'linear-gradient('+d+', #662E9B 0, #662E9B 11px, rgba(102,46,155,0) 11px)'; }   // SOLID 11px bar (hard edge, no fade) — pulsing/crossfade still come from the layer opacity
-// Opacity of a wall vs seconds since its dwell began. Rises in (overlapping the previous edge's
-// fade-out), holds static ~3s, pulses full↔0.5 (never off), then fades out (covered by the next edge).
-function wallPresence(age){ if(age<=-1 || age>=HOT_DWELL) return 0;
-  if(age<0) return age+1;                                      // cross-fade IN over 1s (overlaps the previous edge's 1s pulse-out → presences sum to 1, no gap)
-  if(age>=HOT_DWELL-1) return HOT_DWELL-age;                   // pulse OUT over the last 1s (smooth fade, like the freeze fade-out — not an abrupt vanish)
-  let dip=0;                                                   // ONE breath, like the freeze: dim to ~50% over the 4th second (centred at age 3.5)
-  { const x=age-(HOT_DWELL-1.5); if(Math.abs(x)<0.5) dip=0.5*(0.5+0.5*Math.cos(2*Math.PI*x)); }
-  return 1-dip; }
-// Slide ("train") transition: forward unit vector ALONG each edge in the rotation direction,
-// and the breath (one dim) used while an edge sits still before it slides on.
-function beamFwd(e){ const cw=[[1,0],[0,1],[-1,0],[0,-1]][e]||[1,0]; const sg=(HOT_DIR===1)?1:-1; return [cw[0]*sg, cw[1]*sg]; }
-function beamBreath(a){ let dip=0; const x=a-(HOT_DWELL-1.5); if(Math.abs(x)<0.5) dip=0.5*(0.5+0.5*Math.cos(2*Math.PI*x)); return 1-dip; }
-let pulseRAF=null, lastPulseT=0, beamIntroT=0;
-function pulseLoop(){ try{ const bp=document.getElementById('board-panel'); const now=Date.now(); const frozen=now<freezeEnd;
-  const dt = lastPulseT ? Math.min(120, now-lastPulseT) : 16;
-  // FREEZE: board + timer hold DARK blue, then pulse SMOOTHLY to LIGHT blue once per second the last 2s.
-  const fzRem=freezeEnd-now; const bpEl=document.getElementById('board-panel'), tmEl=document.getElementById('flx-timer');
-  if(fzRem>0){ const cs=getComputedStyle(document.documentElement); const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC';
-    if(bpEl) bpEl.style.background=DK;          // STATIC frozen colour the whole time — no pulse (the draining bar is the countdown)
-    if(tmEl) tmEl.style.color='#0062E3'; }
-  else { if(bpEl) bpEl.style.background=''; if(tmEl) tmEl.style.color=''; }
-  // Smooth auto-charge, per frame (like Cascada) — so the buttons fill continuously, not in 1s steps.
-  if(started && !finished && !frozen && freezeCharges<FREEZE_MAX){ freezeFill=Math.min(1, freezeFill+(dt/1000)/FREEZE_FILL); if(freezeFill>=1){ freezeCharges++; freezeFill=0; } }
-  lastPulseT=now; renderFreeze();
-  // Two wall layers cross-fade off the SAME whole-second clock: as the outgoing edge fades out the
-  // incoming edge rises in (no gap, no dark frame), and the pulse only breathes full↔dim (never off).
-  { const w0=document.getElementById('wall0'), w1=document.getElementById('wall1'); const s=hotSideNow();
-    const intro=beamIntroT?Math.min(1,(now-beamIntroT)/450):1;   // the whole beam glows IN over ~0.45s when you press Empezar
-    if(w0&&w1){
-      if(s<0){ w0.style.opacity='0'; w1.style.opacity='0'; w0.style.transform=''; w1.style.transform=''; }
-      else if(frozen){ w0.style.background=wallGrad(s); w0.style.opacity=intro.toFixed(3); w0.style.transform=''; w1.style.opacity='0'; w1.style.transform=''; }
-      else { const frac=Math.max(0,Math.min(0.999,(now-startedAt)/1000-elapsed));
-        const bx=elapsed+frac-beamBaseTime-HOT_GRACE; const kf=Math.floor(bx/PERIOD), into=bx-kf*PERIOD; const k=beamBaseIndex+kf;
-        const eK=((HOT_START+HOT_DIR*k)%4+4)%4, eN=((HOT_START+HOT_DIR*(k+1))%4+4)%4;
-        const layA=(k%2===0)?w0:w1, layB=(k%2===0)?w1:w0;   // pin each dwell to a layer by parity
-        layA.style.background=wallGrad(eK); layB.style.background=wallGrad(eN);
-        if(into<HOT_DWELL){ layA.style.transform=''; layA.style.opacity=intro.toFixed(3); layB.style.opacity='0'; layB.style.transform=''; }   /* STATIC for the full 5s — solid, no slide */
-        else { const p=(into-HOT_DWELL)/MOVE_DUR, fK=beamFwd(eK), fN=beamFwd(eN);   // then it MOVES: outgoing edge trains OFF; incoming edge trains IN around the corner
-          layA.style.transform='translate('+(fK[0]*p*100).toFixed(2)+'%,'+(fK[1]*p*100).toFixed(2)+'%)'; layA.style.opacity=intro.toFixed(3);
-          layB.style.transform='translate('+(-fN[0]*(1-p)*100).toFixed(2)+'%,'+(-fN[1]*(1-p)*100).toFixed(2)+'%)'; layB.style.opacity=intro.toFixed(3); } } } } }catch(e){}
-  // three-segment effect bar: each fills its colour on activation and drains as its timer/streak runs down
-  try{ const tn=Date.now(), sr=document.getElementById('seg-racha'), sp=document.getElementById('seg-peligro'), sh=document.getElementById('seg-shield'), sgB=document.getElementById('seg-borde');
-    if(sr) sr.style.transform='scaleX('+(rachaLeft>0?Math.max(0,Math.min(1,rachaLeft/rachaTotal)):0).toFixed(3)+')';
-    if(sp) sp.style.transform='scaleX('+(tn<peligroEnd?Math.max(0,Math.min(1,(peligroEnd-tn)/(PEL_WINDOW*Math.max(1,peligroCount)))):0).toFixed(3)+')';      // divide by the TOTAL stacked window so it drains the whole time (slower per extra red), not just the last 6s
-    if(sh) sh.style.transform='scaleX('+(tn<shieldEnd?Math.max(0,Math.min(1,(shieldEnd-tn)/(SHIELD_WINDOW*Math.max(1,shieldCount)))):0).toFixed(3)+')';
-    if(sgB){ if(started && !finished){ const base=(Date.now()<freezeEnd)?elapsed:(Date.now()-startedAt)/1000; const into=(((base-beamBaseTime-HOT_GRACE)%PERIOD)+PERIOD)%PERIOD; const v=into<HOT_DWELL?(HOT_DWELL-into)/HOT_DWELL:(into-HOT_DWELL)/MOVE_DUR; sgB.style.transform='scaleX('+Math.max(0,Math.min(1,v)).toFixed(3)+')'; } else sgB.style.transform='scaleX(0)'; } }catch(e){}   // empties over the 5s sit, fills as it moves, holds while frozen
-  pulseRAF = finished ? null : requestAnimationFrame(pulseLoop); }
-// Hearts ARE your score: each one you finish with shaves time off (see effTime).
-function rankNow(){ return rankForTime(effTime()); }
+function wallGrad(e){ const d=['to bottom','to left','to top','to right'][e]||'to bottom'; return 'linear-gradient('+d+', #662E9B 0, #662E9B 11px, rgba(102,46,155,0) 11px)'; }   // SOLID 11px bar
+function wallGradThin(e){ const d=['to bottom','to left','to top','to right'][e]||'to bottom'; return 'linear-gradient('+d+', #662E9B 0, #662E9B 6px, rgba(102,46,155,0) 6px)'; }  // NEXT-side hint: thinner bar
+// v2 (calibration): the border occupies TWO ADJACENT sides — borderSide and the next one
+// clockwise. With one side, par == piece count on ~99% of boards and even random play landed
+// within +1 of par (measured); blocking half the compass makes ORDERING the actual game.
+function beamBlocksDir(dir){ return started && !finished && (dir===borderSide || dir===((borderSide+1)%4)); }
+function beamBlocks(pid){ return beamBlocksDir(PIECES[pid].dir); }
+function renderBorder(){ const w0=document.getElementById('wall0'), w1=document.getElementById('wall1'), w2=document.getElementById('wall2');
+  if(!w0||!w1) return;
+  if(!started||finished){ w0.style.opacity='0'; w1.style.opacity='0'; if(w2) w2.style.opacity='0'; return; }
+  w0.style.background=wallGrad(borderSide);            w0.style.opacity='1'; w0.style.transform='';
+  w1.style.background=wallGrad((borderSide+1)%4);      w1.style.opacity='1'; w1.style.transform='';
+  if(w2){ w2.style.background=wallGradThin((borderSide+2)%4); w2.style.opacity='0.35'; w2.style.transform=''; } }
+function rotateBorder(){ borderSide=(borderSide+1)%4; renderBorder(); }
+// LIVE RANK: projected best-case final gap = turns so far + one turn per arrow left on this
+// board + the pars of the boards not yet started − the day's par. Clamped at 0 — you start
+// at Maestro/a and decay as turns are wasted. Once the run is WON, the real gap is used.
+function parRemainingFuture(){ let s=0; for(let b=boardNum+1;b<=RUN_BOARDS;b++) s+=PARS[b-1]; return s; }
+function projGap(){ return Math.max(0, turns + piecesLeft() + parRemainingFuture() - PAR_TOTAL); }
+function gapNow(){ return runWon ? (turns-PAR_TOTAL) : projGap(); }
+function rankNow(){ return rankForGap(gapNow()); }
 function applyRole(pid){ const r=ROLE[pid];
-  if(r===R_RACHA){                                                         // STACK: each amber adds RACHA_NEED to the requirement AND the reward
+  if(r===R_RACHA){                                                         // STACK: each amber adds RACHA_NEED to the target AND the reward
     if(rachaLeft>0){ rachaLeft+=RACHA_NEED; rachaTotal+=RACHA_NEED; rachaCount++; }
     else { rachaLeft=RACHA_NEED; rachaTotal=RACHA_NEED; rachaCount=1; }
-    flash('Racha ×'+rachaCount+' · '+rachaTotal+' limpias','bonus'); }
-  else if(r===R_PELIGRO){                                                  // STACK: each red extends the window AND the survive reward
-    const now=Date.now();
-    if(peligroEnd>now){ peligroEnd+=PEL_WINDOW; peligroCount++; }
-    else { peligroEnd=now+PEL_WINDOW; peligroCount=1; }
-    peligroPending=true; document.body.classList.add('danger');
-    flash('Peligro ×'+peligroCount+' · sobrevive limpio','bonus'); }
-  else if(r===R_SHIELD){                                                   // STACK: each shield extends the grace window — bumps cost 0 hearts while it's up
-    const now=Date.now();
-    if(shieldEnd>now){ shieldEnd+=SHIELD_WINDOW; shieldCount++; }
-    else { shieldEnd=now+SHIELD_WINDOW; shieldCount=1; }
-    document.body.classList.add('shielded');
-    flash('Escudo ×'+shieldCount,'bonus'); } }
-// DESVIAR: auto-charges over time (bar in the button); spend a charge to jump the purple
-// border to the OPPOSITE side and restart its 5s dwell. The clock keeps running — Desviar
-// controls the hazard, it doesn't stop time. (freezeCharges/freezeFill are reused as the
-// charge store so saved games keep their charge across the rename.)
-function renderFreeze(){ const fz=document.getElementById('flx-desviar');
-  // The button stays FULL opacity (never the dim "disabled" look); only the ready (glowing)
-  // state is clickable, exactly like Cascada's Congelar.
-  const playing=started && !finished, has=freezeCharges>0 && playing;
-  if(fz){ fz.disabled=!playing; fz.classList.toggle('ready', has);
-    const fillTo = (freezeCharges>=FREEZE_MAX)?1:freezeFill;
-    const f=fz.querySelector('.act-fill'); if(f) f.style.transform='scaleX('+fillTo.toFixed(3)+')'; } }
-function useDesviar(){ if(freezeCharges<=0 || finished || !started) return;
-  if(hotSideNow()<0) return;                               // border not out yet — nothing to deflect
-  freezeCharges--;
-  beamBaseIndex=hotIndex()+2; beamBaseTime=elapsed;        // opposite side (+2 of 4, HOT_DIR is always 1), dwell restarts
-  renderFreeze(); renderHot(); renderStatus(); saveState(); flash('Borde desviado','success'); }
+    flash('Racha · '+rachaTotal+' limpias → +½','bonus'); }
+  else if(r===R_SHIELD){                                                   // bank a fail-absorber (stacks to 3)
+    escudos=Math.min(ESCUDO_CAP, escudos+1);
+    flash('Escudo ×'+escudos,'bonus'); } }
+// The two action buttons. Esperar is always ready during play (no charges); Desviar shows
+// its remaining count (×2/×1) and dims when spent. Both disabled when not playing.
+function renderActions(){ const playing=started && !finished;
+  const ew=document.getElementById('flx-esperar');
+  if(ew){ ew.disabled=!playing; ew.classList.toggle('ready', playing); }
+  const dv=document.getElementById('flx-desviar');
+  if(dv){ const has=playing && desviarCharges>0;
+    dv.disabled=!playing||desviarCharges<=0; dv.classList.toggle('ready', has); dv.classList.toggle('spent', desviarCharges<=0);
+    const c=document.getElementById('dv-count'); if(c) c.textContent='×'+desviarCharges; } }
+// ESPERAR: pass the turn — the border rotates one side clockwise. Neutral to the racha.
+function useEsperar(){ if(!started||finished||busy) return;
+  turns++; rotateBorder();
+  saveState(); renderStatus(); renderRank(); }
+// DESVIAR: spend one of the run's 2 charges — this turn's rotation becomes a SNAP to the
+// OPPOSITE side. Neutral to the racha. No recharge.
+function useDesviar(){ if(desviarCharges<=0 || finished || !started || busy) return;
+  desviarCharges--; turns++;
+  borderSide=(borderSide+2)%4; renderBorder();
+  renderActions(); saveState(); renderStatus(); renderRank(); flash('Borde desviado','success'); }
 
 let firedP=new Array(PIECES.length).fill(false);
 let mistakes=0, hintsUsed=0, solved=false, finished=false, busy=false, score=0;
 let training=false;   // after the FIRST attempt (win or spill) the daily is locked; further runs are practice only
 function dailyDone(){ return !!LS.getItem(DSCOPE+'-counted-'+ISO); }
-let elapsed=0, startedAt=null, timerId=null, started=false;
-let combo=0, lastLaunch=0;
+let started=false;
 
 function ownerNow(){ const o=new Array(NCELLS).fill(-1); PIECES.forEach(p=>{ if(!firedP[p.id]) p.cells.forEach(c=>o[c]=p.id); }); return o; }
 function headCellOf(p){ return (p.headEnd==='A') ? p.cells[0] : p.cells[p.cells.length-1]; }
@@ -1714,33 +1573,26 @@ function computeScore(){
 function rankIndex(s){let idx=0;for(let i=0;i<RANK_THRESHOLDS.length;i++){if(s>=RANK_THRESHOLDS[i])idx=i;}return idx;}
 
 /* ============================ PERSISTENCE ============================ */
-function saveState(){ try{ LS.setItem(DSCOPE+'-state-'+ISO, JSON.stringify({f:firedP,m:mistakes,h:hintsUsed,e:elapsed,st:started,lv:lives,fz:freezeCharges,ff:freezeFill,bi:beamBaseIndex,bti:beamBaseTime,tr:training,bn:boardNum})); }catch(e){} }
+function saveState(){ try{ LS.setItem(DSCOPE+'-state-'+ISO, JSON.stringify({f:firedP,m:mistakes,h:hintsUsed,t:turns,st:started,lv:lives,bs:borderSide,dv:desviarCharges,es:escudos,rl:rachaLeft,rt:rachaTotal,rk:rachaCount,th:turnsHist,rw:runWon,tr:training,bn:boardNum})); }catch(e){} }
 function loadState(){
   try{ const o=JSON.parse(LS.getItem(DSCOPE+'-state-'+ISO)); if(!o) return;
     const bn=o.bn||1; if(bn!==boardNum) genBoard(bn);   // rebuild the saved board first so firedP lines up with its pieces
-    if(Array.isArray(o.f) && o.f.length===PIECES.length){ firedP=o.f.map(Boolean); mistakes=o.m||0; hintsUsed=o.h||0; elapsed=o.e||0; started=!!o.st||elapsed>0; lives=(typeof o.lv==='number')?o.lv:HEARTS_MAX; freezeCharges=Math.min(FREEZE_MAX,o.fz|0); freezeFill=(typeof o.ff==='number')?o.ff:0; beamBaseIndex=o.bi|0; beamBaseTime=(typeof o.bti==='number')?o.bti:0; training=!!o.tr; document.body.classList.toggle('training', training); }
+    if(Array.isArray(o.f) && o.f.length===PIECES.length){ firedP=o.f.map(Boolean); mistakes=o.m||0; hintsUsed=o.h||0; turns=o.t|0; started=!!o.st||turns>0; lives=(typeof o.lv==='number')?o.lv:HEARTS_MAX;
+      borderSide=(typeof o.bs==='number')?(o.bs&3):startSideFor(bn); desviarCharges=(typeof o.dv==='number')?Math.max(0,Math.min(DESVIAR_MAX,o.dv|0)):DESVIAR_MAX;
+      escudos=Math.max(0,Math.min(ESCUDO_CAP,o.es|0)); rachaLeft=(typeof o.rl==='number')?o.rl:-1; rachaTotal=o.rt|0; rachaCount=o.rk|0;
+      turnsHist=Array.isArray(o.th)?o.th.map(Number):[]; runWon=!!o.rw; training=!!o.tr; document.body.classList.toggle('training', training); }
   }catch(e){}
 }
 
-/* ============================ TIMER + START GATE ============================ */
-function fmtTime(s){ const m=Math.floor(s/60); return m+':'+String(s%60).padStart(2,'0'); }
-function stopTimer(){ if(timerId){ clearInterval(timerId); timerId=null; } }
-function startTimer(){ if(finished) return; stopTimer(); startedAt=Date.now()-elapsed*1000;
-  timerId=setInterval(()=>{ const now=Date.now();
-    if(now<freezeEnd){ startedAt=now-elapsed*1000; }                                  // frozen: hold elapsed AND pause the charge
-    else { if(document.body.classList.contains('frozen')) document.body.classList.remove('frozen'); elapsed=Math.floor((now-startedAt)/1000); }   // (freeze charge is advanced per-frame in pulseLoop)
-    if(!peligroOn() && document.body.classList.contains('danger')){
-      document.body.classList.remove('danger');
-      if(peligroPending){ peligroPending=false; const rew=0.5*Math.max(1,peligroCount); addLife(rew); flash('Sobreviviste · +'+_fmtHalf(rew)+' vida','success'); } peligroCount=0; }
-    if(!shieldOn() && document.body.classList.contains('shielded')){ document.body.classList.remove('shielded'); shieldCount=0; }   // grace ended — and your hands are still going fast…
-    renderStatus(); renderRank(); renderBeans(); renderHot(); renderFreeze(); if(elapsed%5===0) saveState(); },1000);
-  if(!pulseRAF) pulseRAF=requestAnimationFrame(pulseLoop); }
+/* ============================ START GATE (no clock — the score is TURNS) ============================ */
+function fmtTime(s){ const m=Math.floor(s/60); return m+':'+String(s%60).padStart(2,'0'); }   // kept for legacy call sites
 function applyGateState(){ const gate=document.getElementById('start-gate'); if(!gate) return;
-  if(finished){ gate.hidden=true; document.body.classList.remove('prestart'); stopTimer(); }
-  else if(started){ gate.hidden=true; document.body.classList.remove('prestart'); startTimer(); }
-  else { gate.hidden=false; document.body.classList.add('prestart'); } }
+  if(finished){ gate.hidden=true; document.body.classList.remove('prestart'); }
+  else if(started){ gate.hidden=true; document.body.classList.remove('prestart'); }
+  else { gate.hidden=false; document.body.classList.add('prestart'); }
+  renderBorder(); renderActions(); }
 function beginPuzzle(){ const gate=document.getElementById('start-gate'); if(gate) gate.hidden=true; document.body.classList.remove('prestart');
-  if(finished) return; started=true; beamIntroT=Date.now(); startTimer(); armBeans(); saveState(); renderStatus(); renderRank(); renderHot(); renderFreeze(); }
+  if(finished) return; started=true; saveState(); renderStatus(); renderRank(); renderBorder(); renderActions(); }
 
 /* ============================ BOARD RENDER ============================ */
 function cellCenter(idx){ const [r,c]=rc(idx); return [c*U+U/2, r*U+U/2]; }
@@ -1789,28 +1641,20 @@ function buildBoard(){
   host.innerHTML=svg;
   PIECES.forEach(p=>{ const g=document.getElementById('pc-'+p.id); if(!g) return; g.addEventListener('click',()=>tapPiece(p.id));
     const rcl=roleClass(p.id); if(rcl) g.classList.add(rcl); });
-  renderBoard(); renderLives(); renderFreeze();
+  renderBoard(); renderLives(); renderActions();
 }
 function renderBoard(){
   PIECES.forEach(p=>{ const g=document.getElementById('pc-'+p.id); if(!g)return; g.style.display=firedP[p.id]?'none':''; });
-  renderBeans();
 }
 function renderStatus(){
-  const left=piecesLeft();
-  const tEl=document.getElementById('flx-timer'); if(tEl) tEl.textContent=fmtTime(elapsed);
-  // RIGHT slot — info about the timed effect in play (the most relevant one):
-  // a running freeze countdown > Peligro window > active racha; nothing otherwise.
-  // ALWAYS-ON STATUS STRIP — every effect's tile is always visible; it lights up + shows its
-  // live counter/timer when active, and sits dim otherwise.
-  // Cascada-formatted box, but showing the three effects (lights up + colours when active)
+  const tEl=document.getElementById('flx-timer'); if(tEl) tEl.textContent=String(turns);
   const setFx=(id,on,val)=>{ const t=document.getElementById(id); if(!t) return; t.classList.toggle('on',on); const v=t.querySelector('.fbox-val'); if(v) v.textContent=val; };
   const rOn=rachaLeft>0; document.body.classList.toggle('racha-on', rOn);   // yellow board tint while a streak is live
   setFx('fb-racha', rOn, rOn?((rachaTotal-rachaLeft)+'/'+rachaTotal):'—');
-  const pOn=peligroOn(); setFx('fb-peligro', pOn, pOn?(Math.max(0,Math.ceil((peligroEnd-Date.now())/1000))+'s'):'—');
-  const shOn=shieldOn(); setFx('fb-shield', shOn, shOn?(Math.max(0,Math.ceil((shieldEnd-Date.now())/1000))+'s'):'—');
-  // Borde (beam) countdown — seconds until it jumps to the next edge (like Cascada's "Nuevo")
-  if(started && !finished){ const into=(((elapsed-beamBaseTime-HOT_GRACE)%PERIOD)+PERIOD)%PERIOD; setFx('fb-borde', true, into<HOT_DWELL?(Math.max(1,Math.ceil(HOT_DWELL-into))+'s'):'—'); }
-  else setFx('fb-borde', false, '—');
+  const shOn=escudos>0; document.body.classList.toggle('shielded', shOn);   // cyan tint while a fail-absorber is banked
+  setFx('fb-shield', shOn, shOn?('×'+escudos):'—');
+  setFx('fb-par', true, String(PAR_TOTAL));
+  setFx('fb-borde', started && !finished, (started && !finished)?(BORDER_GLYPH[borderSide]+BORDER_GLYPH[(borderSide+1)%4]):'—');
   const lc=document.getElementById('flx-left'); if(lc) lc.textContent=boardNum+'/'+RUN_BOARDS;
 }
 
@@ -1840,55 +1684,46 @@ function showBlockLine(pid){
   setTimeout(()=>{ try{ svg.removeChild(ln); }catch(e){} },780);
 }
 function tapPiece(pid){
-  if(finished || firedP[pid]) return;
+  if(finished || !started || busy || firedP[pid]) return;
   const g=document.getElementById('pc-'+pid); if(!g) return;
-  // ORDER MATTERS: a real bump (blocked by another arrow) is resolved FIRST — you lose the
-  // heart and break the racha exactly as if no beam existed. The beam is checked LAST, and
-  // only matters for an arrow that would OTHERWISE launch cleanly.
+  // FAILED LAUNCH #1 — another arrow blocks the lane: red bounce. Costs ½ heart (or an
+  // escudo), +1 turn, breaks the racha, and the border does NOT rotate.
   if(!pieceClear(pid)){
-    mistakes++; combo=0;
-    if(started && !finished) loseLife(peligroOn()?PEL_COST:BUMP_COST);                     // ½ heart per bump, doubled to 1 during a Peligro window
-    computeScore(); saveState();
+    const safe=escudos>0;                            // an escudo will absorb this fail → cyan flash, not red
+    failLaunch();
     const bp=PIECES[pid], vx=DC[bp.dir], vy=DR[bp.dir];
     const hit=nearestCollision(pid); let adv=34;
     if(hit){ const [r1,c1]=rc(hit.from),[r2,c2]=rc(hit.to); adv=Math.max(20,(Math.abs(r1-r2)+Math.abs(c1-c2)-1)*U+34); }
     const line=g.querySelector('.pline'), hd=g.querySelector('.phead'); const T=Math.max(300,Math.round(adv*1.5));
-    const safe=shieldOn(); g.classList.add(safe?'blocked-safe':'blocked');   // under a shield a bump is harmless → no red alarm
+    g.classList.add(safe?'blocked-safe':'blocked');
     if(line) line.animate([{strokeDashoffset:'0px'},{strokeDashoffset:(-adv)+'px',offset:.45},{strokeDashoffset:'0px'}],{duration:T,easing:'ease-in-out'});
     if(hd) hd.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(adv*vx)+'px,'+(adv*vy)+'px)',offset:.45},{transform:'translate(0px,0px)'}],{duration:T,easing:'ease-in-out'});
     if(DCFG.blockHint && !safe) findBlockers(pid).forEach(bid=>{ setTimeout(()=>{ const bg=document.getElementById('pc-'+bid); if(!bg) return; bg.classList.add('blocker'); setTimeout(()=>bg.classList.remove('blocker'),600); }, Math.max(0,T*0.45-120)); });
     setTimeout(()=>{ g.classList.remove('blocked','blocked-safe'); },T+20);
-    renderStatus(); renderRank();
     return;
   }
-  // HOT BEAM (checked LAST): the lane is clear, so the only thing stopping this arrow is the
-  // live (indigo) edge. That side is CLOSED — no penalty, no racha break, pure routing. The
-  // arrow flies ALL the way to the edge, turns purple, and BOUNCES back; fire a cool side,
-  // wait, or spend ⏭ to shove the beam.
+  // FAILED LAUNCH #2 — lane clear but the exit side IS the border: PURPLE bounce. Same
+  // cost as a bump (½ heart / escudo, +1 turn, racha breaks, border does NOT rotate).
   if(beamBlocks(pid)){
+    const safe=escudos>0;
+    failLaunch();
     const p=PIECES[pid];
     const line=g.querySelector('.pline'), hd=g.querySelector('.phead');
-    const mv=Math.max(20, p._move-WALL_UNITS);   // stop at the bar's INNER FACE (~the 11px bar), not the board edge
-    // SAME snappy out-and-back as an arrow-vs-arrow bump: one ease-in-out keyframe (out at .45, back to 0).
+    const mv=Math.max(20, p._move-WALL_UNITS);   // stop at the bar's INNER FACE, not the board edge
     const T=Math.max(300, Math.round(mv*1.5));
-    g.classList.add('beam-blocked');
+    g.classList.add(safe?'blocked-safe':'borderblocked');
     if(line) line.animate([{strokeDashoffset:'0px'},{strokeDashoffset:(-mv)+'px',offset:.45},{strokeDashoffset:'0px'}],{duration:T,easing:'ease-in-out'});
     if(hd)   hd.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(mv*p._vx)+'px,'+(mv*p._vy)+'px)',offset:.45},{transform:'translate(0px,0px)'}],{duration:T,easing:'ease-in-out'});
-    setTimeout(()=>{ try{g.classList.remove('beam-blocked');}catch(e){} }, T+40);
-    flash('Borde cerrado · rebota','bonus');
+    setTimeout(()=>{ try{g.classList.remove('borderblocked','blocked-safe');}catch(e){} }, T+40);
     return;
   }
-  // LAUNCH — commit immediately so the next tap registers instantly (no input lock)
-  const beforeSet=launchableSet();
-  armBeans(beforeSet);                              // arm any bean already reachable (incl. the one we grab)
-  firedP[pid]=true; computeScore();
-  collectBeans();                                   // bank beans this sweep grabbed (with ☕ feedback)
+  // LAUNCH — +1 turn, the border rotates one side clockwise. Commit immediately so the
+  // next tap registers instantly (no input lock).
+  firedP[pid]=true; turns++; computeScore();
   rachaTick();                                       // a clean launch advances any active racha (set below)
   applyRole(pid);
-  const afterSet=launchableSet(); armBeans(afterSet);   // arm beans this fire just opened a path to
-  const freedPids=[]; afterSet.forEach(x=>{ if(!beforeSet.has(x)) freedPids.push(x); });
-  /* freed-neighbor pulse removed — no more pink blink */
-  saveState(); renderStatus(); renderRank(); renderBeans(); clearHintPulse();
+  rotateBorder();
+  saveState(); renderStatus(); renderRank(); clearHintPulse();
   const p=PIECES[pid]; g.classList.add('firing');
   const line=g.querySelector('.pline'), hd=g.querySelector('.phead');
   const T=Math.max(200, Math.round(110+p._F*0.20));
@@ -1898,27 +1733,40 @@ function tapPiece(pid){
   if(solved) onSolved();
 }
 
-// Regenerate the board data for board n (no DOM). Pieces, fire order, specials and the
-// per-board progress all reset; the timer / hearts / beam / freeze are left untouched.
+// Swap in the board data for board n (no DOM). Pieces, fire order, specials and the
+// per-board progress all reset; hearts / escudos / Desviar charges / turns carry over.
+// The border resets to the board's own seeded starting side (par is computed from it).
 function genBoard(n){
   boardNum=n; const sk=seedFor(n);
-  PUZ=genPuzzle(sk); PIECES=PUZ.pieces; FIRE_ORDER=PUZ.fireOrder;
+  PUZ=PUZZLES[n-1]; PIECES=PUZ.pieces; FIRE_ORDER=PUZ.fireOrder;
   _fr=new Array(PIECES.length); FIRE_ORDER.forEach((pid,i)=>_fr[pid]=i);
   ROLE=new Array(PIECES.length).fill(0); assignRoles(sk);
   firedP=new Array(PIECES.length).fill(false); TOTALC=0; solved=false; busy=false;
+  borderSide=startSideFor(n);
 }
 // Swap a fresh board in mid-run and re-render it.
-function loadBoard(n){ genBoard(n); buildBoard(); renderStatus(); renderRank(); renderHot(); renderFreeze(); }
+function loadBoard(n){ genBoard(n); buildBoard(); renderStatus(); renderRank(); renderBorder(); renderActions(); }
 
+// Board-clear interstitial: 'Tablero N limpio · Par 11 — Tú 13 (+2)' in the goal panel.
+function fmtGap(g){ return g>0?('+'+g):(g===0?'par':String(g)); }
+function boardInterstitial(n, bTurns, bPar){
+  const head=document.querySelector('#goal-panel .goal-headline'); if(head) head.textContent='Tablero '+n+' limpio';
+  const sub=document.getElementById('goal-sub');
+  if(sub) sub.innerHTML='<div class="gb-math">Par '+bPar+' — Tú '+bTurns+' <span class="gb-time">('+fmtGap(bTurns-bPar)+')</span></div>'
+    +'<div class="gb-note">Tablero '+(n+1)+' de '+RUN_BOARDS+' listo</div>';
+  openGoal('goal-panel');
+}
 function onSolved(){
+  turnsHist[boardNum-1]=turns;                               // cumulative turns at each board clear
+  const bPar=PARS[boardNum-1], bTurns=turns-(boardNum>1?(turnsHist[boardNum-2]||0):0);
   if(boardNum<RUN_BOARDS){                                   // board cleared — the next one falls in (run continues)
-    const nx=boardNum+1; busy=true; flash('Tablero '+nx+' / '+RUN_BOARDS,'bonus');
-    setTimeout(()=>{ if(finished) return; loadBoard(nx); saveState(); },420);   // let the last arrow finish leaving
+    const done=boardNum; busy=true;
+    setTimeout(()=>{ if(finished) return; loadBoard(done+1); saveState(); boardInterstitial(done, bTurns, bPar); },420);   // let the last arrow finish leaving
     return;
   }
-  // last board cleared → the run is over; total time is the score
-  finished=true; stopTimer(); if(!training) recordResult(true);   // only the FIRST attempt counts
-  maybeCelebrate(); renderHints(); renderRank();
+  // last board cleared → the run is over; total TURNS are the score
+  finished=true; runWon=true; if(!training) recordResult(true);   // only the FIRST attempt counts
+  saveState(); maybeCelebrate(); renderHints(); renderRank(); renderStatus(); renderBorder(); renderActions();
 }
 
 /* ============================ PISTA ============================ */
@@ -1941,34 +1789,35 @@ function buildRankTrack(track){                              // build the static
   track.innerHTML='<div class="rank-track-line"></div><div class="rank-track-fill"></div>';
   for(let i=0;i<=TOP;i++){ const dot=document.createElement('div'); dot.className='rank-dot'; dot.dataset.i=i; dot.style.left='clamp(3px, '+((i/slots)*100)+'%, calc(100% - 3px))'; track.appendChild(dot); }
   const bubble=document.createElement('div'); bubble.className='rank-dot current'; bubble.id='rank-bubble'; bubble.style.zIndex='5'; track.appendChild(bubble);
-  const mk=document.createElement('div'); mk.className='rank-marker'; mk.id='rank-marker'; mk.style.left='clamp(2px, '+timePos(META)+'%, calc(100% - 2px))'; track.appendChild(mk);   // continuous — same mapping as the bubble (Racimo standard)
+  const mk=document.createElement('div'); mk.className='rank-marker'; mk.id='rank-marker'; mk.style.left='clamp(2px, '+gapPos(RETO_DELTA)+'%, calc(100% - 2px))'; track.appendChild(mk);   // reto marker — same mapping as the bubble (Racimo standard)
   _rankBuilt=true;
 }
-// Continuous track position for a TIME t — the Racimo standard mapping: the bubble
-// GLIDES between the bracketing rank dots (same mapping as the reto marker), instead
-// of snapping dot to dot. Time ranks DECAY: you start at Maestro/a and slide left.
-function timePos(t){ const idx=rankForTime(t);
-  const hi=timeMaxFor(idx); if(!isFinite(hi)) return 0;                 // slower than the bottom band
-  const lo=(idx>=TOP)?0:timeMaxFor(idx+1);
-  const frac=Math.max(0,Math.min(1,(hi-t)/Math.max(1,hi-lo)));
+// Continuous track position for a GAP g — the Racimo standard mapping: the bubble GLIDES
+// between the bracketing rank dots (same mapping as the reto marker), instead of snapping
+// dot to dot. Gaps DECAY: you start at Maestro/a (gap 0) and slide left as turns pile up.
+function gapPos(g){ const idx=rankForGap(g);
+  if(idx>=TOP) return 100;                                              // par or better — pinned at the top
+  const hi=gapMaxFor(idx); if(!isFinite(hi)) return 0;                  // beyond the bottom band
+  const lo=gapMaxFor(idx+1);
+  const frac=Math.max(0,Math.min(1,(hi-g)/Math.max(1,hi-lo)));
   return Math.min(100,(idx+frac)/TOP*100); }
 function renderRank(){
   const track=document.getElementById('rank-track'); if(!track) return;
   if(!_rankBuilt || !track.querySelector('.rank-track-fill')) buildRankTrack(track);   // (re)build only if missing
-  const live=started||finished, idx=live?rankNow():0, pos=live?timePos(effTime()):0;
+  const live=started||finished, idx=live?rankNow():TOP, pos=live?gapPos(gapNow()):100;
   const fill=track.querySelector('.rank-track-fill'); if(fill) fill.style.width=pos+'%';
   track.querySelectorAll('.rank-dot:not(.current)').forEach(d=>d.classList.toggle('passed', live&&(+d.dataset.i)<=idx));
   const bubble=document.getElementById('rank-bubble'); if(bubble){ bubble.style.left='clamp(12px, '+pos+'%, calc(100% - 12px))'; bubble.classList.toggle('at-maestro',idx===TOP); }
-  const mk=document.getElementById('rank-marker'); if(mk) mk.classList.toggle('done', finished&&effTime()<=META);
+  const mk=document.getElementById('rank-marker'); if(mk) mk.classList.toggle('done', runWon&&turns<=META);
   const lbl=document.getElementById('rank-label'); if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); }
-  const st=document.getElementById('stat-today'); if(st) st.textContent=(started||finished)?(fmtTime(elapsed)+' · '+RANK_NAMES[idx]):'Sin empezar';
+  const st=document.getElementById('stat-today'); if(st) st.textContent=(started||finished)?(turns+' turnos · '+RANK_NAMES[idx]):'Sin empezar';
 }
 
 /* ============================ RANGOS ============================ */
 function renderRangos(){
-  const rr=document.getElementById('rangos-reto'); if(rr) rr.innerHTML='Tu rango lo decide el <strong style="color:var(--accent)">tiempo total</strong> en despejar los <strong style="color:var(--accent)">5 tableros</strong>. <br>Meta de hoy: <strong style="color:var(--accent)">'+fmtTime(META)+'</strong> — bájala y celebra con un <strong style="color:var(--accent)">¡Buen sorbo!</strong>';
+  const rr=document.getElementById('rangos-reto'); if(rr) rr.innerHTML='Tu rango lo decide cuántos <strong style="color:var(--accent)">turnos</strong> usas frente al <strong style="color:var(--accent)">par</strong> de los 3 tableros (hoy: <strong style="color:var(--accent)">par '+PAR_TOTAL+'</strong>). <br>Reto de hoy: <strong style="color:var(--accent)">≤ '+META+' turnos</strong> — lógralo y celebra con un <strong style="color:var(--accent)">¡Buen sorbo!</strong>';
   const cur=rankNow(); let html='';
-  for(let i=TOP;i>=0;i--){ const mx=timeMaxFor(i); const band=(mx===Infinity)?('> '+fmtTime(timeMaxFor(1))):('≤ '+fmtTime(mx));
+  for(let i=TOP;i>=0;i--){ const band=GAP_BAND_LABELS[i];
     const cls='rank-row'+((i===cur&&(started||finished))?' current':'')+(i===TOP?' is-top':'');
     html+='<div class="'+cls+'"><span class="name">'+RANK_NAMES[i]+'</span><span class="score">'+band+'</span></div>'; }
   const rl=document.getElementById('rangos-list'); if(rl) rl.innerHTML=html;
@@ -1976,7 +1825,7 @@ function renderRangos(){
 
 /* ============================ STATS ============================ */
 function getStats(){
-  const def={played:0,wins:0,curPlay:0,maxPlay:0,curReto:0,maxReto:0,ranks:[0,0,0,0,0,0,0,0,0,0],lastPlay:null,lastReto:null,bestTime:0,noMiss:0};
+  const def={played:0,wins:0,curPlay:0,maxPlay:0,curReto:0,maxReto:0,ranks:[0,0,0,0,0,0,0,0,0,0],lastPlay:null,lastReto:null,bestGap:null,noMiss:0};
   try{ return Object.assign(def, JSON.parse(LS.getItem(DSCOPE+'-stats'))||{}); }catch(e){ return def; }
 }
 // The OFFICIAL daily — recorded once, on the first attempt's conclusion (a finish OR a spill).
@@ -1985,18 +1834,18 @@ function recordResult(won){
   const s=getStats(), y=prevISO(ISO);
   s.played++;
   s.curPlay=(s.lastPlay===y)?s.curPlay+1:1; s.lastPlay=ISO; s.maxPlay=Math.max(s.maxPlay,s.curPlay);
-  if(won){ const idx=rankNow();
+  if(won){ const idx=rankNow(), gap=turns-PAR_TOTAL;
     s.wins++; s.ranks[idx]=(s.ranks[idx]||0)+1;
-    if(effTime()<=META){ s.curReto=(s.lastReto===y)?s.curReto+1:1; s.lastReto=ISO; s.maxReto=Math.max(s.maxReto,s.curReto); } else s.curReto=0;
-    if(!s.bestTime || elapsed<s.bestTime) s.bestTime=elapsed;
+    if(turns<=META){ s.curReto=(s.lastReto===y)?s.curReto+1:1; s.lastReto=ISO; s.maxReto=Math.max(s.maxReto,s.curReto); } else s.curReto=0;
+    if(s.bestGap===null || gap<s.bestGap) s.bestGap=gap;
     if(mistakes===0) s.noMiss=(s.noMiss||0)+1;
-  } else { s.curReto=0; }   // a spill breaks the meta streak
+  } else { s.curReto=0; }   // a spill breaks the reto streak
   try{ LS.setItem(DSCOPE+'-stats', JSON.stringify(s)); }catch(e){}
 }
 function SB(v,l,a){ return '<div class="stat-block"><div class="v'+(a?' accent':'')+'">'+v+'</div><div class="l">'+l+'</div></div>'; }
 function renderStats(){
   const s=getStats();
-  document.getElementById('stats-overall').innerHTML=SB(s.played,'Días jugados')+SB(s.wins,'Despejados')+SB(s.bestTime?fmtTime(s.bestTime):'—','Mejor tiempo',true)+SB(s.noMiss||0,'✨ Sin choques',true);
+  document.getElementById('stats-overall').innerHTML=SB(s.played,'Días jugados')+SB(s.wins,'Despejados')+SB((s.bestGap===null)?'—':fmtGap(s.bestGap),'Mejor vs. par',true)+SB(s.noMiss||0,'✨ Sin fallos',true);
   document.getElementById('stats-streaks').innerHTML=SB(s.curPlay,'Racha de juego')+SB(s.curReto,'Racha de meta')+SB(s.maxPlay,'Mejor de juego')+SB(s.maxReto,'Mejor de meta');
   const ranks=s.ranks||[], total=ranks.reduce((a,b)=>a+b,0), mx=Math.max(1,...ranks); let html='';
   for(let i=TOP;i>=0;i--){ const c=ranks[i]||0, pct=total?Math.round(c/total*100):0;
@@ -2005,15 +1854,16 @@ function renderStats(){
 }
 
 /* ============================ SHARE ============================ */
+function heartsLine(){ let h=''; const full=Math.floor(lives+1e-9), half=(lives-full)>=0.5-1e-9;
+  for(let i=0;i<HEARTS_MAX;i++) h+=(i<full)?'❤️':((i===full&&half)?'🧡':'🖤');
+  return h; }
 function buildShareText(){
   const n=dayNumber(ISO), L=[];
-  L.push('Flechas #'+n); L.push(GRID_C+'×'+GRID_R);
-  if(!finished){ L.push(''); L.push('⏳ Sin terminar todavía'); L.push(''); L.push(NEWSLETTER_URL); return L.join('\n'); }
-  const idx=rankNow();
-  L.push('');
-  L.push('⏱️ '+fmtTime(elapsed)+' · '+RANK_NAMES[idx]);
-  L.push((effTime()<=META?'✅':'➖')+' Meta '+fmtTime(META));
-  if(mistakes>0) L.push('💥 '+mistakes+' choque'+(mistakes===1?'':'s')); else L.push('✨ Sin choques');
+  if(!runWon){ L.push('Borde #'+n); L.push(''); L.push('⏳ Sin terminar todavía'); L.push(''); L.push(NEWSLETTER_URL); return L.join('\n'); }
+  const idx=rankNow(), gap=turns-PAR_TOTAL;
+  L.push('Borde #'+n+' · Par '+PAR_TOTAL+' — '+turns+' turnos · '+fmtGap(gap)+' · '+RANK_NAMES[idx]);
+  L.push(heartsLine());
+  if(turns<=META) L.push('✅ ¡Buen sorbo! (reto ≤ '+META+')');
   const s=getStats(); if(s.curReto>1) L.push('🔥 Racha '+s.curReto);
   L.push(''); L.push(NEWSLETTER_URL); return L.join('\n');
 }
@@ -2023,20 +1873,25 @@ async function doShare(){ const text=buildShareText();
 
 /* ============================ CELEBRATION ============================ */
 function maybeCelebrate(){
-  const key=DSCOPE+'-result-shown-'+ISO, idx=rankNow(), beat=effTime()<=META;
+  const key=DSCOPE+'-result-shown-'+ISO, idx=rankNow(), gap=turns-PAR_TOTAL, beat=turns<=META;
   const head=document.querySelector('#goal-panel .goal-headline'); if(head) head.textContent=training?'¡Entrenamiento!':(beat?'¡Buen sorbo!':'¡Terminado!');
-  // Score is the time, plain. Big time on top, rank under it.
+  // Score is the turns vs. par. Big math on top, rank under it.
   const sub=document.getElementById('goal-sub');
   if(sub) sub.innerHTML =
-    '<div class="gb-math"><span class="gb-ranked">⏱ '+fmtTime(elapsed)+'</span></div>'
+    '<div class="gb-math"><span class="gb-time">Par '+PAR_TOTAL+'</span> — <span class="gb-ranked">'+turns+' turnos</span> ('+fmtGap(gap)+')</div>'
     + '<div class="gb-rank">'+RANK_NAMES[idx]+'</div>'
-    + (mistakes===0?'<div class="gb-clean">Sin choques</div>':'<div class="gb-note">'+mistakes+' choque'+(mistakes===1?'':'s')+'</div>')
+    + '<div class="gb-note">'+heartsLine()+'</div>'
+    + (mistakes===0?'<div class="gb-clean">Sin fallos</div>':'<div class="gb-note">'+mistakes+' fallo'+(mistakes===1?'':'s')+'</div>')
     + (training?'<div class="gb-note">Entrenamiento · no cuenta para hoy</div>':'');
   if(!LS.getItem(key)){ LS.setItem(key,'1'); setTimeout(()=>openGoal('goal-panel'),450); }
 }
 
 /* ============================ FEEDBACK / MODALS / THEME ============================ */
-function flash(text,kind){ /* text prompts removed on Borde — feedback is the hearts + the arrows-left counter */ }
+let _fbT=null;
+function flash(text,kind){ const el=document.getElementById('word-feedback'); if(!el) return;
+  el.textContent=text; el.className='word-feedback show '+(kind||'');
+  const cnt=document.getElementById('flx-count'); if(cnt) cnt.classList.add('dim');
+  clearTimeout(_fbT); _fbT=setTimeout(()=>{ el.classList.remove('show'); if(cnt) cnt.classList.remove('dim'); },1300); }
 function openModal(id){ const ov=document.getElementById(id); if(!ov)return; ov.classList.add('open'); ov.scrollTop=0; document.body.style.overflow='hidden';
   if(id==='rangos-modal'){ const rb=document.getElementById('rank-bar'); if(rb) rb.classList.add('open'); } }
 function closeModals(){ document.querySelectorAll('.modal-overlay.open').forEach(o=>o.classList.remove('open')); document.body.style.overflow='';
@@ -2064,7 +1919,7 @@ const LAND_LOGO_CLASICO='<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/200
 const LAND_MODES={
   cascada:{   title:'Cascada',   tag:'Despeja antes de que caiga.', a:'#4ECDC4', a2:'#ff6b6b', logo:LAND_LOGO_CASCADA, ready:true, href:'./cascada.html' },
   clasico:{   title:'Clásico',   tag:'Desenreda el tablero.', a:'#2f7d46', a2:'#8fbf63', logo:LAND_LOGO_CLASICO, ready:true, href:'./clasico.html' },
-  perimetro:{ title:'Borde', tag:'Evita el borde, despeja el tablero.', a:'#662E9B', a2:'#F9C80E', logo:LAND_LOGO_PERIMETRO, ready:true },
+  perimetro:{ title:'Borde', tag:'Gira el borde. Cuadra la secuencia.', a:'#662E9B', a2:'#F9C80E', logo:LAND_LOGO_PERIMETRO, ready:true },
   desvio:{    title:'Rumbo',    tag:'Gana tiempo, cruza el laberinto.', a:'#F86624', a2:'#1E8E82', logo:LAND_LOGO_RUMBO, ready:true, href:'./rumbo.html' },
   flujo:{     title:'Flujo',    tag:'Conecta el agua antes de que se derrame.', a:'#2E8BC0', a2:'#ff6b6b', logo:LAND_LOGO_FLUJO, ready:true, href:'./flujo.html' },
 };
@@ -2081,7 +1936,7 @@ function setLandMode(m){ const d=LAND_MODES[m]; if(!d) return; landMode=m;
     if(m==='cascada'){ lbl.textContent='Reto del día'; val.textContent='2:00'; }
     else if(m==='flujo'){ lbl.textContent='Reto del día'; val.textContent='≤ 1:18'; }
     else if(m==='desvio'){ lbl.textContent='Reto del día'; const _s='rumbo-reto-'+ISO; let _h=2166136261>>>0; for(let _i=0;_i<_s.length;_i++){_h^=_s.charCodeAt(_i);_h=Math.imul(_h,16777619)>>>0;} const _rt=55+((_h>>>0)%9)*5; val.textContent='≤ '+Math.floor(_rt/60)+':'+String(_rt%60).padStart(2,'0'); }
-    else { lbl.textContent='Reto del día'; val.textContent='≤ '+fmtTime(META); } }
+    else { lbl.textContent='Reto del día'; val.textContent='Par +'+RETO_DELTA; } }
   else { lbl.textContent='Estado'; val.textContent='Próximamente'; play.textContent='Próximamente'; play.classList.add('is-soon'); play.disabled=true; }
 }
 
@@ -2089,12 +1944,13 @@ function setLandMode(m){ const d=LAND_MODES[m]; if(!d) return; landMode=m;
 function resetToday(){
   training = dailyDone();   // once the daily is locked, every reset is a PRACTICE run
   firedP=new Array(PIECES.length).fill(false); mistakes=0; hintsUsed=0; solved=false; finished=false; busy=false;
-  elapsed=0; startedAt=null; started=false; combo=0; lastLaunch=0; stopTimer();
-  lives=HEARTS_MAX; rachaLeft=-1; rachaTotal=0; rachaCount=0; peligroEnd=0; peligroCount=0; shieldEnd=0; shieldCount=0; freezeEnd=0; freezeCharges=0; freezeFill=0; peligroPending=false; beamBaseIndex=0; beamBaseTime=0; document.body.classList.remove('frozen','danger','shielded','racha-on','over');
+  started=false; turns=0; turnsHist=[]; runWon=false;
+  lives=HEARTS_MAX; rachaLeft=-1; rachaTotal=0; rachaCount=0; escudos=0; desviarCharges=DESVIAR_MAX;
+  document.body.classList.remove('shielded','racha-on','over');
   document.body.classList.toggle('training', training);
-  genBoard(1);   // a run always restarts from board 1
+  genBoard(1);   // a run always restarts from board 1 (genBoard resets borderSide to its seeded side)
   LS.removeItem(DSCOPE+'-result-shown-'+ISO);   // (the daily lock, -counted-, is kept)
-  saveState(); buildBoard(); renderBeans(); renderStatus(); renderRank(); renderHints(); applyGateState(); flash('Reiniciado','bonus');
+  saveState(); buildBoard(); renderStatus(); renderRank(); renderHints(); renderBorder(); applyGateState(); flash('Reiniciado','bonus');
 }
 
 /* ============================ BOOT ============================ */
@@ -2110,19 +1966,22 @@ function boot(){
     setLandMode(_fm);
     if(_hasModo){ var _lt=document.getElementById('land-tabs'); if(_lt) _lt.style.display='none'; }
     document.querySelectorAll('.land-tab').forEach(t=>t.addEventListener('click',()=>setLandMode(t.getAttribute('data-mode'))));
-    { const _o=document.getElementById('flx-objetivo'); if(_o) _o.textContent='Objetivo de hoy · ≤ '+fmtTime(META); }
+    { const _o=document.getElementById('flx-objetivo'); if(_o) _o.textContent='Reto de hoy · ≤ '+META+' turnos (par '+PAR_TOTAL+')'; }
 
-    loadState(); computeScore(); collectBeans(true); finished=solved||lives<=0; if(lives<=0&&!solved) document.body.classList.add('over');
+    loadState(); computeScore();
+    finished=runWon||lives<=0||(solved&&boardNum===RUN_BOARDS); if(finished&&solved&&boardNum===RUN_BOARDS) runWon=true;
+    if(lives<=0&&!runWon) document.body.classList.add('over');
     buildBoard(); renderStatus(); renderRank(); renderRangos(); renderHints();
 
     // single daily — hide difficulty / experimental toggles
     ['diff-pills','land-mode','land-arch','m-arch'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
-    const rd=document.getElementById('rules-diff'); if(rd) rd.innerHTML='Borde es una carrera de <b>5 tableros</b> diarios, iguales para todo el mundo. Despeja un tablero y cae el siguiente — <b>los corazones, el reloj, el borde y el desviador siguen</b> de uno a otro. Lanza las flechas por su punta, <b>rápido y sin chocar</b>: tu rango es el <b>tiempo total</b> de los cinco, y si te quedas sin corazones se acaba la partida.';
+    const rd=document.getElementById('rules-diff'); if(rd) rd.innerHTML='Borde es un rompecabezas <b>por turnos</b> de <b>3 tableros</b> diarios, iguales para todo el mundo. El <b>borde morado</b> cierra un lado; <b>cada jugada lo gira</b> al siguiente (reloj). Lanza, <b>Espera</b> o <b>Desvía</b> (×2) — cada una cuesta <b>1 turno</b> — y despeja los tres en la <b>menor cantidad de turnos</b> frente al <b>par del día</b>. Los fallos cuestan <b>½ corazón</b>; sin corazones se acaba la partida.';
     document.getElementById('play-btn').addEventListener('click',()=>{ const d=LAND_MODES[landMode]; if(!d||!d.ready) return;
       if(d.href){ location.replace(d.href); return; }   /* replace: keep El Recreo one Back away */
       document.body.classList.add('game-active'); applyGateState();
       if(window.maybeOpenTutorial) setTimeout(window.maybeOpenTutorial,260); });   // first visit: tutorial opens inside the game, not on the landing
     document.getElementById('start-btn').addEventListener('click',beginPuzzle);
+    document.getElementById('flx-esperar').addEventListener('click',useEsperar);
     document.getElementById('flx-desviar').addEventListener('click',useDesviar);
     document.getElementById('home-btn').addEventListener('click',()=>{ closeModals(); toggleMenu(false); document.body.classList.remove('game-active'); });
     document.getElementById('rank-bar').addEventListener('click',()=>{ renderRangos(); openModal('rangos-modal'); });
@@ -2145,7 +2004,7 @@ function boot(){
     document.getElementById('maestro-share').addEventListener('click',doShare);
     document.getElementById('over-retry').addEventListener('click',()=>{ closeGoal('over-panel'); resetToday(); });
 
-    if((firedCells()>0 || finished) && location.hash!=='#landing') document.body.classList.add('game-active');
+    if((firedCells()>0 || turns>0 || finished) && location.hash!=='#landing') document.body.classList.add('game-active');
     if(location.hash==='#landing'){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} }   /* keep ?modo — refresh must stay on this mode's landing */
     applyGateState();
   } finally { document.body.classList.add('ready'); }
@@ -2159,34 +2018,24 @@ boot();
     <button class="tut-x" id="tut-x" aria-label="Cerrar">&#10005;</button>
     <div class="tut-track" id="tut-track">
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g class="tv-launch"><line x1="22" y1="55" x2="118" y2="55" stroke="currentColor"/><polyline points="102,38 126,55 102,72" stroke="currentColor"/></g></svg></div>
-        <h3>Lanza una flecha</h3>
-        <p>Toca una flecha con el <b>carril libre</b> y sale volando por su punta — destella en <b style="color:var(--success)">verde</b> al salir.</p>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect x="24" y="14" width="184" height="82" rx="7" fill="none" stroke="var(--ink-line)" stroke-width="3"/><rect x="200" y="14" width="8" height="82" rx="4" fill="#662E9B"/><g class="tv-blk"><line x1="120" y1="40" x2="176" y2="40" stroke="#662E9B"/><polyline points="164,26 184,40 164,54" stroke="#662E9B"/></g><g class="tv-launch"><line x1="44" y1="74" x2="112" y2="74" stroke="currentColor"/><polyline points="98,58 120,74 98,90" stroke="currentColor"/></g></svg></div>
+        <h3>Lanza si puedes</h3>
+        <p>Una flecha sale si su <b>carril est&aacute; libre</b> Y su salida <b>no es el borde</b>. Contra el borde <b>rebota en <span style="color:#662E9B">morado</span></b> y cuesta <b>&frac12; coraz&oacute;n + 1 turno</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g class="tv-blk"><line x1="150" y1="22" x2="150" y2="90" stroke="currentColor"/><polyline points="134,40 150,20 166,40" stroke="currentColor"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><polyline points="82,58 106,74 82,90" stroke="currentColor"/></g></svg></div>
-        <h3>Choque</h3>
-        <p>Si otra flecha bloquea el carril, <b>rebota</b> y ambas parpadean en <b style="color:#EA3546">rojo</b>. Te cuesta <b>&frac12; coraz&oacute;n</b>.</p>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect x="46" y="20" width="140" height="70" rx="7" fill="none" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="12" width="140" height="8" rx="4" fill="#662E9B"/><rect x="188" y="20" width="8" height="70" rx="4" fill="#662E9B" opacity=".35"/><path d="M210 40 a18 18 0 0 1 -10 24" fill="none" stroke="#662E9B" stroke-width="4" stroke-linecap="round"/><path d="M197 58 l3 9 9 -4" fill="none" stroke="#662E9B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h3>Cada jugada gira el borde</h3>
+        <p>Lanzar o <b>Esperar</b> mueve el borde <b>un lado en sentido reloj</b> (la marca tenue es el pr&oacute;ximo). Un fallo <b>no</b> lo gira. Todo cuesta <b>1 turno</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect x="30" y="24" width="172" height="74" rx="7" fill="none" stroke="var(--ink-line)" stroke-width="3"/><rect class="tv-beam" x="30" y="18" width="60" height="8" rx="4" fill="#662E9B"/></svg></div>
-        <h3>El borde</h3>
-        <p>Una barra <b style="color:#662E9B">morada</b> recorre la orilla como un tren. No puedes salir por donde est&aacute; — <b>espera o desv&iacute;ala</b>.</p>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect x="46" y="20" width="140" height="70" rx="7" fill="none" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="12" width="140" height="8" rx="4" fill="#662E9B" opacity=".3"/><rect x="46" y="90" width="140" height="8" rx="4" fill="#662E9B"/><path d="M116 44 v22 M107 56 l9 12 9 -12" fill="none" stroke="#662E9B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><text x="196" y="102" font-size="15" font-weight="800" fill="#662E9B">&times;2</text></svg></div>
+        <h3>Desviar &times;2</h3>
+        <p><b style="color:#662E9B">&#8645; Desviar</b> salta el borde al <b>lado opuesto</b> en vez de girarlo. Solo <b>2 cargas</b> para los 3 tableros — g&aacute;stalas con cabeza.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="26" x2="74" y2="26" stroke="#F9C80E" stroke-width="9"/><polyline points="64,16 84,26 64,36" stroke="#F9C80E" stroke-width="9"/></g><text x="98" y="31" font-size="15" font-weight="700" fill="#C99700">Racha &middot; +&frac12;&#10084;</text><g><line x1="20" y1="56" x2="74" y2="56" stroke="#EA3546" stroke-width="9"/><polyline points="64,46 84,56 64,66" stroke="#EA3546" stroke-width="9"/></g><text x="98" y="61" font-size="15" font-weight="700" fill="#EA3546">Peligro &middot; &times;2</text><g><line x1="20" y1="86" x2="74" y2="86" stroke="#4ECDC4" stroke-width="9"/><polyline points="64,76 84,86 64,96" stroke="#4ECDC4" stroke-width="9"/></g><text x="98" y="91" font-size="15" font-weight="700" fill="#3BB6AE">Escudo &middot; 0&#10084;</text></svg></div>
-        <h3>Flechas especiales</h3>
-        <p><b style="color:#C99700">Amarilla</b> da corazones, <b style="color:#EA3546">roja</b> es peligro (cuesta el doble) y <b style="color:#3BB6AE">cian</b> es escudo (choques gratis). T&uacute; eliges cu&aacute;ndo.</p>
-      </section>
-      <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-fz-board" x="46" y="10" width="140" height="56" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="4" width="50" height="7" rx="3.5" fill="#662E9B"/><rect x="136" y="65" width="50" height="7" rx="3.5" fill="#662E9B" opacity=".35"/><path d="M116 52 V28 M108 36 L116 26 L124 36" fill="none" stroke="#662E9B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><rect x="46" y="80" width="140" height="22" rx="11" fill="none" stroke="#662E9B" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="82" width="136" height="18" rx="9" fill="#d9c9ee"/></svg></div>
-        <h3>Desviar</h3>
-        <p>El bot&oacute;n <b style="color:#662E9B">&#8645; Desviar</b> se llena solo (~20 s). &Uacute;salo para <b>saltar el borde al lado opuesto</b> — el reloj sigue corriendo.</p>
-      </section>
-      <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv-run"><rect x="14" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:0s"/><rect x="54" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:.4s"/><rect x="94" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:.8s"/><rect x="134" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:1.2s"/><rect x="174" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:1.6s"/></svg></div>
-        <h3>5 tableros seguidos</h3>
-        <p>Despeja uno y cae el siguiente. El reloj no se reinicia: tu <b>tiempo total</b> de los cinco es tu <b>rango</b>.</p>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv-run"><rect x="34" y="36" width="46" height="40" rx="5" fill="var(--accent)" style="animation-delay:0s"/><rect x="94" y="36" width="46" height="40" rx="5" fill="var(--accent)" style="animation-delay:.5s"/><rect x="154" y="36" width="46" height="40" rx="5" fill="var(--accent)" style="animation-delay:1s"/></svg></div>
+        <h3>Par y rango</h3>
+        <p>Despeja los <b>3 tableros</b> en la <b>menor cantidad de turnos</b>. Tu rango es cu&aacute;nto te pasas del <b>par del d&iacute;a</b> — igualarlo es <b style="color:var(--accent)">Maestro/a</b>.</p>
       </section>
     </div>
     <div class="tut-dots" id="tut-dots"></div>
