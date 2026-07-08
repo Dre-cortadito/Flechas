@@ -514,7 +514,7 @@
       <div class="fbox-tile t-borde" id="fb-borde"><div class="fbox-val">—</div><div class="fbox-lbl">Borde</div></div>
     </div>
     <div class="flx-actions" id="flx-actions" aria-label="Cargas">
-      <button class="act-btn dv" id="flx-desviar" type="button" aria-label="Desviar el borde al lado opuesto" disabled><span class="act-fill"></span><span class="act-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="3.5" x2="19" y2="3.5"/><line x1="5" y1="20.5" x2="19" y2="20.5"/><path d="M12 16.5v-8"/><path d="m8.5 11.5 3.5-4 3.5 4"/></svg></span></button>
+      <button class="act-btn dv" id="flx-desviar" type="button" aria-label="Desviar el borde al lado opuesto" disabled><span class="act-fill"></span><span class="act-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.9" stroke-width="2.2"/><g transform="translate(12 12) scale(0.62) translate(-12 -12)" stroke-width="3.5"><line x1="5" y1="3.5" x2="19" y2="3.5"/><line x1="5" y1="20.5" x2="19" y2="20.5"/><path d="M12 16.5v-8"/><path d="m8.5 11.5 3.5-4 3.5 4"/></g></svg></span></button>
     </div>
     <div class="train-badge" id="train-badge">⟳ Entrenamiento</div>
     <div class="lower-spacer">
@@ -876,7 +876,7 @@ function genConstructive(rng){
   // region), 40% are random (local variety / intertwining at the seams).
   const ZB=3;
   const STYLES=[
-    {fold:false, cap:6, sp:0.82, turn:'rand'},  // 0 long-ish corridor
+    {fold:false, cap:4, sp:0.68, turn:'rand'},  // 0 corridor (v3: cap 6→4, sp .82→.68 — no more full-width straights)
     {fold:false, cap:3, sp:0.45, turn:'rand'},  // 1 medium irregular
     {fold:false, cap:2, sp:0.28, turn:'alt'},   // 2 zig-zag (capped to 3)
     {fold:true,  cap:2, sp:0.22, turn:'spin'},  // 3 coil / compact block
@@ -1282,17 +1282,18 @@ function genPuzzle(iso){
     let pool=cands.filter(c=>c._occ>=0.90);                                      // v2: compact-tactical — raise the density floor (was 0.80)
     if(!pool.length) pool=cands.filter(c=>c._occ>=0.85);
     if(!pool.length){ pool=cands.slice().sort((a,b)=>b._occ-a._occ).slice(0, Math.max(1,(cands.length/3)|0)); }
-    // reject boards with empty channels (>5 in a row/col) OR clustered empty blobs (v2: >4 cells, was >6)
-    const tight=pool.filter(c=>c._em<=5 && c._blob<=4);
+    // reject boards with empty channels (>4 in a row/col) OR clustered empty blobs (v3: >3 cells)
+    const tight=pool.filter(c=>c._em<=4 && c._blob<=3);
     if(tight.length) pool=tight;
-    else { const t2=pool.filter(c=>c._blob<=6); if(t2.length) pool=t2;
-      else { const t3=pool.filter(c=>c._blob<=8); if(t3.length) pool=t3; } }
+    else { const t2=pool.filter(c=>c._em<=5&&c._blob<=4); if(t2.length) pool=t2;
+      else { const t3=pool.filter(c=>c._blob<=6); if(t3.length) pool=t3;
+        else { const t4=pool.filter(c=>c._blob<=8); if(t4.length) pool=t4; } } }
     const noBackbone=pool.filter(c=>c._stair<=5);   // no dominant staircase backbone
     if(noBackbone.length) pool=noBackbone;
     { const mx=Math.max.apply(null,pool.map(c=>c._occ));            // v2: compact-tactical — keep only boards within
       pool=pool.filter(c=>c._occ>=mx-0.03); }                       // 3 pts of the densest candidate, THEN pick by difficulty
     { const mn=Math.min.apply(null,pool.map(c=>c._ce));             // v3: no relaxed middles — among the dense ones, keep the
-      pool=pool.filter(c=>c._ce<=mn+2); }                           // boards whose CENTER region has the fewest empty cells
+      pool=pool.filter(c=>c._ce<=mn+1); }                           // boards whose CENTER region has the fewest empty cells
     pool.sort((a,b)=>a._br-b._br);
     if(DCFG.pick==='low')  return pool[0];
     if(DCFG.pick==='high') return pool[pool.length-1];

@@ -321,7 +321,7 @@
     <div class="freeze">
       <button class="freeze-btn" id="freeze-btn" type="button" aria-label="Congelar">
         <span class="fill" id="freeze-fill"></span>
-        <span class="ficon" id="freeze-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg></span>
+        <span class="ficon" id="freeze-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.9" stroke-width="2.2"/><g transform="translate(12 12) scale(0.62) translate(-12 -12)" stroke-width="3.5"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></g></svg></span>
         <span class="fnum" id="freeze-num"></span>
       </button>
     </div>
@@ -460,23 +460,52 @@
     for(const p of made){ const o=candList(p)[0]; p.head=o.head; p.dir=o.dir; }      // default, in case the peel is partial
     const occR=new Map(); for(const p of made) for(const cl of p.cells) occR.set(key(cl.r,cl.c),p.id);
     const remaining=new Set(made.map(p=>p.id)); let solved=0; const dirUsed=[0,0,0,0];
+    const locked=[];                                                                  // v5: heads already oriented — for LOCAL de-clustering
+    const localSame=(o)=>{ let n=0; for(const h of locked){ if(h.dir===o.dir&&Math.abs(h.r-o.head.r)<=2&&Math.abs(h.c-o.head.c)<=2) n++; } return n; };
     while(remaining.size){ const ids=[...remaining];
       for(let i=ids.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=ids[i]; ids[i]=ids[j]; ids[j]=t; }   // random tie-break order
       let picked=null, pickO=null;
       for(const id of ids){ const p=pieces[id]; const valid=candList(p).filter(o=>laneClearOcc(p,o,occR));
-        if(!valid.length) continue; valid.sort((a,b)=>dirUsed[a.dir]-dirUsed[b.dir]);   // among this piece's options, pick its least-used direction
+        if(!valid.length) continue;
+        valid.sort((a,b)=>(localSame(a)-localSame(b)) || (dirUsed[a.dir]-dirUsed[b.dir]));   // v5: avoid same-dir neighbors FIRST, then global balance
         picked=p; pickO=valid[0]; break; }
       if(!picked) break;                                                              // stuck → this layout can't be fully oriented
-      picked.head=pickO.head; picked.dir=pickO.dir; dirUsed[pickO.dir]++; for(const cl of picked.cells) occR.delete(key(cl.r,cl.c)); remaining.delete(picked.id); solved++; }
+      picked.head=pickO.head; picked.dir=pickO.dir; dirUsed[pickO.dir]++; locked.push({r:pickO.head.r,c:pickO.head.c,dir:pickO.dir});
+      for(const cl of picked.cells) occR.delete(key(cl.r,cl.c)); remaining.delete(picked.id); solved++; }
     return solved===made.length; }
   function snap(){ return Object.values(pieces).map(p=>({cells:p.cells.map(c=>({r:c.r,c:c.c})), head:{r:p.head.r,c:p.head.c}, dir:p.dir})); }
   function restore(s){ pid=0; pieces={}; ownerMap=new Map(); for(const o of s){ const p={id:pid,cells:o.cells,head:o.head,dir:o.dir}; pieces[pid]=p; o.cells.forEach(cl=>ownerMap.set(key(cl.r,cl.c),pid)); pid++; } }
+  // v5: de-cluster pass — flip a piece to its OTHER end (same body, head/dir swapped) when that
+  // reduces local same-direction head pairs AND the board stays fully solvable with enough
+  // opening moves. Kills the "traffic lanes" of 3-4 arrows doing the same thing in one area.
+  function peelFixed(){ const all=Object.values(pieces);
+    const occR=new Map(); for(const p of all) for(const cl of p.cells) occR.set(key(cl.r,cl.c),p.id);
+    const rem=new Set(all.map(p=>p.id)); let prog=true;
+    while(prog&&rem.size){ prog=false;
+      for(const id of [...rem]){ const p=pieces[id];
+        if(laneClearOcc(p,{head:p.head,dir:p.dir},occR)){ for(const cl of p.cells) occR.delete(key(cl.r,cl.c)); rem.delete(id); prog=true; } } }
+    return rem.size===0; }
+  function clustersNow(){ const P=Object.values(pieces); let n=0;
+    for(let i=0;i<P.length;i++) for(let j=i+1;j<P.length;j++){ if(P[i].dir!==P[j].dir) continue;
+      if(Math.abs(P[i].head.r-P[j].head.r)<=2&&Math.abs(P[i].head.c-P[j].head.c)<=2) n++; }
+    return n; }
+  function deCluster(){ let guard=0, improved=true;
+    while(improved&&guard++<3){ improved=false;
+      for(const p of Object.values(pieces)){ if(p.cells.length<2) continue;
+        const alts=candList(p); if(alts.length<2) continue;
+        const cur=(alts[0].head.r===p.head.r&&alts[0].head.c===p.head.c&&alts[0].dir===p.dir)?0:1;
+        const other=alts[1-cur];
+        const before=clustersNow(); if(!before) return;
+        const oh=p.head, od=p.dir;
+        p.head=other.head; p.dir=other.dir;
+        if(clustersNow()<before && peelFixed() && Object.values(pieces).filter(laneClear).length>=MIN_LAUNCH) improved=true;
+        else { p.head=oh; p.dir=od; } } } }
   function genBoard(){ let bestSnap=null, bestScore=-1e9;
     for(let attempt=0; attempt<200; attempt++){ growAll(); const full=orientSolvable();
       const lc=Object.values(pieces).filter(p=>laneClear(p)).length;
-      if(full && lc>=MIN_LAUNCH) return;                                              // fully solvable + enough opening moves
+      if(full && lc>=MIN_LAUNCH){ deCluster(); return; }                              // fully solvable + enough opening moves
       const score=(full?1000:0)+lc; if(score>bestScore){ bestScore=score; bestSnap=snap(); } }
-    if(bestSnap) restore(bestSnap); }
+    if(bestSnap) restore(bestSnap); deCluster(); }
 
   // ================= special arrows (Escudo / Frenesí / Congelar) =================
   function _pcCenter(p){ let sx=0,sy=0; for(const cl of p.cells){ const c=center(cl.r,cl.c); sx+=c[0]; sy+=c[1]; } return [sx/p.cells.length, sy/p.cells.length]; }
