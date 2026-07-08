@@ -395,7 +395,7 @@
   let svg=null, layer=null; const board=$('board'), inner=$('board-inner');
 
   // ================= board generation =================
-  function growSnake(sr,sc){ const cells=[{r:sr,c:sc}]; ownerMap.set(key(sr,sc),pid); let cr=sr,cc=sc,last=-1; const len=3+(rng()*5|0);   // 3–7 — winding family shapes, shorter than Borde's 4–10 so MORE arrows fit (arcade density) without shrinking them
+  function growSnake(sr,sc){ const cells=[{r:sr,c:sc}]; ownerMap.set(key(sr,sc),pid); let cr=sr,cc=sc,last=-1; const len=3+(rng()*4|0);   // 3–6 (v3: was 3–7) — slightly shorter shapes → ~10% more arrows at the same full size (arcade density)
     for(let k=1;k<len;k++){ const opt=[];
       for(let d=0;d<4;d++){ const nr=cr+DYn[d],nc=cc+DXn[d];
         if(nr<0||nr>=ROWS||nc<0||nc>=COLS||occ(nr,nc)) continue;

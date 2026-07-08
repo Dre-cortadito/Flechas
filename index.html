@@ -1030,7 +1030,7 @@ function genConstructive(rng){
       const sc=(anywhere?0:base2*1000)+((rng()*999)|0); if(sc>bd){ bd=sc; T=i; } }
     if(T<0) break;
     let done=false;
-    for(let a=0;a<6 && !done;a++){
+    for(let a=0;a<9 && !done;a++){                // v2: 6→9 retries — fewer abandoned seeds, fewer holes
       const cells=walkFrom(T, 5+((rng()*7)|0));   // 5..11
       if(cells.length>=3 && tryCommitWalk(cells)) done=true;
     }
@@ -1137,6 +1137,31 @@ function genConstructive(rng){
     if(!MASK[i]||placed[i]!==-1) continue;
     for(let d=0;d<4;d++){ if(crowded(i,d)) continue; const cells=tryPiece(i,d,1); if(cells){ commit(cells,d); headMap[i]=d; break; } }
   }
+  // Final absorb (v2): cells the stitcher could not form into pieces get woven into the
+  // TAIL of an adjacent ORIGINAL piece. Rule: the cell may sit in NOBODY's firing lane
+  // (recomputed over ALL pieces incl. stitched/singles) and in no backdated ray — then
+  // no piece's clear-at-fire-time proof changes. Kills the last holes with bends.
+  { const lane2={}; const bset=new Set(backdated);
+    pieces.forEach(p=>{ const hc2=(p.headEnd==='A')?p.cells[0]:p.cells[p.cells.length-1];
+      let [r,c]=rc(hc2); r+=DR[p.dir]; c+=DC[p.dir];
+      while(inb(r,c)){ lane2[r*GRID_C+c]=1; r+=DR[p.dir]; c+=DC[p.dir]; } });
+    let grew=true, guard=0;
+    while(grew && guard++<60){ grew=false;
+      for(const p of pieces){ if(bset.has(p.id)||p.cells.length>=12) continue;
+        const tailIdx=(p.headEnd==='A')?p.cells.length-1:0;
+        const t=p.cells[tailIdx]; const [tr,tc]=rc(t);
+        for(let k=0;k<4;k++){ const nr=tr+DR[k], nc=tc+DC[k]; if(!inb(nr,nc)) continue;
+          const L=nr*GRID_C+nc;
+          if(!MASK[L]||placed[L]!==-1||lane2[L]||bdRay[L]) continue;
+          let folds=false;
+          for(let q=0;q<4;q++){ const ar=nr+DR[q], ac=nc+DC[q]; if(!inb(ar,ac)) continue;
+            const ai=ar*GRID_C+ac; if(ai!==t && placed[ai]===p.id){ folds=true; break; } }
+          if(folds) continue;
+          const cells2=(p.headEnd==='A')?p.cells.concat([L]):[L].concat(p.cells);
+          const hc3=(p.headEnd==='A')?cells2[0]:cells2[cells2.length-1];
+          if(!selfClearDir(cells2,hc3,p.dir)) continue;
+          p.cells=cells2; placed[L]=p.id; grew=true; break; }
+      } } }
   // backdated pieces go to the FRONT of the insertion order = they fire last,
   // in discovery order (each earlier one's ray avoids each later one's cells).
   const fullOrder=backdated.slice().reverse().concat(order);
@@ -1236,7 +1261,7 @@ function genPuzzle(iso){
   }
   const base=fnv('flechas-'+SHAPE_KEY+'-'+DIFF+'-'+iso);
   const cands=[];
-  const NC=NCELLS>400?12:34;   // fewer candidates on the big daily board (perf)
+  const NC=NCELLS>400?12:48;   // fewer candidates on the big daily board (perf); v2: 34→48 — bigger pool to pick DENSE boards from
   for(let a=0;a<NC;a++){
     const rng=mulberry32((base+Math.imul(a,2654435761))>>>0);
     const got=genConstructive(rng);
@@ -1247,14 +1272,18 @@ function genPuzzle(iso){
     // packed — difficulty should come from long paths + density, not from
     // sparse, scattered arrows. Among the dense ones, apply the difficulty's
     // branching preference (low = hardest order, high = easiest).
-    let pool=cands.filter(c=>c._occ>=0.80);
+    let pool=cands.filter(c=>c._occ>=0.90);                                      // v2: compact-tactical — raise the density floor (was 0.80)
+    if(!pool.length) pool=cands.filter(c=>c._occ>=0.85);
     if(!pool.length){ pool=cands.slice().sort((a,b)=>b._occ-a._occ).slice(0, Math.max(1,(cands.length/3)|0)); }
-    // reject boards with empty channels (>5 in a row/col) OR clustered empty blobs (>6 cells)
-    const tight=pool.filter(c=>c._em<=5 && c._blob<=6);
+    // reject boards with empty channels (>5 in a row/col) OR clustered empty blobs (v2: >4 cells, was >6)
+    const tight=pool.filter(c=>c._em<=5 && c._blob<=4);
     if(tight.length) pool=tight;
-    else { const t2=pool.filter(c=>c._blob<=8); if(t2.length) pool=t2; }
+    else { const t2=pool.filter(c=>c._blob<=6); if(t2.length) pool=t2;
+      else { const t3=pool.filter(c=>c._blob<=8); if(t3.length) pool=t3; } }
     const noBackbone=pool.filter(c=>c._stair<=5);   // no dominant staircase backbone
     if(noBackbone.length) pool=noBackbone;
+    { const mx=Math.max.apply(null,pool.map(c=>c._occ));            // v2: compact-tactical — keep only boards within
+      pool=pool.filter(c=>c._occ>=mx-0.03); }                       // 3 pts of the densest candidate, THEN pick by difficulty
     pool.sort((a,b)=>a._br-b._br);
     if(DCFG.pick==='low')  return pool[0];
     if(DCFG.pick==='high') return pool[pool.length-1];
