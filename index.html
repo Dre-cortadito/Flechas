@@ -204,8 +204,9 @@
   .lives-row .heart svg { width:100%; height:100%; }
   .lives-row .heart .hon { fill:#ff6b6b; }                 /* default heart colour (shared with Cascada) */
   .lives-row .heart .hoff { fill:var(--ink-line); }              /* empty half */
-  /* Charge action bar BELOW the board: the freeze resource (blue charges) + its counter.
-     One verb — ❄ Congelar (pauses the clock and the beam), same as Cascada. */
+  /* Charge action bar BELOW the board: the Desviar resource (auto-charges ~20s).
+     One verb — ⇅ Desviar (jumps the purple border to the OPPOSITE side and restarts
+     its 5s dwell). The clock does NOT pause — that's Cascada's power, not Borde's. */
   .flx-actions { display:flex; align-items:center; justify-content:center;
     width:min(94vw,400px); margin:12px auto 0; }
   .act-btn { position:relative; overflow:hidden; flex:1; display:inline-flex; align-items:center; justify-content:center;
@@ -213,7 +214,7 @@
     cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
     transition:opacity .15s, transform .08s, box-shadow .2s, background .15s; }
   .act-btn .act-fill { position:absolute; left:0; top:0; bottom:0; width:100%; transform-origin:left; transform:scaleX(0); z-index:0; transition:transform .35s linear; }
-  .act-btn.fz .act-fill  { background:var(--freeze-fill); }   /* charge fill = the exact frozen-board blue, so button-full and frozen board match */
+  .act-btn.dv .act-fill  { background:#d9c9ee; }   /* charge fill = soft border-purple, so button-full reads "border power ready" */
   .act-btn .act-ico { position:relative; z-index:1; display:inline-flex; width:28px; height:28px; }   /* icon only, centred, large */
   .act-btn .act-ico svg { width:100%; height:100%; display:block; }
   .act-btn .act-num { position:relative; z-index:1; display:none; font:800 22px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; height:28px; align-items:center; }
@@ -222,7 +223,7 @@
   .act-btn { cursor:default; }                          /* only the ready (glowing) button is clickable */
   .act-btn.ready { cursor:pointer; }
   .act-btn:not(.ready):active { transform:none; }
-  .act-btn.fz  { color:#0062E3; background:rgba(0,98,227,.10); border:2px solid #0062E3; }   /* intense freeze blue — border always full; only the fill grows */
+  .act-btn.dv  { color:#662E9B; background:rgba(102,46,155,.10); border:2px solid #662E9B; }   /* Borde purple — the button controls the border; only the fill grows */
   .act-btn:active { transform:scale(.96); }
   .act-btn:disabled { cursor:default; }   /* freeze button stays LIT before the game starts (like Cascada), just not clickable */
   body.frozen .act-btn.fz { color:#0049B0; background:rgba(0,98,227,.3); }
@@ -511,7 +512,7 @@
       <div class="fbox-tile t-borde" id="fb-borde"><div class="fbox-val">—</div><div class="fbox-lbl">Borde</div></div>
     </div>
     <div class="flx-actions" id="flx-actions" aria-label="Cargas">
-      <button class="act-btn fz" id="flx-freeze" type="button" aria-label="Congelar" disabled><span class="act-fill"></span><span class="act-num" id="flx-fz-num"></span><span class="act-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg></span></button>
+      <button class="act-btn dv" id="flx-desviar" type="button" aria-label="Desviar el borde al lado opuesto" disabled><span class="act-fill"></span><span class="act-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="3.5" x2="19" y2="3.5"/><line x1="5" y1="20.5" x2="19" y2="20.5"/><path d="M12 16.5v-8"/><path d="m8.5 11.5 3.5-4 3.5 4"/></svg></span></button>
     </div>
     <div class="train-badge" id="train-badge">⟳ Entrenamiento</div>
     <div class="lower-spacer">
@@ -530,7 +531,7 @@
       <button class="modal-close" data-close>✕</button>
       <h2>Cómo jugar</h2>
       <button class="tut-open-btn" style="display:none" onclick="openTutorial()">▶ Ver tutorial animado</button>
-      <p><b>Borde</b> es una <b>carrera diaria de 5 tableros</b>, igual para todo el mundo. Despeja un tablero y <b>cae el siguiente</b> — el <b>reloj, los corazones, el borde y el congelador no se reinician</b>: siguen de un tablero al otro. El contador a la derecha del reloj marca <b>Tablero N/5</b>.</p>
+      <p><b>Borde</b> es una <b>carrera diaria de 5 tableros</b>, igual para todo el mundo. Despeja un tablero y <b>cae el siguiente</b> — el <b>reloj, los corazones, el borde y el desviador no se reinician</b>: siguen de un tablero al otro. El contador a la derecha del reloj marca <b>Tablero N/5</b>.</p>
       <p>Cada <b>flecha</b> es una forma de varias casillas (recta, en L, en zigzag) que termina en una <b>punta</b>. Tócala para <b>lanzarla</b>: la forma entera sale volando hacia donde apunta la punta y desaparece. Despeja <b>todas</b> las flechas de cada tablero para avanzar.</p>
       <p class="muted">La flecha sale <b>como un tren</b>: la punta primero, y el cuerpo la sigue por su propio camino. Solo importa lo que esté <b>delante de la punta</b> — si otra flecha está en ese carril, <b>choca</b> y rebota, y la flecha que estorba <b>parpadea en rojo</b>. Despeja el tablero lanzándolas en el orden correcto.</p>
       <h3>Las flechas</h3>
@@ -567,13 +568,13 @@
         <div class="txt"><b style="color:#3BB6AE">Cian · Escudo.</b> <b>6 s</b> en que los choques <b>no cuestan corazones</b> — ve a tope. Protege tu <b>vida, no tus bonos</b>, y al acabar sueles seguir embalado.</div>
       </div>
       <div class="legend-row">
-        <div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div>
-        <div class="txt"><b style="color:#0062E3">❄ Congelar.</b> El botón bajo el tablero se <b>llena solo</b> (~20 s); úsalo para <b>congelar 5 s</b> (pausa el reloj y el borde). Una carga.</div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40" fill="none" stroke="#662E9B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><line x1="40" y1="5" x2="80" y2="5"/><line x1="40" y1="35" x2="80" y2="35"/><path d="M60 28 V14"/><path d="M52 19 L60 10 L68 19"/></svg></div>
+        <div class="txt"><b style="color:#662E9B">⇅ Desviar.</b> El botón bajo el tablero se <b>llena solo</b> (~20 s); úsalo para <b>saltar el borde al lado opuesto</b> (y su ronda de 5 s empieza de nuevo). El <b>reloj no se detiene</b>. Una carga.</div>
       </div>
       <h3>El borde</h3>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="98" y="4" width="11" height="32" rx="4" fill="#662E9B"/><path style="stroke:var(--arrow)" d="M14 20 L72 20"/><path style="stroke:var(--arrow)" d="M58 9 L78 20 L58 31"/></svg></div>
-        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> y salta de lado cada <b>5 s</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera a que pase o <b>congela</b> para cruzar.</div>
+        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> y salta de lado cada <b>5 s</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera a que pase o <b>desvíala</b> al lado opuesto.</div>
       </div>
       <h3>Rango y puntuación</h3>
       <p class="muted">Tu puntuación es <b>el tiempo total</b> de despejar los <b>5 tableros</b>, sin trucos: el <b>⏱ reloj</b> con el que terminas el quinto. <b>No hay puntos</b> — solo el reloj. Más <b>rápido</b> = mejor rango, y como un choque puede acabar la partida (a 0 corazones), hay que ir <b>rápido pero limpio</b>. Diez rangos, de <b>Debutante</b> (más de 8:40) a <b style="color:var(--accent)">Maestro/a</b> (por debajo de ~1:52). Hay un <b style="color:var(--accent)">Reto del día</b>: termina por debajo del tiempo objetivo y celebra con un <b style="color:var(--accent)">¡Buen sorbo!</b></p>
@@ -1577,19 +1578,22 @@ function applyRole(pid){ const r=ROLE[pid];
     else { shieldEnd=now+SHIELD_WINDOW; shieldCount=1; }
     document.body.classList.add('shielded');
     flash('Escudo ×'+shieldCount,'bonus'); } }
-// FREEZE: auto-charges over time (bar in the button); spend a charge on ❄ Congelar (pauses clock + beam).
-function renderFreeze(){ const fz=document.getElementById('flx-freeze');
-  // The freeze button stays FULL opacity (never the dim "disabled" look); only the ready (glowing)
-  // state is clickable, exactly like Cascada.
-  const playing=started && !finished, frozen=Date.now()<freezeEnd, has=freezeCharges>0 && playing && !frozen;
-  if(fz){ fz.disabled=!playing; fz.classList.toggle('ready', has); fz.classList.toggle('frozen', frozen);
-    const num=document.getElementById('flx-fz-num'); if(num && frozen) num.textContent=Math.ceil((freezeEnd-Date.now())/1000);
-    const fillTo = frozen ? Math.max(0,(freezeEnd-Date.now())/5000) : (freezeCharges>=FREEZE_MAX?1:freezeFill);   // frozen: the bar DRAINS over the 5 s; otherwise it's the charge fill
+// DESVIAR: auto-charges over time (bar in the button); spend a charge to jump the purple
+// border to the OPPOSITE side and restart its 5s dwell. The clock keeps running — Desviar
+// controls the hazard, it doesn't stop time. (freezeCharges/freezeFill are reused as the
+// charge store so saved games keep their charge across the rename.)
+function renderFreeze(){ const fz=document.getElementById('flx-desviar');
+  // The button stays FULL opacity (never the dim "disabled" look); only the ready (glowing)
+  // state is clickable, exactly like Cascada's Congelar.
+  const playing=started && !finished, has=freezeCharges>0 && playing;
+  if(fz){ fz.disabled=!playing; fz.classList.toggle('ready', has);
+    const fillTo = (freezeCharges>=FREEZE_MAX)?1:freezeFill;
     const f=fz.querySelector('.act-fill'); if(f) f.style.transform='scaleX('+fillTo.toFixed(3)+')'; } }
-function useFreeze(){ if(freezeCharges<=0 || finished || !started) return;
-  if(Date.now()<freezeEnd) return;                         // already frozen — don't waste a charge stacking
-  freezeCharges--; freezeEnd=Date.now()+5000; document.body.classList.add('frozen');
-  renderFreeze(); renderStatus(); saveState(); flash('Congelado 5s','success'); }
+function useDesviar(){ if(freezeCharges<=0 || finished || !started) return;
+  if(hotSideNow()<0) return;                               // border not out yet — nothing to deflect
+  freezeCharges--;
+  beamBaseIndex=hotIndex()+2; beamBaseTime=elapsed;        // opposite side (+2 of 4, HOT_DIR is always 1), dwell restarts
+  renderFreeze(); renderHot(); renderStatus(); saveState(); flash('Borde desviado','success'); }
 
 let firedP=new Array(PIECES.length).fill(false);
 let mistakes=0, hintsUsed=0, solved=false, finished=false, busy=false, score=0;
@@ -2021,13 +2025,13 @@ function boot(){
 
     // single daily — hide difficulty / experimental toggles
     ['diff-pills','land-mode','land-arch','m-arch'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
-    const rd=document.getElementById('rules-diff'); if(rd) rd.innerHTML='Borde es una carrera de <b>5 tableros</b> diarios, iguales para todo el mundo. Despeja un tablero y cae el siguiente — <b>los corazones, el reloj, el borde y el congelador siguen</b> de uno a otro. Lanza las flechas por su punta, <b>rápido y sin chocar</b>: tu rango es el <b>tiempo total</b> de los cinco, y si te quedas sin corazones se acaba la partida.';
+    const rd=document.getElementById('rules-diff'); if(rd) rd.innerHTML='Borde es una carrera de <b>5 tableros</b> diarios, iguales para todo el mundo. Despeja un tablero y cae el siguiente — <b>los corazones, el reloj, el borde y el desviador siguen</b> de uno a otro. Lanza las flechas por su punta, <b>rápido y sin chocar</b>: tu rango es el <b>tiempo total</b> de los cinco, y si te quedas sin corazones se acaba la partida.';
     document.getElementById('play-btn').addEventListener('click',()=>{ const d=LAND_MODES[landMode]; if(!d||!d.ready) return;
       if(d.href){ location.replace(d.href); return; }   /* replace: keep El Recreo one Back away */
       document.body.classList.add('game-active'); applyGateState();
       if(window.maybeOpenTutorial) setTimeout(window.maybeOpenTutorial,260); });   // first visit: tutorial opens inside the game, not on the landing
     document.getElementById('start-btn').addEventListener('click',beginPuzzle);
-    document.getElementById('flx-freeze').addEventListener('click',useFreeze);
+    document.getElementById('flx-desviar').addEventListener('click',useDesviar);
     document.getElementById('home-btn').addEventListener('click',()=>{ closeModals(); toggleMenu(false); document.body.classList.remove('game-active'); });
     document.getElementById('rank-bar').addEventListener('click',()=>{ renderRangos(); openModal('rangos-modal'); });
     document.querySelectorAll('[data-modal]').forEach(a=>a.addEventListener('click',()=>{ toggleMenu(false); const id=a.getAttribute('data-modal'); if(id==='stats-modal')renderStats(); if(id==='rangos-modal')renderRangos(); openModal(id); }));
@@ -2075,7 +2079,7 @@ boot();
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect x="30" y="24" width="172" height="74" rx="7" fill="none" stroke="var(--ink-line)" stroke-width="3"/><rect class="tv-beam" x="30" y="18" width="60" height="8" rx="4" fill="#662E9B"/></svg></div>
         <h3>El borde</h3>
-        <p>Una barra <b style="color:#662E9B">morada</b> recorre la orilla como un tren. No puedes salir por donde est&aacute; — <b>espera o congela</b>.</p>
+        <p>Una barra <b style="color:#662E9B">morada</b> recorre la orilla como un tren. No puedes salir por donde est&aacute; — <b>espera o desv&iacute;ala</b>.</p>
       </section>
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="26" x2="74" y2="26" stroke="#F9C80E" stroke-width="9"/><polyline points="64,16 84,26 64,36" stroke="#F9C80E" stroke-width="9"/></g><text x="98" y="31" font-size="15" font-weight="700" fill="#C99700">Racha &middot; +&frac12;&#10084;</text><g><line x1="20" y1="56" x2="74" y2="56" stroke="#EA3546" stroke-width="9"/><polyline points="64,46 84,56 64,66" stroke="#EA3546" stroke-width="9"/></g><text x="98" y="61" font-size="15" font-weight="700" fill="#EA3546">Peligro &middot; &times;2</text><g><line x1="20" y1="86" x2="74" y2="86" stroke="#4ECDC4" stroke-width="9"/><polyline points="64,76 84,86 64,96" stroke="#4ECDC4" stroke-width="9"/></g><text x="98" y="91" font-size="15" font-weight="700" fill="#3BB6AE">Escudo &middot; 0&#10084;</text></svg></div>
@@ -2083,9 +2087,9 @@ boot();
         <p><b style="color:#C99700">Amarilla</b> da corazones, <b style="color:#EA3546">roja</b> es peligro (cuesta el doble) y <b style="color:#3BB6AE">cian</b> es escudo (choques gratis). T&uacute; eliges cu&aacute;ndo.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-fz-board" x="46" y="10" width="140" height="56" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="80" width="140" height="22" rx="11" fill="none" stroke="#0062E3" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="82" width="136" height="18" rx="9" fill="#9CCCEC"/></svg></div>
-        <h3>Congelar</h3>
-        <p>El bot&oacute;n <b style="color:#0062E3">&#10052; Congelar</b> se llena solo. &Uacute;salo para <b>pausar el reloj y el borde</b> durante 5 s.</p>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-fz-board" x="46" y="10" width="140" height="56" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="4" width="50" height="7" rx="3.5" fill="#662E9B"/><rect x="136" y="65" width="50" height="7" rx="3.5" fill="#662E9B" opacity=".35"/><path d="M116 52 V28 M108 36 L116 26 L124 36" fill="none" stroke="#662E9B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><rect x="46" y="80" width="140" height="22" rx="11" fill="none" stroke="#662E9B" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="82" width="136" height="18" rx="9" fill="#d9c9ee"/></svg></div>
+        <h3>Desviar</h3>
+        <p>El bot&oacute;n <b style="color:#662E9B">&#8645; Desviar</b> se llena solo (~20 s). &Uacute;salo para <b>saltar el borde al lado opuesto</b> — el reloj sigue corriendo.</p>
       </section>
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv-run"><rect x="14" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:0s"/><rect x="54" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:.4s"/><rect x="94" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:.8s"/><rect x="134" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:1.2s"/><rect x="174" y="36" width="34" height="40" rx="5" fill="var(--accent)" style="animation-delay:1.6s"/></svg></div>

@@ -95,6 +95,12 @@
   .recenter-btn { position:absolute; top:10px; right:10px; z-index:5; width:34px; height:34px; border-radius:50%; border:1.5px solid var(--arrow); background:var(--board-bg); color:var(--arrow); display:none; align-items:center; justify-content:center; cursor:pointer; opacity:.85; padding:0; }
   .recenter-btn.show { display:flex; }
   .recenter-btn svg { width:18px; height:18px; }
+  .enfoque-btn { position:absolute; top:10px; left:10px; z-index:5; height:34px; padding:0 13px; border-radius:999px; border:1.5px solid var(--arrow); background:var(--board-bg); color:var(--arrow); display:none; align-items:center; gap:6px; cursor:pointer; font:800 12.5px var(--font-ui); letter-spacing:.3px; opacity:.9; }
+  .enfoque-btn.show { display:flex; }
+  .enfoque-btn:disabled { opacity:.4; cursor:default; }
+  .enfoque-btn svg { width:15px; height:15px; }
+  .piece.enfoque .pline, .piece.enfoque .phead { stroke:var(--clear) !important; animation:enfpulse 1s ease infinite; }
+  @keyframes enfpulse { 0%,100%{ opacity:1; } 50%{ opacity:.5; } }
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }
   .piece { cursor:pointer; }
@@ -232,6 +238,7 @@
       <div class="board" id="board">
         <div id="board-inner"></div>
         <div class="train-badge" id="train-badge">Entrenamiento</div>
+        <button class="enfoque-btn" id="enfoque-btn" type="button" aria-label="Enfoque: resalta las flechas libres, cuesta 12 segundos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="5.2"/><path d="M12 1.5v3.2M12 19.3v3.2M1.5 12h3.2M19.3 12h3.2"/></svg>Enfoque · +12 s</button>
         <div class="toast" id="toast"></div>
         <div class="gate" id="gate">
           <h2>Clásico</h2>
@@ -256,6 +263,7 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path style="stroke:var(--arrow)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta). El tablero es un lienzo grande: <b>pellizca</b> para acercar y <b>arrastra</b> para moverte.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--clear)" d="M14 20 L92 20"/><path style="stroke:var(--clear)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al despejarla <b style="color:var(--clear)">destella en verde</b> y desaparece — deja hueco para otras.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> tocar una flecha <b>tapada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">½ corazón</b>. 3 corazones = 6 choques.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><circle cx="60" cy="20" r="11" fill="none" stroke="var(--accent)" stroke-width="5.5"/><path d="M60 2 V9 M60 31 V38 M42 20 H49 M71 20 H78" fill="none" stroke="var(--accent)" stroke-width="5.5" stroke-linecap="round"/></svg></div><div class="txt"><b>Enfoque:</b> resalta <b>3 s</b> las flechas que ya pueden salir. Cuesta <b>+12 s</b> de reloj — ayuda, pero pesa en tu rango. Úsalo solo cuando lo necesites.</div></div>
     <div class="legend-row"><div class="legend-cell" style="font-size:22px;">🏁</div><div class="txt"><b>Meta:</b> vacía el tablero entero. Tu <b>rango es el tiempo</b> — el reloj arranca en cuanto el tablero <b>se asienta</b>, justo tras <b>Empezar</b>. <b>Más rápido, mejor rango.</b></div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Despejar solo <b>quita</b> flechas, nunca traba el tablero. Tu <b>primer intento</b> cuenta como el reto de hoy; después puedes <b>entrenar</b> con tableros nuevos.</p>
   </div></div>
@@ -524,7 +532,7 @@
     let start=null, pinch0=null, suppressUntil=0, lastTap=null;
     const box=()=>boardEl.getBoundingClientRect();
     boardEl.addEventListener('click',(e)=>{ if(Date.now()<suppressUntil){ e.stopPropagation(); e.preventDefault(); } }, true);
-    boardEl.addEventListener('pointerdown',(e)=>{ if(e.target.closest('.recenter-btn')) return;
+    boardEl.addEventListener('pointerdown',(e)=>{ if(e.target.closest('.recenter-btn')||e.target.closest('.enfoque-btn')) return;
       ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
       try{ boardEl.setPointerCapture(e.pointerId); }catch(err){}
       if(ptrs.size===1){ mode='maybe-tap'; start={x:e.clientX,y:e.clientY,t:Date.now(),view:{...view},target:e.target}; }
@@ -563,6 +571,19 @@
   }
   function startClock(){ if(started||!running||over) return;   // v9.5: single entry point for the stopwatch
     started=true; lastTick=0; if(rafId) cancelAnimationFrame(rafId); rafId=requestAnimationFrame(loop); }
+
+  // ================= Enfoque — Clásico's signature power =================
+  // Highlights every arrow whose lane is currently clear, for 3 s. Costs +12 s
+  // of clock (same currency as the rank). Unlimited uses, each one hurts.
+  const ENFOQUE_PEN=12, ENFOQUE_DUR=3000;
+  function doEnfoque(){ if(!running||over) return; const b=$('enfoque-btn'); if(b&&b.disabled) return;
+    if(!started) startClock();
+    totalMs+=ENFOQUE_PEN*1000; $('timer').textContent=fmt(totalMs);
+    showToast('Enfoque · +'+ENFOQUE_PEN+' s');
+    if(b) b.disabled=true;
+    const marked=[];
+    for(const k in snakes){ const s=snakes[k]; if(s.el&&laneClear(s)){ s.el.classList.add('enfoque'); marked.push(s.el); } }
+    setTimeout(()=>{ marked.forEach(el=>{ try{ el.classList.remove('enfoque'); }catch(e){} }); if(b) b.disabled=false; }, ENFOQUE_DUR); }
   function zoomHintMaybe(){
     if(boardEl._hintCancel) boardEl._hintCancel();          // plays on EVERY Empezar; never stacks (re-entry does NOT start the old game's clock)
     let raf=null; const t0=performance.now(), DUR=1700;
@@ -673,10 +694,12 @@
     const _tb=$('train-badge'); clearTimeout(_tb._t); _tb.classList.toggle('show', training);
     if(training) _tb._t=setTimeout(()=>{ try{ _tb.classList.remove('show'); }catch(e){} }, 2200);   // v9.6: brief tag while the board settles — hidden during play
     $('gate').classList.add('hidden');
+    const _eb=$('enfoque-btn'); if(_eb){ _eb.classList.add('show'); _eb.disabled=false; }
     zoomHintMaybe();   // v9.2: first-ever game only — subtle breathing zoom, cancelled by any touch
     if(rafId) cancelAnimationFrame(rafId);   // v9.5: clock starts when the breathe settles (or on first touch if cancelled) — see startClock()
   }
   function winGame(){ if(over) return; finished=true; over=true; running=false; if(rafId) cancelAnimationFrame(rafId);
+    const _eb=$('enfoque-btn'); if(_eb) _eb.classList.remove('show');
     const secs=Math.round(totalMs/1000); const idx=rankFromTime(secs); const reto=retoTarget();
     if(!training){ const prev=+(lsGet('clasico-best-'+ISO)||0); if(prev===0||secs<prev){ bestSecs=secs; lsSet('clasico-best-'+ISO,String(secs)); } else bestSecs=prev;
       lsSet('clasico-done-'+ISO,'1'); recordStats(secs,true); }
@@ -693,6 +716,7 @@
       +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
     $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare); }
   function endGame(reason){ if(over) return; over=true; finished=false; running=false; if(rafId) cancelAnimationFrame(rafId);
+    const _eb=$('enfoque-btn'); if(_eb) _eb.classList.remove('show');
     if(!training){ lsSet('clasico-done-'+ISO,'1'); recordStats(0,false); }
     renderRank();
     const g=$('gate'); g.classList.remove('hidden');
@@ -724,6 +748,7 @@
 
   // ================= wiring =================
   $('start-btn').addEventListener('click', ()=>{ const done=lsGet('clasico-done-'+ISO); startGame(!!done); });
+  $('enfoque-btn').addEventListener('click', doEnfoque);
   $('rules-link').addEventListener('click', ()=>openRules(true));
   $('rules-x').addEventListener('click', ()=>openRules(false));
   $('rules-ov').addEventListener('click', e=>{ if(e.target===$('rules-ov')) openRules(false); });
