@@ -98,8 +98,8 @@
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }
   .piece { cursor:pointer; }
-  .piece .pline { fill:none; stroke:var(--arrow); stroke-width:13; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
-  .piece .phead { fill:none; stroke:var(--arrow); stroke-width:13; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }   /* open chevron — family standard (Borde/Cascada) */
+  .piece .pline { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
+  .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }   /* open chevron, stroke 14 — exact Borde/Cascada parity */
   .piece .phit { fill:none; stroke:transparent; stroke-width:96; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
   .piece.blocked .pline { stroke:var(--error) !important; }
   .piece.blocked .phead { stroke:var(--error) !important; }
@@ -451,11 +451,11 @@
   function polyD(pts){ return pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' '); }
   // chevron head at the head cell, pointing in dir d
   function headChevD(head, d){ const v=[DC[d],DR[d]]; const [x,y]=center(head.r,head.c);
-    const tx=x+v[0]*33, ty=y+v[1]*33;                 // tip near the cell edge — big, confident head
-    const bk=24, w=22, px=-v[1], py=v[0];             // open chevron, family standard (Borde/Cascada): legs back to the line end
-    return 'M '+(tx-v[0]*bk+px*w).toFixed(1)+' '+(ty-v[1]*bk+py*w).toFixed(1)
+    const tx=x+v[0]*22, ty=y+v[1]*22;                 // vertex ON the line end — body runs into the V (Borde parity)
+    const L=31, px=-v[1], py=v[0];                    // 45° legs, same size as Borde's headD
+    return 'M '+(tx+(-v[0]+px)*L).toFixed(1)+' '+(ty+(-v[1]+py)*L).toFixed(1)
          +' L '+tx.toFixed(1)+' '+ty.toFixed(1)
-         +' L '+(tx-v[0]*bk-px*w).toFixed(1)+' '+(ty-v[1]*bk-py*w).toFixed(1); }
+         +' L '+(tx+(-v[0]-px)*L).toFixed(1)+' '+(ty+(-v[1]-py)*L).toFixed(1); }
   // body path: from TAIL to HEAD through cell centres, then a short stub toward the head chevron so line + head meet
   function polyLen(pts){ let n=0; for(let i=1;i<pts.length;i++) n+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return n; }
   function distToBorder(pt,v){ if(v[1]>0) return H*U-pt[1]; if(v[1]<0) return pt[1]; if(v[0]>0) return W*U-pt[0]; return pt[0]; }
@@ -466,7 +466,7 @@
     const order=s.cells.slice().reverse();            // tail→head
     const pts=order.map(cl=>center(cl.r,cl.c));
     const head=center(s.cells[0].r, s.cells[0].c);
-    pts.push([head[0]+v[0]*8, head[1]+v[1]*8]);       // tuck 2u under the head triangle base (base at +6) — connected, no gap
+    pts.push([head[0]+v[0]*22, head[1]+v[1]*22]);     // body runs to the chevron vertex (+22) — connected, no gap (Borde parity)
     const L=polyLen(pts);
     const ext=distToBorder(head,v)+76;                // off the board + viewBox inset (30) + head reach (~46)
     return { pts:pts, v:v, L:L, F:L+ext, move:ext }; }
