@@ -98,13 +98,13 @@
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }
   .piece { cursor:pointer; }
-  .piece .pline { fill:none; stroke:var(--arrow); stroke-width:11; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
-  .piece .phead { fill:var(--arrow); stroke:var(--arrow); stroke-width:4; stroke-linejoin:round; transition:fill .12s, stroke .12s, opacity .15s; }   /* solid triangle + matching outline: uniform, rounded, connected */
+  .piece .pline { fill:none; stroke:var(--arrow); stroke-width:13; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
+  .piece .phead { fill:none; stroke:var(--arrow); stroke-width:13; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }   /* open chevron — family standard (Borde/Cascada) */
   .piece .phit { fill:none; stroke:transparent; stroke-width:96; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
   .piece.blocked .pline { stroke:var(--error) !important; }
-  .piece.blocked .phead { fill:var(--error) !important; stroke:var(--error) !important; }
+  .piece.blocked .phead { stroke:var(--error) !important; }
   .piece.firing .pline { stroke:var(--clear) !important; }
-  .piece.firing .phead { fill:var(--clear) !important; stroke:var(--clear) !important; }
+  .piece.firing .phead { stroke:var(--clear) !important; }
   .piece.gone .pline, .piece.gone .phead { opacity:0; }
   .board.clearflash { animation:boardclear .9s ease; }
   @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:var(--accent-soft);} 100%{ background:var(--board-bg);} }
@@ -452,11 +452,10 @@
   // chevron head at the head cell, pointing in dir d
   function headChevD(head, d){ const v=[DC[d],DR[d]]; const [x,y]=center(head.r,head.c);
     const tx=x+v[0]*33, ty=y+v[1]*33;                 // tip near the cell edge — big, confident head
-    const bx=x+v[0]*6,  by=y+v[1]*6;                  // base ON the line end — head and line stay connected
-    const px=-v[1], py=v[0], w=12;
-    return 'M '+tx.toFixed(1)+' '+ty.toFixed(1)
-         +' L '+(bx+px*w).toFixed(1)+' '+(by+py*w).toFixed(1)
-         +' L '+(bx-px*w).toFixed(1)+' '+(by-py*w).toFixed(1)+' Z'; }
+    const bk=24, w=22, px=-v[1], py=v[0];             // open chevron, family standard (Borde/Cascada): legs back to the line end
+    return 'M '+(tx-v[0]*bk+px*w).toFixed(1)+' '+(ty-v[1]*bk+py*w).toFixed(1)
+         +' L '+tx.toFixed(1)+' '+ty.toFixed(1)
+         +' L '+(tx-v[0]*bk-px*w).toFixed(1)+' '+(ty-v[1]*bk-py*w).toFixed(1); }
   // body path: from TAIL to HEAD through cell centres, then a short stub toward the head chevron so line + head meet
   function polyLen(pts){ let n=0; for(let i=1;i<pts.length;i++) n+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return n; }
   function distToBorder(pt,v){ if(v[1]>0) return H*U-pt[1]; if(v[1]<0) return pt[1]; if(v[0]>0) return W*U-pt[0]; return pt[0]; }
