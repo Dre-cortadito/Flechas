@@ -1065,6 +1065,28 @@ function genConstructive(rng){
   pieces.forEach(p=>{ const hc2=p.cells[p.cells.length-1];
     let [r,c]=rc(hc2); r+=DR[p.dir]; c+=DC[p.dir];
     while(inb(r,c)){ laneCells[r*GRID_C+c]=1; r+=DR[p.dir]; c+=DC[p.dir]; } });
+  // Absorb pass (v2, before stitching): weave leftover pocket cells into the TAIL of an
+  // adjacent committed piece — the body bends into the dead air instead of leaving a hole
+  // or a stub. Safe by construction: only cells in NOBODY's firing lane are taken (so no
+  // piece's clear-at-fire-time proof changes), the no-fold rule keeps bodies clean lines,
+  // and selfClearDir re-checks that the piece doesn't point into its own new cell.
+  { let grew=true, guard=0;
+    while(grew && guard++<60){ grew=false;
+      for(const p of pieces){ if(p.cells.length>=12) continue;
+        const tailIdx=(p.headEnd==='A')?p.cells.length-1:0;             // tail = the non-head end
+        const t=p.cells[tailIdx]; const [tr,tc]=rc(t);
+        for(let k=0;k<4;k++){ const nr=tr+DR[k], nc=tc+DC[k]; if(!inb(nr,nc)) continue;
+          const L=nr*GRID_C+nc;
+          if(!MASK[L]||placed[L]!==-1||laneCells[L]) continue;
+          let folds=false;                                              // no-fold vs this piece
+          for(let q=0;q<4;q++){ const ar=nr+DR[q], ac=nc+DC[q]; if(!inb(ar,ac)) continue;
+            const ai=ar*GRID_C+ac; if(ai!==t && placed[ai]===p.id){ folds=true; break; } }
+          if(folds) continue;
+          const cells2=(p.headEnd==='A')?p.cells.concat([L]):[L].concat(p.cells);
+          const hc3=(p.headEnd==='A')?cells2[0]:cells2[cells2.length-1];
+          if(!selfClearDir(cells2,hc3,p.dir)) continue;                 // must not point into its own new tail
+          p.cells=cells2; placed[L]=p.id; grew=true; break; }
+      } } }
   const leftover={}; for(let i=0;i<NCELLS;i++) if(MASK[i]&&placed[i]===-1) leftover[i]=1;
   const bdRay={}; const backdated=[];
   for(let i=0;i<NCELLS;i++){

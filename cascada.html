@@ -426,7 +426,26 @@
   function growAll(){ pid=0; pieces={}; ownerMap=new Map();
     const seeds=[]; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) seeds.push([r,c]);
     for(let i=seeds.length-1;i>0;i--){ const j=(rng()*(i+1))|0; const t=seeds[i]; seeds[i]=seeds[j]; seeds[j]=t; }   // random seed order → shapes grow every direction, not all down-right
-    for(const s of seeds){ if(!occ(s[0],s[1]) && rng()<COVER) growSnake(s[0],s[1]); } }
+    for(const s of seeds){ if(!occ(s[0],s[1]) && rng()<COVER) growSnake(s[0],s[1]); }
+    // Absorb pass (v2): weave leftover pockets into neighbouring bodies — extend a snake END
+    // into an adjacent empty cell (no-fold rule still applies), so dead air fills with BENDS
+    // through the space instead of extra clutter. Orientation is assigned later (orientSolvable).
+    let grew=true;
+    while(grew){ grew=false;
+      for(const p of Object.values(pieces)){ if(p.cells.length>=10) continue;
+        let done=false;
+        for(const endIdx of [0, p.cells.length-1]){ const e=p.cells[endIdx];
+          for(let d=0;d<4;d++){ const nr=e.r+DYn[d], nc=e.c+DXn[d];
+            if(nr<0||nr>=ROWS||nc<0||nc>=COLS||occ(nr,nc)) continue;
+            let folds=false;
+            for(let q=0;q<4;q++){ const ar=nr+DYn[q], ac=nc+DXn[q]; if(ar<0||ar>=ROWS||ac<0||ac>=COLS) continue;
+              if(ar===e.r&&ac===e.c) continue; if(ownerMap.get(key(ar,ac))===p.id){ folds=true; break; } }
+            if(folds) continue;
+            ownerMap.set(key(nr,nc),p.id);
+            if(endIdx===0) p.cells.unshift({r:nr,c:nc}); else p.cells.push({r:nr,c:nc});
+            grew=true; done=true; break; }
+          if(done) break; }
+      } } }
   // lane-clear for a candidate orientation against a "remaining" occupancy map (ignores self)
   function laneClearOcc(p,o,occR){ let r=o.head.r+DYn[o.dir], c=o.head.c+DXn[o.dir]; while(r>=0&&r<ROWS&&c>=0&&c<COLS){ const id=occR.get(key(r,c)); if(id!==undefined && id!==p.id) return false; r+=DYn[o.dir]; c+=DXn[o.dir]; } return true; }
   // Orient by simulating a FULL solve: repeatedly peel off a piece that has a launchable orientation

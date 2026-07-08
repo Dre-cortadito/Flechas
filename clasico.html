@@ -354,7 +354,13 @@
     // direction of a nearby head (within 2 cells). Corridors keep ONE guiding arrow
     // instead of a same-direction cluster; turns/decision points still get their own.
     const heads=[];
-    const sameDirNearby=(r,c,d)=>{ let n=0; for(const h of heads){ if(h.d===d&&Math.abs(h.r-r)<=3&&Math.abs(h.c-c)<=3) n++; } return n; };   // v10.1: wider look
+    const sameDirNearby=(r,c,d)=>{ let n=0; for(const h of heads){ if(h.d!==d) continue;
+      if(Math.abs(h.r-r)<=3&&Math.abs(h.c-c)<=3) n++;                                    // v10.1: wider local look
+      // v10.2: corridor-aware — a same-dir head sharing this head's LINE (column for vertical
+      // dirs, row for horizontal) within 6 cells reads as "stacked traffic" even when it's
+      // outside the 3-cell box. Count it too, so lanes keep ONE guiding arrow.
+      else if((d===0||d===2) ? (h.c===c&&Math.abs(h.r-r)<=6) : (h.r===r&&Math.abs(h.c-c)<=6)) n++;
+      } return n; };
     // v9: center-out seeding — interior cells first, while their outward exit
     // lanes are still clear (fixes big-board interior starvation), then random.
     const seedOrder=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) seedOrder.push([r,c]);
@@ -369,8 +375,8 @@
       // v10: among clear dirs, keep only the least-redundant ones (fewest nearby same-dir heads)
       const red=dirs.map(d=>sameDirNearby(r0,c0,d)); const minRed=Math.min.apply(null,red);
       const pool=dirs.filter((_,i)=>red[i]===minRed);
-      const vd=pool.filter(x=>x===0||x===2);                            // v7: lean vertical
-      const d=(vd.length&&rng()<0.6)?vd[(rng()*vd.length)|0]:pool[(rng()*pool.length)|0];
+      const vd=pool.filter(x=>x===0||x===2);                            // v7: lean vertical (v10.2: softened 0.6→0.5 — the lean itself was stacking columns)
+      const d=(vd.length&&rng()<0.5)?vd[(rng()*vd.length)|0]:pool[(rng()*pool.length)|0];
       const snake=growBody(grid,r0,c0,d,rng,id);
       if(!snake||snake.cells.length<LEN_MIN){ if(snake) for(const cl of snake.cells) grid[cl.r*W+cl.c]=-1; continue; }
       snakes.push(snake); heads.push({r:r0,c:c0,d:d}); id++; }
@@ -451,13 +457,32 @@
     return p; }
   function boardScore(b){ return coverage(b) - Math.max(0, largestGap(b)-4)*0.012
          - b.snakes.filter(s=>s.cells.length<4).length*0.004     // v4: full AND even; v5: few stubby pieces
-         - headClusters(b)*0.001                                 // v10.1: fewer same-dir clusters (down weighs double)
-         - headColumns(b)*0.006                                  // v10.1: stronger column/row spread
+         - headClusters(b)*0.003                                 // v10.2: fewer same-dir clusters (weight 3× — rhythm over raw fill)
+         - headColumns(b)*0.009                                  // v10.2: stronger column/row spread
          + headPlacement(b)*0.0008; }                            // v10.1: heads at decision points / corridor caps
+  // v10.2: de-cluster pass — flip a snake end-for-end (same shape, head at the other end,
+  // pointing back out along its own last segment) when that reduces same-direction head
+  // clustering AND the board stays greedy-solvable. Runs once, on the final board only.
+  function deCluster(b){ if(!b) return b;
+    const rhythm=()=>headClusters(b)+headColumns(b);
+    let guard=0, improved=true;
+    while(improved && guard++<3){ improved=false;
+      for(const s of b.snakes){ if(s.cells.length<2) continue;
+        const before=rhythm();
+        if(before===0) return b;
+        const oldCells=s.cells, oldDir=s.dir;
+        const cells=oldCells.slice().reverse(); const a=cells[0], n=cells[1];
+        let nd=-1; for(let d=0;d<4;d++) if(DR[d]===a.r-n.r&&DC[d]===a.c-n.c){ nd=d; break; }
+        if(nd<0) continue;
+        s.cells=cells; s.dir=nd;
+        if(rhythm()<before && greedySolve(cloneBoard(b))) improved=true;
+        else { s.cells=oldCells; s.dir=oldDir; } } }
+    return b; }
   function generateBoard(seed){ const rng=(typeof seed==='function')?seed:mulberry32(seed>>>0); let best=null;
     for(let attempt=0;attempt<300;attempt++){ const b=buildOnce(rng); if(!b) continue;
       if(!greedySolve(cloneBoard(b))) continue;
       if(!best||boardScore(b)>boardScore(best)) best=b; if(best&&boardScore(best)>=0.90) break; }   // v9: good enough — stop early
+    best=deCluster(best);
     return best || buildOnce(rng); }
 
   // Reto del día: date-hashed target time in the 75–150 s window (1:15–2:30)
