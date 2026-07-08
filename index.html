@@ -1244,12 +1244,14 @@ function genPuzzle(iso){
     // packed — difficulty should come from long paths + density, not from
     // sparse, scattered arrows. Among the dense ones, apply the difficulty's
     // branching preference (low = hardest order, high = easiest).
-    let pool=cands.filter(c=>c._occ>=0.92);                                      // v3: compact-tactical — density floor 0.92
+    let pool=cands.filter(c=>c._occ>=0.95);                                      // v2.1: gauntlet density — floor 0.95, fall back gently
+    if(!pool.length) pool=cands.filter(c=>c._occ>=0.92);
     if(!pool.length) pool=cands.filter(c=>c._occ>=0.88);
     if(!pool.length) pool=cands.filter(c=>c._occ>=0.85);
     if(!pool.length){ pool=cands.slice().sort((a,b)=>b._occ-a._occ).slice(0, Math.max(1,(cands.length/3)|0)); }
     // reject boards with empty channels (>4 in a row/col) OR clustered empty blobs (v3: >3 cells)
-    const tight=pool.filter(c=>c._em<=4 && c._blob<=3);
+    const tight0=pool.filter(c=>c._em<=3 && c._blob<=2);                         // v2.1: pockets of 1-2 cells max when possible
+    const tight=tight0.length?tight0:pool.filter(c=>c._em<=4 && c._blob<=3);
     if(tight.length) pool=tight;
     else { const t2=pool.filter(c=>c._em<=5&&c._blob<=4); if(t2.length) pool=t2;
       else { const t3=pool.filter(c=>c._blob<=6); if(t3.length) pool=t3;
@@ -1416,7 +1418,7 @@ function assignRoles(seedBase){
       if(md>bd){ bd=md; best=cand; } }
     return best; };
   // Turn-based deal: only racha + escudo, 2 of each per board.
-  const nAmber=2, nShield=2;
+  const nAmber=3, nShield=3;   // v2.1: more color on the board (gauntlet energy) — ~24% of ~25 pieces
   // STEP 1 — pick N evenly-spread pieces COLOUR-BLIND (farthest-point), so the slots themselves are
   // distributed across the whole board.
   const TOTAL=nAmber+nShield, slots=[];
@@ -1495,13 +1497,19 @@ function wallGradThin(e){ const d=['to bottom','to left','to top','to right'][e]
 // within +1 of par (measured); blocking half the compass makes ORDERING the actual game.
 function beamBlocksDir(dir){ return started && !finished && (dir===borderSide || dir===((borderSide+1)%4)); }
 function beamBlocks(pid){ return beamBlocksDir(PIECES[pid].dir); }
-function renderBorder(){ const w0=document.getElementById('wall0'), w1=document.getElementById('wall1'), w2=document.getElementById('wall2');
+function renderBorder(moved){ const w0=document.getElementById('wall0'), w1=document.getElementById('wall1'), w2=document.getElementById('wall2');
   if(!w0||!w1) return;
   if(!started||finished){ w0.style.opacity='0'; w1.style.opacity='0'; if(w2) w2.style.opacity='0'; return; }
   w0.style.background=wallGrad(borderSide);            w0.style.opacity='1'; w0.style.transform='';
   w1.style.background=wallGrad((borderSide+1)%4);      w1.style.opacity='1'; w1.style.transform='';
-  if(w2){ w2.style.background=wallGradThin((borderSide+2)%4); w2.style.opacity='0.35'; w2.style.transform=''; } }
-function rotateBorder(){ borderSide=(borderSide+1)%4; renderBorder(); }
+  if(w2){ w2.style.background=wallGradThin((borderSide+2)%4); w2.style.opacity='0.35'; w2.style.transform=''; }
+  if(moved){                                          // v2.1: the trap MOVES — flash the walls + a brief purple breath on the board edge
+    try{ w0.animate([{opacity:.15},{opacity:1}],{duration:300,easing:'ease-out'});
+      w1.animate([{opacity:.15,filter:'brightness(1.8)'},{opacity:1,filter:'brightness(1)'}],{duration:340,easing:'ease-out'});
+      const bp=document.getElementById('board-panel');
+      if(bp) bp.animate([{boxShadow:'inset 0 0 0 0 rgba(102,46,155,0)'},{boxShadow:'inset 0 0 18px 2px rgba(102,46,155,.35)',offset:.35},{boxShadow:'inset 0 0 0 0 rgba(102,46,155,0)'}],{duration:420,easing:'ease-out'});
+    }catch(e){} } }
+function rotateBorder(){ borderSide=(borderSide+1)%4; renderBorder(true); }
 // LIVE RANK: projected best-case final gap = turns so far + one turn per arrow left on this
 // board + the pars of the boards not yet started − the day's par. Clamped at 0 — you start
 // at Maestro/a and decay as turns are wasted. Once the run is WON, the real gap is used.
@@ -1534,7 +1542,7 @@ function useEsperar(){ if(!started||finished||busy) return;
 // OPPOSITE side. Neutral to the racha. No recharge.
 function useDesviar(){ if(desviarCharges<=0 || finished || !started || busy) return;
   desviarCharges--; turns++;
-  borderSide=(borderSide+2)%4; renderBorder();
+  borderSide=(borderSide+2)%4; renderBorder(true);
   renderActions(); saveState(); renderStatus(); renderRank(); flash('Borde desviado','success'); }
 
 let firedP=new Array(PIECES.length).fill(false);
