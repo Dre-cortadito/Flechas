@@ -576,8 +576,16 @@
       if(mode==='maybe-tap'&&start){ mode='idle';
         const dt=Date.now()-start.t, dist=Math.hypot(e.clientX-start.x,e.clientY-start.y);
         if(isTap(dt,dist)){
-          const onPiece=!!(start.target&&start.target.closest&&start.target.closest('.piece'));
-          if(!onPiece){ const now=Date.now();
+          const pieceEl=start.target&&start.target.closest&&start.target.closest('.piece');
+          if(pieceEl){
+            // Launch HERE, from the tracked pointerup. setPointerCapture (needed for pan)
+            // retargets the browser's synthetic click to the BOARD on desktop Chrome, so the
+            // piece's own click handler never fires there (iOS Safari doesn't retarget, which
+            // masked the bug on phones). suppressUntil eats the synthetic click so browsers
+            // that DO deliver it to the piece can't double-launch.
+            suppressUntil=Date.now()+250;
+            const pid=parseInt(pieceEl.id.slice(3),10); if(!isNaN(pid)) tapSnake(pid);
+          } else { const now=Date.now();
             if(lastTap&&now-lastTap.t<300&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<40){ lastTap=null; resetView(); suppressUntil=now+250; }
             else lastTap={x:e.clientX,y:e.clientY,t:now}; }
         } } };
