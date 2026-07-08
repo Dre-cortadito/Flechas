@@ -212,12 +212,12 @@
   .flx-actions { display:flex; align-items:center; justify-content:center;
     width:min(94vw,400px); margin:10px auto 0; }
   .act-btn { position:relative; overflow:hidden; flex:1; display:inline-flex; align-items:center; justify-content:center;
-    padding:11px 12px; border-radius:14px;   /* exact Cascada freeze-btn dimensions — family standard */
+    padding:7px 12px; border-radius:14px;   /* exact Cascada freeze-btn dimensions — family standard; padding 11→7: icon box grew 34→42 for the ring */
     cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
     transition:opacity .15s, transform .08s, box-shadow .2s, background .15s; }
   .act-btn .act-fill { position:absolute; left:0; top:0; bottom:0; width:100%; transform-origin:left; transform:scaleX(0); z-index:0; transition:transform .35s linear; }
   .act-btn.dv .act-fill  { background:#d9c9ee; }   /* charge fill = soft border-purple, so button-full reads "border power ready" */
-  .act-btn .act-ico { position:relative; z-index:1; display:inline-flex; width:34px; height:34px; }   /* icon only, centred, large (Cascada parity) */
+  .act-btn .act-ico { position:relative; z-index:1; display:inline-flex; width:42px; height:42px; }   /* icon at original scale + surrounding ring (Cascada parity) */
   .act-btn .act-ico svg { width:100%; height:100%; display:block; }
   .act-btn .act-num { position:relative; z-index:1; display:none; font:800 22px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; height:28px; align-items:center; }
   .act-btn.frozen .act-ico { display:none; }            /* during a freeze the ❄ icon is replaced by the countdown */
@@ -514,7 +514,7 @@
       <div class="fbox-tile t-borde" id="fb-borde"><div class="fbox-val">—</div><div class="fbox-lbl">Borde</div></div>
     </div>
     <div class="flx-actions" id="flx-actions" aria-label="Cargas">
-      <button class="act-btn dv" id="flx-desviar" type="button" aria-label="Desviar el borde al lado opuesto" disabled><span class="act-fill"></span><span class="act-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.9" stroke-width="2.2"/><g transform="translate(12 12) scale(0.62) translate(-12 -12)" stroke-width="3.5"><line x1="5" y1="3.5" x2="19" y2="3.5"/><line x1="5" y1="20.5" x2="19" y2="20.5"/><path d="M12 16.5v-8"/><path d="m8.5 11.5 3.5-4 3.5 4"/></g></svg></span></button>
+      <button class="act-btn dv" id="flx-desviar" type="button" aria-label="Desviar el borde al lado opuesto" disabled><span class="act-fill"></span><span class="act-ico"><svg viewBox="-3 -3 30 30" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="13.4" stroke-width="2.2"/><g stroke-width="2.2"><line x1="5" y1="3.5" x2="19" y2="3.5"/><line x1="5" y1="20.5" x2="19" y2="20.5"/><path d="M12 16.5v-8"/><path d="m8.5 11.5 3.5-4 3.5 4"/></g></svg></span></button>
     </div>
     <div class="train-badge" id="train-badge">⟳ Entrenamiento</div>
     <div class="lower-spacer">

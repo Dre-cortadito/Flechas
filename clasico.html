@@ -103,10 +103,10 @@
      freeze-btn dimensions). Clásico's verb: 👁 Enfoque — highlights every arrow whose lane
      is clear for 3 s. Auto-charges (~20 s), one charge, green like the game. */
   .freeze { width:min(94vw,400px); margin:10px auto 0; }
-  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:var(--accent); background:rgba(47,125,70,.05); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:7px 12px; border-radius:14px; cursor:pointer; color:var(--accent); background:rgba(47,125,70,.05); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }   /* padding 11→7: icon box grew 34→42 for the ring, button height unchanged */
   .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--accent-soft); transform-origin:left; transform:scaleX(0); z-index:0; }
-  .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:34px; }
-  .freeze-btn .ficon svg { width:34px; height:34px; display:block; }
+  .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:42px; }
+  .freeze-btn .ficon svg { width:42px; height:42px; display:block; }
   .freeze-btn:not(.ready){ cursor:default; }
   .freeze-btn:active { transform:scale(.98); }
   .piece.enfoque .pline, .piece.enfoque .phead { stroke:var(--clear) !important; animation:enfpulse 1s ease infinite; }
@@ -267,7 +267,7 @@
     <div class="freeze">
       <button class="freeze-btn" id="enfoque-btn" type="button" aria-label="Enfoque: resalta las flechas que pueden salir">
         <span class="fill" id="enfoque-fill"></span>
-        <span class="ficon"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="enf-eye-m"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><circle cx="12" cy="12" r="10.9" fill="none" stroke="currentColor" stroke-width="2.2"/><g transform="translate(12 12) scale(0.62) translate(-12 -12)"><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" fill="none" stroke="currentColor" stroke-width="3.5"/><circle cx="12" cy="12.5" r="4.9" fill="currentColor" mask="url(#enf-eye-m)"/></g></svg></span>
+        <span class="ficon"><svg viewBox="-3 -3 30 30" aria-hidden="true"><defs><mask id="enf-eye-m"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><circle cx="12" cy="12" r="13.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12.5" r="4.9" fill="currentColor" mask="url(#enf-eye-m)"/></svg></span>
       </button>
     </div>
   </div>
