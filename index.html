@@ -156,7 +156,7 @@
   .piece.role-freeze .pline, .piece.role-freeze .phead { stroke:#0062E3; }   /* blue — freeze. Same geometry as normal arrows, ONLY the color changes (family rule) */
   .piece.role-racha .pline, .piece.role-racha .phead { stroke:#F9C80E; }   /* yellow — start a clean streak */
   .piece.role-giro .pline, .piece.role-giro .phead { stroke:#E76210; }      /* BURNT ORANGE — Giro: the border JUMPS when you clear it (red stays reserved for mistakes) */
-  .piece.role-candado .pline, .piece.role-candado .phead { stroke:#8E5DC8; }  /* light purple — Candado: pins the border (deeper purple than the walls would vanish against them) */
+  .piece.role-candado .pline, .piece.role-candado .phead { stroke:#662E9B; }  /* BORDER purple — Candado wears the exact border color: it IS a border power */
   /* Peligro danger window — a RED wash (red = danger). It's the only red on the board:
      the hot beam is now indigo, so the two never read as the same thing. */
   /* Board-state tints live in the BACKGROUND so they never collide with the purple beam on the edges.
@@ -232,7 +232,7 @@
   .flx-seg-fill { display:block; height:100%; width:100%; transform-origin:left; transform:scaleX(0); transition:transform .12s linear; }
   .s-racha   .flx-seg-fill { background:#F9C80E; }
   .s-giro .flx-seg-fill { background:#E76210; }
-  .s-candado .flx-seg-fill { background:#8E5DC8; }
+  .s-candado .flx-seg-fill { background:#662E9B; }
   .s-borde   .flx-seg-fill { background:#662E9B; }   /* beam-countdown bar → beam purple */
   /* ===== Status box — Cascada-style: three number tiles (big value + uppercase label) ===== */
   .flx-box { width:min(94vw,400px); margin:10px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--ink-soft); border-radius:14px; overflow:hidden; }
@@ -243,7 +243,7 @@
   .fbox-lbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
   .t-racha   .fbox-val { color:#F9C80E; }
   .t-giro .fbox-val { color:#E76210; }
-  .t-candado .fbox-val { color:#8E5DC8; }
+  .t-candado .fbox-val { color:#662E9B; }
   /* beans tile goes urgent (red, pulsing) when the soonest bean is about to vanish */
   .t-beans.urgent { opacity:1; }
   .t-beans.urgent .hud-ico { color:#EA3546; animation:beanpulse .8s ease-in-out infinite; }
@@ -560,11 +560,11 @@
       </div>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#E76210" d="M14 20 L92 20"/><path style="stroke:#E76210" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt"><b style="color:#E76210">Naranja · Giro.</b> Al despejarla, el borde <b>salta al siguiente lado AHORA</b>. Un arma si la usas a tiempo — una trampa si no. Con un <b style="color:#8E5DC8">Candado</b> activo, el candado <b>absorbe el giro</b> (el borde no se mueve); solo <b>Desviar</b> rompe el candado.</div>
+        <div class="txt"><b style="color:#E76210">Naranja · Giro.</b> Al despejarla, el borde <b>salta al siguiente lado AHORA</b>. Un arma si la usas a tiempo — una trampa si no. Con un <b style="color:#662E9B">Candado</b> activo, el candado <b>absorbe el giro</b> (el borde no se mueve); solo <b>Desviar</b> rompe el candado.</div>
       </div>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#8E5DC8" d="M14 20 L92 20"/><path style="stroke:#8E5DC8" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt"><b style="color:#8E5DC8">Morada · Candado.</b> Al despejarla, el borde queda <b>fijado 6 s</b> (se apila) — una ventana segura para cosechar los lados abiertos.</div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#662E9B" d="M14 20 L92 20"/><path style="stroke:#662E9B" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="txt"><b style="color:#662E9B">Morada · Candado.</b> Al despejarla, el borde queda <b>fijado 6 s</b> (se apila) — una ventana segura para cosechar los lados abiertos.</div>
       </div>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40" fill="none" stroke="#662E9B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><line x1="40" y1="5" x2="80" y2="5"/><line x1="40" y1="35" x2="80" y2="35"/><path d="M60 28 V14"/><path d="M52 19 L60 10 L68 19"/></svg></div>
@@ -573,7 +573,7 @@
       <h3>El borde</h3>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="98" y="4" width="11" height="32" rx="4" fill="#662E9B"/><path style="stroke:var(--arrow)" d="M14 20 L72 20"/><path style="stroke:var(--arrow)" d="M58 9 L78 20 L58 31"/></svg></div>
-        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> saltando de lado. <b>Se acelera con cada tablero</b> (6 s → 4 s) y en los tableros <b>4 y 5 ocupa DOS lados contiguos</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera, fíjala con un <b style="color:#8E5DC8">Candado</b> o <b>desvíala</b>.</div>
+        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> saltando de lado. <b>Se acelera con cada tablero</b> (6 s → 4 s) y en los tableros <b>4 y 5 ocupa DOS lados contiguos</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera, fíjala con un <b style="color:#662E9B">Candado</b> o <b>desvíala</b>.</div>
       </div>
       <h3>Rango y puntuación</h3>
       <p class="muted">Tu puntuación es <b>el tiempo total</b> de despejar los <b>5 tableros</b>, sin trucos: el <b>⏱ reloj</b> con el que terminas el quinto. <b>No hay puntos</b> — solo el reloj. Más <b>rápido</b> = mejor rango, y como un choque puede acabar la partida (a 0 corazones), hay que ir <b>rápido pero limpio</b>. Diez rangos, de <b>Debutante</b> (más de 8:40) a <b style="color:var(--accent)">Maestro/a</b> (por debajo de ~1:52). Hay un <b style="color:var(--accent)">Reto del día</b>: termina por debajo del tiempo objetivo y celebra con un <b style="color:var(--accent)">¡Buen sorbo!</b></p>
@@ -2193,9 +2193,9 @@ boot();
         <p>Una barra <b style="color:#662E9B">morada</b> recorre la orilla como un tren. <b>Se acelera cada tablero</b> y al final ocupa <b>dos lados</b>. No puedes salir por donde est&aacute; — <b>espera o desv&iacute;ala</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="26" x2="74" y2="26" stroke="#F9C80E" stroke-width="9"/><polyline points="64,16 84,26 64,36" stroke="#F9C80E" stroke-width="9"/></g><text x="98" y="31" font-size="15" font-weight="700" fill="#C99700">Racha &middot; +&frac12;&#10084;</text><g><line x1="20" y1="56" x2="74" y2="56" stroke="#E76210" stroke-width="9"/><polyline points="64,46 84,56 64,66" stroke="#E76210" stroke-width="9"/></g><text x="98" y="61" font-size="15" font-weight="700" fill="#E76210">Giro &middot; salta</text><g><line x1="20" y1="86" x2="74" y2="86" stroke="#8E5DC8" stroke-width="9"/><polyline points="64,76 84,86 64,96" stroke="#8E5DC8" stroke-width="9"/></g><text x="98" y="91" font-size="15" font-weight="700" fill="#8E5DC8">Candado &middot; fija 6s</text></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="26" x2="74" y2="26" stroke="#F9C80E" stroke-width="9"/><polyline points="64,16 84,26 64,36" stroke="#F9C80E" stroke-width="9"/></g><text x="98" y="31" font-size="15" font-weight="700" fill="#C99700">Racha &middot; +&frac12;&#10084;</text><g><line x1="20" y1="56" x2="74" y2="56" stroke="#E76210" stroke-width="9"/><polyline points="64,46 84,56 64,66" stroke="#E76210" stroke-width="9"/></g><text x="98" y="61" font-size="15" font-weight="700" fill="#E76210">Giro &middot; salta</text><g><line x1="20" y1="86" x2="74" y2="86" stroke="#662E9B" stroke-width="9"/><polyline points="64,76 84,86 64,96" stroke="#662E9B" stroke-width="9"/></g><text x="98" y="91" font-size="15" font-weight="700" fill="#662E9B">Candado &middot; fija 6s</text></svg></div>
         <h3>Flechas especiales</h3>
-        <p>Las especiales <b>mueven el borde</b>: la <b style="color:#E76210">naranja (Giro)</b> lo hace saltar YA, la <b style="color:#8E5DC8">morada (Candado)</b> lo fija 6&nbsp;s. La <b style="color:#C99700">amarilla (Racha)</b> da corazones por jugar limpio. T&uacute; eliges cu&aacute;ndo.</p>
+        <p>Las especiales <b>mueven el borde</b>: la <b style="color:#E76210">naranja (Giro)</b> lo hace saltar YA, la <b style="color:#662E9B">morada (Candado)</b> lo fija 6&nbsp;s. La <b style="color:#C99700">amarilla (Racha)</b> da corazones por jugar limpio. T&uacute; eliges cu&aacute;ndo.</p>
       </section>
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-fz-board" x="46" y="10" width="140" height="56" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="4" width="50" height="7" rx="3.5" fill="#662E9B"/><rect x="136" y="65" width="50" height="7" rx="3.5" fill="#662E9B" opacity=".35"/><path d="M116 52 V28 M108 36 L116 26 L124 36" fill="none" stroke="#662E9B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><rect x="46" y="80" width="140" height="22" rx="11" fill="none" stroke="#662E9B" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="82" width="136" height="18" rx="9" fill="#d9c9ee"/></svg></div>
