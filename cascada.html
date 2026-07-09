@@ -22,13 +22,13 @@
   * { touch-action:manipulation; box-sizing:border-box; }
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
-    --accent:#4ECDC4; --accent-deep:#1f7d72; --accent-soft:#dcefe9; --accent-2:#ff6b6b; --error:#EA3546;
-    --board-bg:#E9F6F3; --arrow:#141210; --freeze-bg:#aec9de; --freeze-fill:#9CCCEC;
+    --accent:#0B63E5; --accent-deep:#084BB0; --accent-soft:#CFE4FF; --accent-2:#ff6b6b; --error:#EA3546;
+    --board-bg:#EAF3FF; --arrow:#141210; --freeze-bg:#aec9de; --freeze-fill:#9CCCEC;
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
     --bg:#0c100f; --paper:#161b1a; --ink:#eef3f1; --ink-soft:#7f8b89; --ink-line:#232a29; --box-edge:#7f8b89;
-    --accent:#4ECDC4; --accent-deep:#2fa294; --accent-soft:#10302c; --accent-2:#ff6b6b; --board-bg:#142220; --arrow:#ECE7DC; --freeze-bg:#1c4256; --freeze-fill:#2E7CB0;
+    --accent:#4d94f5; --accent-deep:#8fbfff; --accent-soft:#10233d; --accent-2:#ff6b6b; --board-bg:#101826; --arrow:#ECE7DC; --freeze-bg:#1c4256; --freeze-fill:#2E7CB0;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { overscroll-behavior:none; }   /* no rubber-band bounce — feels locked, still scrolls a little */
@@ -105,10 +105,10 @@
   .piece .phit { fill:none; stroke:transparent; stroke-width:62; stroke-linecap:round; stroke-linejoin:round; }
   .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error) !important; }   /* a mistake (bump) → red */
   .piece.firing .pline, .piece.firing .phead { stroke:#157145 !important; }   /* successful launch → green as it leaves */
-  .piece.blocked-safe .pline, .piece.blocked-safe .phead { stroke:#0E9DA8 !important; }   /* bump ABSORBED by the shield → cyan, no heart lost */
+  .piece.blocked-safe .pline, .piece.blocked-safe .phead { stroke:#90a4ae !important; }   /* bump ABSORBED by the shield → cyan, no heart lost */
   /* combo live → arrows STAY black (the board ring is the racha indicator); specials keep their role colour */
   /* ===== Special arrows — solid role colour, a touch thicker (Borde style) ===== */
-  .piece.sp-shield .pline, .piece.sp-shield .phead { stroke:#0E9DA8; }   /* deep cyan — Escudo. Same geometry as normal arrows, ONLY the color changes (family rule) */
+  .piece.sp-shield .pline, .piece.sp-shield .phead { stroke:#90a4ae; }   /* deep cyan — Escudo. Same geometry as normal arrows, ONLY the color changes (family rule) */
   .piece.sp-frenzy .pline, .piece.sp-frenzy .phead { stroke:#F2711C; }   /* orange — Frenesí */
   .piece.sp-freeze .pline, .piece.sp-freeze .phead { stroke:#0062E3; }   /* blue — Congelar */
   .board.frenzy::before { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; z-index:17; box-shadow:inset 0 0 0 6px #F2711C; opacity:.85; }   /* Frenesí active → orange inset ring */
@@ -143,7 +143,7 @@
   .stile.next .sval { color:var(--accent); }        /* "Nuevo" countdown is teal by default */
   .stile.next.warn .sval { color:#ff6b6b; }         /* …and turns pink in the last 5 s */
   .stile.escudo .sval { color:var(--ink-soft); transition:color .15s; }
-  .stile.escudo.on .sval { color:#0E9DA8; }          /* holding a shield → cyan */
+  .stile.escudo.on .sval { color:#90a4ae; }          /* holding a shield → cyan */
   .stile.frenesi .sval { color:var(--ink-soft); transition:color .15s; }
   .stile.frenesi.on .sval { color:#F2711C; }         /* Frenesí active → orange */
   .stile.frenesi .sbar { background:#F2711C; }       /* its countdown bar is orange, not the combo yellow */
@@ -335,7 +335,7 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path style="stroke:#157145" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al salir <b style="color:#157145">destella en verde</b> y suma puntos.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> una flecha <b>tapada</b> rebota, <b>corta el combo</b> y cuesta <b style="color:#EA3546">½ corazón</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#F9C80E" stroke-width="5"/><text x="60" y="28" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="20" fill="#C99700">&times;3</text></svg></div><div class="txt"><b style="color:#C99700">Combo.</b> Despeja <b>rápido y seguido</b> (×2, ×3…) — más combo, más puntos. El borde se enciende en <b style="color:#C99700">amarillo</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#0E9DA8" d="M14 20 L92 20"/><path style="stroke:#0E9DA8" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#0E9DA8">Escudo (cian).</b> Despéjala y guardas un escudo: tu <b>próximo choque cuesta 0 corazones</b> y <b>no corta el combo</b>. Se <b>acumulan hasta 3</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#90a4ae" d="M14 20 L92 20"/><path style="stroke:#90a4ae" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#90a4ae">Escudo (cian).</b> Despéjala y guardas un escudo: tu <b>próximo choque cuesta 0 corazones</b> y <b>no corta el combo</b>. Se <b>acumulan hasta 3</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#F2711C" d="M14 20 L92 20"/><path style="stroke:#F2711C" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#F2711C">Frenesí (naranja).</b> Despéjala y ganas <b>5 s a doble puntos</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#0062E3" d="M14 20 L92 20"/><path style="stroke:#0062E3" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#0062E3">Congelar (azul).</b> El congelador carga <b>lento solo</b>; las flechas azules lo llenan casi todo (~3 = un congelado).</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="34" y="23" width="52" height="13" rx="3" fill="var(--ink-line)"/><rect x="34" y="5" width="52" height="13" rx="3" fill="var(--accent)"/></svg></div><div class="txt">Cada <b>30 s</b> cae un <b>tablero nuevo</b> que empuja al viejo. Lo que no despejes, <b>se va</b>.</div></div>
