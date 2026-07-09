@@ -272,7 +272,7 @@
     <div class="freeze">
       <button class="freeze-btn" id="enfoque-btn" type="button" aria-label="Enfoque: resalta las flechas que pueden salir">
         <span class="fill" id="enfoque-fill"></span>
-        <span class="ficon"><svg viewBox="-3 -3 30 30" aria-hidden="true"><defs><mask id="enf-eye-m"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><circle cx="12" cy="12" r="13.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12.5" r="4.9" fill="currentColor" mask="url(#enf-eye-m)"/></svg></span>
+        <span class="ficon"><svg viewBox="-3 -3 30 30" aria-hidden="true"><defs><mask id="enf-eye-m"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12.5" r="4.9" fill="currentColor" mask="url(#enf-eye-m)"/></svg></span>
       </button>
     </div>
   </div>
@@ -658,13 +658,18 @@
   // fills alone over ~20 s, one charge. Spend it to highlight every arrow whose
   // lane is currently clear, for 3 s. The clock keeps running.
   const ENF_FILL=20, ENFOQUE_DUR=5000;
-  let enfCharge=0, enfReady=false, enfVisual=0;
+  let enfCharge=0, enfReady=false, enfVisual=0, enfUntil=0;
   function updateEnfoque(){ const btn=$('enfoque-btn'), fill=$('enfoque-fill'); if(!btn||!fill) return;
+    const now=Date.now();
+    if(now<enfUntil){ // ACTIVE — the bar drains over the 5 s window, like Cascada's countdown
+      fill.style.transform='scaleX('+Math.max(0,(enfUntil-now)/ENFOQUE_DUR).toFixed(3)+')';
+      btn.classList.add('active'); btn.classList.remove('ready'); return; }
+    btn.classList.remove('active');
     if(enfReady){ enfVisual=1; fill.style.transform='scaleX(1)'; btn.classList.add('ready'); }
     else { enfVisual += (enfCharge-enfVisual)*0.18; if(Math.abs(enfCharge-enfVisual)<0.002) enfVisual=enfCharge;
       fill.style.transform='scaleX('+Math.max(0,enfVisual).toFixed(3)+')'; btn.classList.remove('ready'); } }
   function doEnfoque(){ if(!enfReady||!running||over) return;
-    enfReady=false; enfCharge=0; enfVisual=0; updateEnfoque();
+    enfReady=false; enfCharge=0; enfVisual=0; enfUntil=Date.now()+ENFOQUE_DUR; updateEnfoque();
     const marked=[];
     for(const k in snakes){ const s=snakes[k]; if(s.el&&laneClear(s)){ s.el.classList.add('enfoque'); marked.push(s.el); } }
     boardEl.classList.add('enfoque-ring');
@@ -779,7 +784,7 @@
   function fmtSec(s){ if(!isFinite(s)) return '∞'; return Math.floor(s/60)+':'+String(Math.round(s)%60).padStart(2,'0'); }
   function loop(ts){ if(!running) return; if(!lastTick) lastTick=ts; const dt=Math.min(64,ts-lastTick); lastTick=ts;
     if(started) totalMs+=dt; $('timer').textContent=fmt(totalMs);
-    if(started && !enfReady){ enfCharge=Math.min(1, enfCharge+(dt/1000)/ENF_FILL); if(enfCharge>=1){ enfCharge=1; enfReady=true; } }
+    if(started && !enfReady && Date.now()>=enfUntil){ enfCharge=Math.min(1, enfCharge+(dt/1000)/ENF_FILL); if(enfCharge>=1){ enfCharge=1; enfReady=true; } }
     updateEnfoque();
     const _rs=Math.floor(totalMs/1000); if(_rs!==loop._lastRankS){ loop._lastRankS=_rs; renderRank(); }   // live rank decay, once per second (Racimo-standard glide)
     rafId=requestAnimationFrame(loop); }
@@ -800,7 +805,7 @@
     const _tb=$('train-badge'); clearTimeout(_tb._t); _tb.classList.toggle('show', training);
     if(training) _tb._t=setTimeout(()=>{ try{ _tb.classList.remove('show'); }catch(e){} }, 2200);   // v9.6: brief tag while the board settles — hidden during play
     $('gate').classList.add('hidden');
-    enfCharge=0; enfReady=false; enfVisual=0; updateEnfoque();   // Enfoque starts empty every run, charges alone (~20s)
+    enfCharge=0; enfReady=false; enfVisual=0; enfUntil=0; updateEnfoque();   // Enfoque starts empty every run, charges alone (~20s)
     zoomHintMaybe();   // v9.2: first-ever game only — subtle breathing zoom, cancelled by any touch
     if(rafId) cancelAnimationFrame(rafId);   // v9.5: clock starts when the breathe settles (or on first touch if cancelled) — see startClock()
   }
