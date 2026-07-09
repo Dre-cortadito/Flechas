@@ -23,9 +23,9 @@
 <style>
   * { touch-action:manipulation; box-sizing:border-box; }
   :root {
-    --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
-    --accent:#2f7d46; --accent-deep:#1f5c33; --accent-soft:#dcedd9; --accent-2:#7a9b6f; --error:#EA3546;
-    --board-bg:#D2E4C9; --arrow:#3A2A1D; --clear:#157145;
+    --bg:#ddefe6; --paper:#eef7f1; --ink:#1a1614; --ink-soft:#6f8478; --ink-line:#cbe1d5; --box-edge:#6f8478;
+    --accent:#0b6130; --accent-deep:#084a25; --accent-soft:#ddefe6; --accent-2:#7a9b6f; --error:#EA3546;
+    --board-bg:#ddefe6; --arrow:#141210; --clear:#0b6130;
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
@@ -103,7 +103,7 @@
      freeze-btn dimensions). Clásico's verb: 👁 Enfoque — highlights every arrow whose lane
      is clear for 3 s. Auto-charges (~20 s), one charge, green like the game. */
   .freeze { width:min(94vw,400px); margin:14px auto 0; }
-  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:7px 12px; border-radius:14px; cursor:pointer; color:var(--accent); background:rgba(47,125,70,.05); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }   /* padding 11→7: icon box grew 34→42 for the ring, button height unchanged */
+  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:7px 12px; border-radius:14px; cursor:pointer; color:var(--accent); background:rgba(11,97,48,.06); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }   /* padding 11→7: icon box grew 34→42 for the ring, button height unchanged */
   .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--accent-soft); transform-origin:left; transform:scaleX(0); z-index:0; }
   .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:42px; }
   .freeze-btn .ficon svg { width:42px; height:42px; display:block; }
@@ -124,6 +124,10 @@
   .piece.gone .pline, .piece.gone .phead { opacity:0; }
   .board.clearflash { animation:boardclear .9s ease; }
   @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:var(--accent-soft);} 100%{ background:var(--board-bg);} }
+  /* Enfoque active → dark-green inset ring, same 11px thickness as Cascada's yellow combo ring */
+  .board::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; z-index:17;
+    box-shadow:inset 0 0 0 11px var(--accent); opacity:0; transition:opacity .25s ease; }
+  .board.enfoque-ring::after { opacity:1; }
 
   .toast { position:absolute; top:14px; left:50%; transform:translate(-50%,-8px); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:#fff; font:800 13px var(--font-ui); letter-spacing:.4px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .2s ease, transform .2s ease; }
   .toast.show { opacity:1; transform:translate(-50%,0); }
@@ -662,7 +666,9 @@
     enfReady=false; enfCharge=0; enfVisual=0; updateEnfoque();
     const marked=[];
     for(const k in snakes){ const s=snakes[k]; if(s.el&&laneClear(s)){ s.el.classList.add('enfoque'); marked.push(s.el); } }
-    setTimeout(()=>{ marked.forEach(el=>{ try{ el.classList.remove('enfoque'); }catch(e){} }); }, ENFOQUE_DUR); }
+    boardEl.classList.add('enfoque-ring');
+    setTimeout(()=>{ marked.forEach(el=>{ try{ el.classList.remove('enfoque'); }catch(e){} });
+      boardEl.classList.remove('enfoque-ring'); }, ENFOQUE_DUR); }
   function zoomHintMaybe(){
     // Intro reveal (v10, Dre): open zoomed IN at family arrow scale, then zoom all the
     // way OUT to the whole board — the clock starts when the zoom-out lands (or on the
