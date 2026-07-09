@@ -149,11 +149,11 @@
   .stile.frenesi .sbar { background:#F2711C; }       /* its countdown bar is orange, not the combo yellow */
 
   .freeze { width:min(94vw,400px); margin:14px auto 0; }
-  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:7px 12px; border-radius:14px; cursor:pointer; color:#0062E3; background:rgba(0,98,227,.05); border:2px solid #0062E3; }   /* intense freeze blue — border always full; only the fill grows. padding 11→7: icon box grew 34→42 for the ring, height unchanged */
+  .freeze-btn { width:100%; height:60px; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:0 12px; border-radius:14px; cursor:pointer; color:#0062E3; background:rgba(0,98,227,.05); border:2px solid #0062E3; }   /* FIXED height — snowflake can grow without resizing the bar */
   .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); z-index:0; }   /* smoothing is done in JS (eased each frame) — a CSS transition here fights the per-frame updates and stutters */   /* charge fill = the exact frozen-board blue, so button-full and frozen board match */
-  .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:42px; }   /* fixed height so the button doesn't resize when the number swaps in */
-  .freeze-btn .ficon svg { width:42px; height:42px; display:block; }   /* icon at original scale + surrounding ring */
-  .freeze-btn .fnum { position:relative; z-index:1; display:none; align-items:center; height:42px; font:800 30px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; }
+  .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:52px; }
+  .freeze-btn .ficon svg { width:52px; height:52px; display:block; }
+  .freeze-btn .fnum { position:relative; z-index:1; display:none; align-items:center; height:52px; font:800 30px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; }
   .freeze-btn.frozen .ficon { display:none; }
   .freeze-btn.frozen .fnum { display:inline-flex; }
   .freeze-btn:not(.ready):not(.frozen){ cursor:default; }
@@ -321,7 +321,7 @@
     <div class="freeze">
       <button class="freeze-btn" id="freeze-btn" type="button" aria-label="Congelar">
         <span class="fill" id="freeze-fill"></span>
-        <span class="ficon" id="freeze-icon"><svg viewBox="-3 -3 30 30" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="13.4" stroke-width="2.2"/><g stroke-width="2.2"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></g></svg></span>
+        <span class="ficon" id="freeze-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g stroke-width="2.2"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></g></svg></span>
         <span class="fnum" id="freeze-num"></span>
       </button>
     </div>
