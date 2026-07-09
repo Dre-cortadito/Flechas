@@ -34,7 +34,7 @@
     --board-bg:#fbf2e1; --arrow:#141210;
     --font-display:'Newsreader', Georgia, serif;
     --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif;
-    --header-h:56px; --rank-top:74px;   /* 56 header + 18 gap — more air above the rank bar (2026-07-08, Dre) */
+    --header-h:56px; --rank-top:66px;   /* rank bar top at 66px — EXACT Racimo geometry */
   }
   body[data-theme="black"] {
     --bg:#0e0c0a; --paper:#1a1614; --ink:#f3eee4; --ink-soft:#8a8278; --freeze-fill:#2E7CB0;
@@ -95,7 +95,7 @@
   .lower-spacer { flex:1 1 0; min-height:0; display:flex; align-items:center; justify-content:center; }
 
   /* ===== RANK BAR (standard) ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 0; margin:0 auto 10px;   /* STANDARD (2026-07-08, Dre): zero side padding — label flush with the board's LEFT edge, chevron flush with the RIGHT */ cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:8px 0; margin:0 auto 10px;   /* STANDARD (2026-07-08, Dre): zero side padding — label flush with the board's LEFT edge, chevron flush with the RIGHT */ cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
   @media (hover:hover){ .rank-bar:hover { background:var(--paper); } .rank-bar:hover .rank-label, .rank-bar:hover .rank-chev { color:var(--accent); } }
   .rank-bar.open .rank-chev { transform:rotate(180deg); }
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px;

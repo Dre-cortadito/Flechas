@@ -58,10 +58,10 @@
   @media (max-width:620px){ .wordmark{ display:none; } .header-nav{ gap:18px; } }
   @media (max-width:400px){ .header-nav{ gap:13px; } .header-nav a{ font-size:13px; } }
 
-  .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 18px);   /* more air above the rank bar (2026-07-08, Dre) */ padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
+  .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px);   /* rank bar top at 66px — EXACT Racimo geometry */ padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
 
   /* ===== Rank bar (standard) — driven by points ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 0; margin:0 auto 10px;   /* STANDARD (2026-07-08, Dre): zero side padding — label flush with the board's LEFT edge, chevron flush with the RIGHT */ cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:8px 0; margin:0 auto 10px;   /* STANDARD (2026-07-08, Dre): zero side padding — label flush with the board's LEFT edge, chevron flush with the RIGHT */ cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
   @media (hover:hover){ .rank-bar:hover { background:var(--paper); } .rank-bar:hover .rank-label, .rank-bar:hover .rank-chev { color:var(--accent); } }
   .rank-bar.open .rank-chev { transform:rotate(180deg); }
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
