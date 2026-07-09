@@ -155,19 +155,16 @@
   /* ===== Special colored arrows — a touch thicker, SOLID colour (no glow). ===== */
   .piece.role-freeze .pline, .piece.role-freeze .phead { stroke:#0062E3; }   /* blue — freeze. Same geometry as normal arrows, ONLY the color changes (family rule) */
   .piece.role-racha .pline, .piece.role-racha .phead { stroke:#F9C80E; }   /* yellow — start a clean streak */
-  .piece.role-peligro .pline, .piece.role-peligro .phead { stroke:#EA3546; }  /* RED — Peligro / danger */
-  .piece.role-shield .pline, .piece.role-shield .phead { stroke:#4ECDC4; }   /* Cascada cyan — Escudo / shield */
-  .piece.blocked-safe .pline, .piece.blocked-safe .phead { stroke:#4ECDC4; }   /* a bump under a shield flashes cyan, not red */
+  .piece.role-giro .pline, .piece.role-giro .phead { stroke:#EA3546; }      /* RED — Giro: the border JUMPS when you clear it */
+  .piece.role-candado .pline, .piece.role-candado .phead { stroke:#8E5DC8; }  /* light purple — Candado: pins the border (deeper purple than the walls would vanish against them) */
   /* Peligro danger window — a RED wash (red = danger). It's the only red on the board:
      the hot beam is now indigo, so the two never read as the same thing. */
   /* Board-state tints live in the BACKGROUND so they never collide with the purple beam on the edges.
      One shows at a time, by priority (source order = later wins): racha < danger < shield. Freeze (set
      inline by JS) sits on top of all of them. */
   body.racha-on .board-panel { background:#FBF1C9; }   /* soft yellow — streak (the ambient state) */
-  body.danger   .board-panel { background:#F9D4D5; }   /* soft red — Peligro */
-  body.shielded .board-panel { background:#D4F2EC; }   /* soft cyan — Escudo (overrides danger: you're safe) */
-  .board-panel.shield-hit { animation:shieldhit .3s ease; }
-  @keyframes shieldhit { 0%,100%{ background:#D4F2EC; } 45%{ background:#A6E8DD; } }   /* quick brighten when a bump is absorbed */
+  body.candado .board-panel { background:#EEE6F7; }   /* soft purple — Candado: the border is PINNED */
+  body.candado .wall { filter:brightness(1.25) saturate(1.15); }
   /* HOT BEAM: TWO purple gradient layers (background+opacity set by JS off the beam clock). The
      outgoing edge fades out as the incoming fades in, so there's never a gap and the wall never
      fully disappears between pulses — it only ever breathes from full to dim. */
@@ -229,13 +226,13 @@
   .act-btn:active { transform:scale(.96); }
   .act-btn:disabled { cursor:default; }   /* freeze button stays LIT before the game starts (like Cascada), just not clickable */
   body.frozen .act-btn.fz { color:#0049B0; background:rgba(0,98,227,.3); }
-  /* bar under the board — three segments (racha · peligro · escudo); each fills its colour on activation and drains as its timer runs */
+  /* bar under the board — segments (racha · giro · candado · borde); each fills its colour on activation and drains as its timer runs */
   .flx-bar-box { width:min(94vw,400px); margin:9px auto 0; padding:5px; background:var(--bg); border:2px solid var(--ink-soft); border-radius:10px; display:flex; gap:5px; }
   .flx-seg { flex:1; height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
   .flx-seg-fill { display:block; height:100%; width:100%; transform-origin:left; transform:scaleX(0); transition:transform .12s linear; }
   .s-racha   .flx-seg-fill { background:#F9C80E; }
-  .s-peligro .flx-seg-fill { background:#EA3546; }
-  .s-shield  .flx-seg-fill { background:#4ECDC4; }
+  .s-giro .flx-seg-fill { background:#EA3546; }
+  .s-candado .flx-seg-fill { background:#8E5DC8; }
   .s-borde   .flx-seg-fill { background:#662E9B; }   /* beam-countdown bar → beam purple */
   /* ===== Status box — Cascada-style: three number tiles (big value + uppercase label) ===== */
   .flx-box { width:min(94vw,400px); margin:10px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--ink-soft); border-radius:14px; overflow:hidden; }
@@ -245,8 +242,8 @@
   .fbox-val { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
   .fbox-lbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
   .t-racha   .fbox-val { color:#F9C80E; }
-  .t-peligro .fbox-val { color:#EA3546; }
-  .t-shield  .fbox-val { color:#4ECDC4; }
+  .t-giro .fbox-val { color:#EA3546; }
+  .t-candado .fbox-val { color:#8E5DC8; }
   /* beans tile goes urgent (red, pulsing) when the soonest bean is about to vanish */
   .t-beans.urgent { opacity:1; }
   .t-beans.urgent .hud-ico { color:#EA3546; animation:beanpulse .8s ease-in-out infinite; }
@@ -504,13 +501,13 @@
       <div class="flx-meta-slot is-right" aria-label="Tablero"><div class="flx-count" id="flx-count"><div class="n" id="flx-left">1/5</div><div class="l">Tablero</div></div><span class="word-feedback" id="word-feedback"></span></div>
     </div>
     <div class="board-wrap"><div class="board-panel" id="board-panel"><div id="board"></div><i class="wall" id="wall0"></i><i class="wall" id="wall1"></i><div class="start-gate" id="start-gate" hidden><div class="start-target" id="flx-objetivo">Objetivo de hoy · —</div><button class="start-btn" id="start-btn" type="button">Empezar</button></div></div></div>
-    <div class="flx-bar-box"><div class="flx-seg s-racha"><i class="flx-seg-fill" id="seg-racha"></i></div><div class="flx-seg s-peligro"><i class="flx-seg-fill" id="seg-peligro"></i></div><div class="flx-seg s-shield"><i class="flx-seg-fill" id="seg-shield"></i></div><div class="flx-seg s-borde"><i class="flx-seg-fill" id="seg-borde"></i></div></div>
+    <div class="flx-bar-box"><div class="flx-seg s-racha"><i class="flx-seg-fill" id="seg-racha"></i></div><div class="flx-seg s-giro"><i class="flx-seg-fill" id="seg-giro"></i></div><div class="flx-seg s-candado"><i class="flx-seg-fill" id="seg-candado"></i></div><div class="flx-seg s-borde"><i class="flx-seg-fill" id="seg-borde"></i></div></div>
     <!-- Always-on status box: one panel holding every effect (icon in its arrow colour + live
          counter/timer). Each lights up as it activates; dividers, not separate button-tiles. -->
     <div class="flx-box" id="flx-box" aria-label="Estado">
       <div class="fbox-tile t-racha" id="fb-racha"><div class="fbox-val">—</div><div class="fbox-lbl">Racha</div></div>
-      <div class="fbox-tile t-peligro" id="fb-peligro"><div class="fbox-val">—</div><div class="fbox-lbl">Peligro</div></div>
-      <div class="fbox-tile t-shield" id="fb-shield"><div class="fbox-val">—</div><div class="fbox-lbl">Escudo</div></div>
+      <div class="fbox-tile t-giro" id="fb-giro"><div class="fbox-val">—</div><div class="fbox-lbl">Giro</div></div>
+      <div class="fbox-tile t-candado" id="fb-candado"><div class="fbox-val">—</div><div class="fbox-lbl">Candado</div></div>
       <div class="fbox-tile t-borde" id="fb-borde"><div class="fbox-val">—</div><div class="fbox-lbl">Borde</div></div>
     </div>
     <div class="flx-actions" id="flx-actions" aria-label="Cargas">
@@ -563,11 +560,11 @@
       </div>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt"><b style="color:#EA3546">Roja · Peligro.</b> Abre <b>6 s</b> en que cada choque cuesta el <b>doble (1 corazón)</b>; sobrevive limpio → <b>+½</b>. Se apila (más tiempo, más premio).</div>
+        <div class="txt"><b style="color:#EA3546">Roja · Giro.</b> Al despejarla, el borde <b>salta al siguiente lado AHORA</b>. Un arma si la usas a tiempo — una trampa si no. Tú decides cuándo lanzarla.</div>
       </div>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#4ECDC4" d="M14 20 L92 20"/><path style="stroke:#4ECDC4" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt"><b style="color:#3BB6AE">Cian · Escudo.</b> <b>6 s</b> en que los choques <b>no cuestan corazones</b> — ve a tope. Protege tu <b>vida, no tus bonos</b>, y al acabar sueles seguir embalado.</div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#8E5DC8" d="M14 20 L92 20"/><path style="stroke:#8E5DC8" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="txt"><b style="color:#8E5DC8">Morada · Candado.</b> Al despejarla, el borde queda <b>fijado 6 s</b> (se apila) — una ventana segura para cosechar los lados abiertos.</div>
       </div>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40" fill="none" stroke="#662E9B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><line x1="40" y1="5" x2="80" y2="5"/><line x1="40" y1="35" x2="80" y2="35"/><path d="M60 28 V14"/><path d="M52 19 L60 10 L68 19"/></svg></div>
@@ -576,7 +573,7 @@
       <h3>El borde</h3>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="98" y="4" width="11" height="32" rx="4" fill="#662E9B"/><path style="stroke:var(--arrow)" d="M14 20 L72 20"/><path style="stroke:var(--arrow)" d="M58 9 L78 20 L58 31"/></svg></div>
-        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> y salta de lado cada <b>5 s</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera a que pase o <b>desvíala</b> al lado opuesto.</div>
+        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> saltando de lado. <b>Se acelera con cada tablero</b> (6 s → 4 s) y en los tableros <b>4 y 5 ocupa DOS lados contiguos</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera, fíjala con un <b style="color:#8E5DC8">Candado</b> o <b>desvíala</b>.</div>
       </div>
       <h3>Rango y puntuación</h3>
       <p class="muted">Tu puntuación es <b>el tiempo total</b> de despejar los <b>5 tableros</b>, sin trucos: el <b>⏱ reloj</b> con el que terminas el quinto. <b>No hay puntos</b> — solo el reloj. Más <b>rápido</b> = mejor rango, y como un choque puede acabar la partida (a 0 corazones), hay que ir <b>rápido pero limpio</b>. Diez rangos, de <b>Debutante</b> (más de 8:40) a <b style="color:var(--accent)">Maestro/a</b> (por debajo de ~1:52). Hay un <b style="color:var(--accent)">Reto del día</b>: termina por debajo del tiempo objetivo y celebra con un <b style="color:var(--accent)">¡Buen sorbo!</b></p>
@@ -1290,7 +1287,9 @@ function genPuzzle(iso){
   for(let a=0;a<NC;a++){
     const rng=mulberry32((base+Math.imul(a,2654435761))>>>0);
     const got=genConstructive(rng);
-    if(got && boardSelfClean(got) && boardHeadClean(got)){ got._br=branchAvg(got.pieces); got._occ=got.pieces.reduce((s,p)=>s+p.cells.length,0)/NCELLS; got._em=boardEmptyMax(got.pieces); got._blob=largestEmptyBlob(got.pieces); got._stair=longestStaircase(got.pieces); got._ce=centerEmpty(got.pieces); cands.push(got); }
+    if(got && boardSelfClean(got) && boardHeadClean(got)){ got._br=branchAvg(got.pieces); got._occ=got.pieces.reduce((s,p)=>s+p.cells.length,0)/NCELLS; got._em=boardEmptyMax(got.pieces); got._blob=largestEmptyBlob(got.pieces); got._stair=longestStaircase(got.pieces); got._ce=centerEmpty(got.pieces);
+      const _dc=[0,0,0,0]; got.pieces.forEach(p=>_dc[p.dir]++); got._skew=Math.max.apply(null,_dc)/got.pieces.length;   // v3: dominant-direction share
+      cands.push(got); }
   }
   if(cands.length){
     // Prefer DENSE boards (>=78% of the square filled) so the labyrinth stays
@@ -1309,6 +1308,11 @@ function genPuzzle(iso){
         else { const t4=pool.filter(c=>c._blob<=8); if(t4.length) pool=t4; } } }
     const noBackbone=pool.filter(c=>c._stair<=5);   // no dominant staircase backbone
     if(noBackbone.length) pool=noBackbone;
+    { // v3 BORDER WINDOWS: prefer boards where a meaningful share of arrows aim at ONE
+      // dominant edge (measured pool: p50 .33, p90 .37) — the border's position then
+      // genuinely opens/closes batches ("the right side just opened — NOW").
+      const sk1=pool.filter(c=>c._skew>=0.36); const sk2=pool.filter(c=>c._skew>=0.33);
+      if(sk1.length) pool=sk1; else if(sk2.length) pool=sk2; }
     { const mx=Math.max.apply(null,pool.map(c=>c._occ));            // v2: compact-tactical — keep only boards within
       pool=pool.filter(c=>c._occ>=mx-0.03); }                       // 3 pts of the densest candidate, THEN pick by difficulty
     { const mn=Math.min.apply(null,pool.map(c=>c._ce));             // v3: no relaxed middles — ONLY the boards whose center
@@ -1446,7 +1450,7 @@ function renderBeans(){ for(let i=0;i<BEAN_CELLS.length;i++){ const el=document.
   } else { el.style.opacity='1'; el.style.fill='#3F7D3F'; } } }
 // ===== SPECIAL ARROWS (date-seeded). Tension lives in your HEARTS, so specials
 // only HELP: blue = breathe (freeze), amber = racha (earn a heart), crimson = gamble.
-const R_NONE=0,R_FREEZE=1,R_RACHA=2,R_PELIGRO=3,R_SHIELD=4;
+const R_NONE=0,R_FREEZE=1,R_RACHA=2,R_GIRO=3,R_CANDADO=4;
 let ROLE=new Array(PIECES.length).fill(0);
 let _fr=new Array(PIECES.length); FIRE_ORDER.forEach((pid,i)=>_fr[pid]=i);
 const _pcCenter=kid=>{ const cs=PIECES[kid].cells; let r=0,c=0; for(const x of cs){ r+=(x/GRID_C|0); c+=x%GRID_C; } return [r/cs.length,c/cs.length]; };
@@ -1466,9 +1470,9 @@ function assignRoles(seedBase){
       if(md>bd){ bd=md; best=cand; } }
     return best; };
   // Original counts (the mix the user liked). The fix for clustering/zoning is placement, not count.
-  const nAmber=Math.max(2, Math.round(PIECES.length*0.035));   // FEWER heart-givers — healing was too easy, hearts came back fast
-  const nRed=Math.max(4, Math.round(PIECES.length*0.06));      // MORE danger windows — mistakes actually bite now
-  const nShield=Math.max(2, Math.round(PIECES.length*0.03));
+  const nAmber=Math.max(2, Math.round(PIECES.length*0.035));   // racha — heart income for clean play
+  const nRed=Math.max(3, Math.round(PIECES.length*0.05));      // GIRO — border jumps; risky, so a few per board
+  const nShield=Math.max(2, Math.round(PIECES.length*0.04));   // CANDADO — pin windows
   // STEP 1 — pick N evenly-spread pieces COLOUR-BLIND (farthest-point), so the slots themselves are
   // distributed across the whole board.
   const TOTAL=nAmber+nRed+nShield, slots=[];
@@ -1477,19 +1481,23 @@ function assignRoles(seedBase){
   // every colour spread over the whole board and stops one colour zoning to a side (the old bug:
   // farthest-point seeded each colour in its own region — orange left, red right, cyan bottom).
   slots.sort((x,y)=>{ const a=_pcCenter(x), b=_pcCenter(y); return (a[0]-b[0])||(a[1]-b[1]); });
-  const cnt=[nAmber,nRed,nShield], rol=[R_RACHA,R_PELIGRO,R_SHIELD], deal=[];
+  const cnt=[nAmber,nRed,nShield], rol=[R_RACHA,R_GIRO,R_CANDADO], deal=[];
   for(let i=0; deal.length<slots.length; i++){ const c=i%3; if(cnt[c]>0){ deal.push(rol[c]); cnt[c]--; } }
   slots.forEach((id,k)=>{ ROLE[id]=deal[k]; });
 }
 assignRoles(ISO);   // board 1's specials
 const HEARTS_MAX=3, HEART_CAP=3, HEART_BONUS=8;          // 3 hearts = LIVES (lose all → game over). NO banking past 3 — save heart-givers for when you're hurt. (HEART_BONUS kept only for legacy share math, unused in scoring)
 const RACHA_NEED=6;                                      // clear this many in a row clean after a racha arrow → +1 heart
-const PEL_WINDOW=6000, PEL_COST=1, BUMP_COST=0.5;        // a bump costs ½ heart (Cascada parity); during a 6s Peligro window it DOUBLES to 1; survive → +½ heart
-const SHIELD_WINDOW=6000;                                // Escudo: bumps cost 0 hearts for 6s (grace). Stacks (extends the window). Go aggressive — but don't overstay the welcome.
+// v3 — BORDER-NATIVE specials (Cascada owns flow powers; Borde's powers steer the HAZARD):
+//   Giro (red)      → clearing it makes the border JUMP to the next side immediately. A weapon
+//                     if you timed it, a trap if you didn't.
+//   Candado (purple) → clearing it PINS the border in place for 6s (stacks) — a harvest window.
+const BUMP_COST=0.5;                                     // a bump costs ½ heart (Cascada parity)
+const CANDADO_MS=6000;
 const FREEZE_MAX=1, FREEZE_FILL=20;                       // single charge like Cascada: earn one, use it, wait ~20s for it to recharge
-let lives=HEARTS_MAX, beanLifeGiven=0, rachaLeft=-1, peligroEnd=0, freezeEnd=0, freezeCharges=0, freezeFill=0, peligroPending=false, shieldEnd=0, shieldCount=0;
-let rachaTotal=0, rachaCount=0, peligroCount=0;   // amber/red STACK: each extra arrow lengthens the requirement AND the reward
-function roleClass(id){ return ['','role-freeze','role-racha','role-peligro','role-shield'][ROLE[id]]; }
+let lives=HEARTS_MAX, beanLifeGiven=0, rachaLeft=-1, freezeEnd=0, freezeCharges=0, freezeFill=0;
+let rachaTotal=0, rachaCount=0, candadoUntil=0, candadoCount=0, giroFlashT=0;
+function roleClass(id){ return ['','role-freeze','role-racha','role-giro','role-candado'][ROLE[id]]; }
 // ===== LIVES (the core tension) =====
 // Heart built from the shared half-heart icon: one half + its mirror = a full heart,
 // so a half-life is literally one half filled (left rose, right grey).
@@ -1515,21 +1523,17 @@ function pulseLives(dir){ const el=document.getElementById('lives-row'); if(!el)
 function showHeartDelta(){ /* removed — hearts animate instead */ }
 // Gain hearts through ONE path so the pop + cap are always handled together.
 function addLife(a){ const b=lives; lives=Math.min(HEART_CAP, lives+a); renderLives(); if(lives>b) pulseLives(1); }
-function peligroOn(){ return Date.now()<peligroEnd; }
-function shieldOn(){ return Date.now()<shieldEnd; }
-// Bumping (a choque) costs a heart — TWO during an espresso window — and breaking an
-// active racha costs an extra HALF on top. Touching a HOT WALL costs HALF a heart.
+function candadoOn(){ return Date.now()<candadoUntil; }
+// Bumping (a choque) costs a heart, and breaking an active racha costs an extra HALF
+// on top. Touching a HOT WALL costs HALF a heart.
 function loseLife(n, fromWall){ n=n||1; if(lives<=0) return;
-  if(peligroOn() && peligroPending) peligroPending=false;                               // a bump during the window FORFEITS the Peligro reward (even under shield)
-  let broke=false; if(rachaLeft>0 && !fromWall){ rachaLeft=-1; rachaTotal=0; rachaCount=0; broke=true; }   // a bump breaks the racha (even under shield); a rush (fromWall) is clean play
-  if(shieldOn()){ pulseShield(); return; }                                              // SHIELD: the bump costs 0 hearts (the racha/peligro side-effects above still apply)
+  let broke=false; if(rachaLeft>0 && !fromWall){ rachaLeft=-1; rachaTotal=0; rachaCount=0; broke=true; }   // a bump breaks the racha; a rush (fromWall) is clean play
   if(broke) n+=0.5;                                                                     // breaking a racha costs ½ extra
   const _pl=lives; lives=Math.max(0, lives-n); renderLives(); if(lives<_pl) pulseLives(-1);
   let msg;
   if(lives<=0) msg='¡Se derramó!';
   else if(fromWall) msg='Rebote · −½ vida';
   else if(broke) msg='Racha rota · −'+n;
-  else if(n>=2) msg='Choque doble · −'+n;
   else msg='−'+n+' vida';
   flash(msg,'error');
   if(lives<=0){ const bp=document.getElementById('board-panel'); if(bp){ bp.classList.add('ks-shake'); setTimeout(()=>{ try{bp.classList.remove('ks-shake');}catch(e){} },500); } gameOver(); } }
@@ -1550,8 +1554,17 @@ function rachaTick(){ if(rachaLeft<0) return; rachaLeft--;
 // the next edge every HOT_DWELL seconds (seeded start + direction per day, same for
 // everyone). After a short grace, something is always hot, so every tap means checking
 // the beam: fire the cool sides now, wait ~HOT_DWELL for it to pass, or rush it for ½. =====
-const HOT_DWELL=5, HOT_GRACE=0;   // each edge sits STATIC for 5s (the countdown)…
-const MOVE_DUR=0.8, PERIOD=HOT_DWELL+MOVE_DUR;   // …then a separate ~0.8s MOVE to the next edge. One full cycle = PERIOD.
+// v3 GAUNTLET: the border ESCALATES across the run — each board sits a bit less, and on
+// boards 4–5 it grows to cover TWO adjacent sides. The run visibly tightens.
+function dwellFor(n){ return [6,5,4.5,4.5,4][Math.min(4,Math.max(0,n-1))]; }
+function twoSided(){ return boardNum>=4; }
+let HOT_DWELL=dwellFor(1); const HOT_GRACE=0;    // each edge sits STATIC for dwellFor(board) seconds (the countdown)…
+const MOVE_DUR=0.8; let PERIOD=HOT_DWELL+MOVE_DUR;   // …then a separate ~0.8s MOVE to the next edge. One full cycle = PERIOD.
+// Rebase the beam clock when the tempo changes (board handoff): pin the CURRENT side as the
+// new base and restart its dwell — the formulas keep working because (elapsed-beamBaseTime)
+// starts fresh under the new PERIOD.
+function setBeamTempo(n){ const k=hotIndex(); beamBaseIndex=k; beamBaseTime=elapsed;
+  HOT_DWELL=dwellFor(n); PERIOD=HOT_DWELL+MOVE_DUR; }
 const WALL_UNITS=40;              // the 11px purple bar ≈ 0.4 cells; arrows bounce this far before the board edge (at the bar's face)
 const _hr=mulberry32(fnv('flx-walls-'+ISO));
 const HOT_START=(_hr()*4)|0, HOT_DIR=(_hr(),1);          // always 1 = clockwise (still consume the rng draw so the daily board sequence is unchanged)
@@ -1564,6 +1577,7 @@ function hotSideNow(){ if(!started||finished||elapsed<HOT_GRACE) return -1; retu
 // An edge blocks if it's the lit one — OR, during the ~0.5s wall handoff, the incoming edge too (it's
 // already visibly rising, so an arrow can't slip through it).
 function beamBlocksDir(dir){ const s=hotSideNow(); if(s<0) return false; if(dir===s) return true;
+  if(twoSided() && dir===((HOT_START+HOT_DIR*(hotIndex()+1))%4+4)%4) return true;   // boards 4–5: the NEXT edge is hot too
   if(started && !finished){ const frac=Math.max(0,Math.min(0.999,(Date.now()-startedAt)/1000-elapsed));
     const x=elapsed+frac-beamBaseTime-HOT_GRACE, into=x-Math.floor(x/PERIOD)*PERIOD;
     if(into>=HOT_DWELL){ const k=beamBaseIndex+Math.floor(x/PERIOD); if(dir===((HOT_START+HOT_DIR*(k+1))%4+4)%4) return true; } }   // while it MOVES, the incoming edge also blocks
@@ -1581,6 +1595,7 @@ function beamExitFrac(e, headIdx){ const [r,c]=rc(headIdx);   // forward-normali
   const f=beamFwd(e); const sgn = horiz ? f[0] : f[1]; if(sgn<0) frac=1-frac; return frac; }
 function beamBlocks(pid){ const st=beamState(); if(!st) return false;
   const dir=PIECES[pid].dir;
+  if(twoSided()) return dir===st.eK || dir===st.eN;                    // boards 4–5: BOTH edges fully hot, sliding or not — harsher and simpler
   if(!st.sliding) return dir===st.eK;                                  // sitting: the whole hot edge blocks
   const fr=beamExitFrac(dir, headCellOf(PIECES[pid]));
   if(dir===st.eK) return fr>=st.p;                                     // outgoing bar still covers [p,1]
@@ -1615,6 +1630,11 @@ function pulseLoop(){ try{ const bp=document.getElementById('board-panel'); cons
     if(bpEl) bpEl.style.background=DK;          // STATIC frozen colour the whole time — no pulse (the draining bar is the countdown)
     if(tmEl) tmEl.style.color='#0062E3'; }
   else { if(bpEl) bpEl.style.background=''; if(tmEl) tmEl.style.color=''; }
+  // CANDADO pin: while pinned, push the beam's time base forward each frame — the phase
+  // (elapsed − beamBaseTime) freezes in place, so every consumer (blocks, render, countdown)
+  // sees a border that simply holds still. When the pin ends, time flows again seamlessly.
+  if(started && !finished && Date.now()<candadoUntil){ beamBaseTime += dt/1000; }
+  else if(candadoUntil && Date.now()>=candadoUntil){ candadoUntil=0; candadoCount=0; document.body.classList.remove('candado'); }
   // Smooth auto-charge, per frame (like Cascada) — so the buttons fill continuously, not in 1s steps.
   if(started && !finished && !frozen && freezeCharges<FREEZE_MAX){ freezeFill=Math.min(1, freezeFill+(dt/1000)/FREEZE_FILL); if(freezeFill>=1){ freezeCharges++; freezeFill=0; } }
   lastPulseT=now; renderFreeze();
@@ -1635,10 +1655,10 @@ function pulseLoop(){ try{ const bp=document.getElementById('board-panel'); cons
           layA.style.transform='translate('+(fK[0]*p*100).toFixed(2)+'%,'+(fK[1]*p*100).toFixed(2)+'%)'; layA.style.opacity=intro.toFixed(3);
           layB.style.transform='translate('+(-fN[0]*(1-p)*100).toFixed(2)+'%,'+(-fN[1]*(1-p)*100).toFixed(2)+'%)'; layB.style.opacity=intro.toFixed(3); } } } } }catch(e){}
   // three-segment effect bar: each fills its colour on activation and drains as its timer/streak runs down
-  try{ const tn=Date.now(), sr=document.getElementById('seg-racha'), sp=document.getElementById('seg-peligro'), sh=document.getElementById('seg-shield'), sgB=document.getElementById('seg-borde');
+  try{ const tn=Date.now(), sr=document.getElementById('seg-racha'), sp=document.getElementById('seg-giro'), sh=document.getElementById('seg-candado'), sgB=document.getElementById('seg-borde');
     if(sr) sr.style.transform='scaleX('+(rachaLeft>0?Math.max(0,Math.min(1,rachaLeft/rachaTotal)):0).toFixed(3)+')';
-    if(sp) sp.style.transform='scaleX('+(tn<peligroEnd?Math.max(0,Math.min(1,(peligroEnd-tn)/(PEL_WINDOW*Math.max(1,peligroCount)))):0).toFixed(3)+')';      // divide by the TOTAL stacked window so it drains the whole time (slower per extra red), not just the last 6s
-    if(sh) sh.style.transform='scaleX('+(tn<shieldEnd?Math.max(0,Math.min(1,(shieldEnd-tn)/(SHIELD_WINDOW*Math.max(1,shieldCount)))):0).toFixed(3)+')';
+    if(sp) sp.style.transform='scaleX('+((tn-giroFlashT<800)?(1-(tn-giroFlashT)/800):0).toFixed(3)+')';   // giro is INSTANT — its segment flashes full and drains in 0.8s
+    if(sh) sh.style.transform='scaleX('+(tn<candadoUntil?Math.max(0,Math.min(1,(candadoUntil-tn)/(CANDADO_MS*Math.max(1,candadoCount)))):0).toFixed(3)+')';
     if(sgB){ if(started && !finished){ const base=(Date.now()<freezeEnd)?elapsed:(Date.now()-startedAt)/1000; const into=(((base-beamBaseTime-HOT_GRACE)%PERIOD)+PERIOD)%PERIOD; const v=into<HOT_DWELL?(HOT_DWELL-into)/HOT_DWELL:(into-HOT_DWELL)/MOVE_DUR; sgB.style.transform='scaleX('+Math.max(0,Math.min(1,v)).toFixed(3)+')'; } else sgB.style.transform='scaleX(0)'; } }catch(e){}   // empties over the 5s sit, fills as it moves, holds while frozen
   pulseRAF = finished ? null : requestAnimationFrame(pulseLoop); }
 // Hearts ARE your score: each one you finish with shaves time off (see effTime).
@@ -1648,18 +1668,16 @@ function applyRole(pid){ const r=ROLE[pid];
     if(rachaLeft>0){ rachaLeft+=RACHA_NEED; rachaTotal+=RACHA_NEED; rachaCount++; }
     else { rachaLeft=RACHA_NEED; rachaTotal=RACHA_NEED; rachaCount=1; }
     flash('Racha ×'+rachaCount+' · '+rachaTotal+' limpias','bonus'); }
-  else if(r===R_PELIGRO){                                                  // STACK: each red extends the window AND the survive reward
+  else if(r===R_GIRO){                                                     // the border JUMPS to the next side NOW — dwell restarts there
+    beamBaseIndex=hotIndex()+1; beamBaseTime=elapsed;
+    beamIntroT=Date.now(); giroFlashT=Date.now();                          // walls re-glow in → the jump reads instantly
+    renderHot(); flash('¡Giro! El borde salta','bonus'); }
+  else if(r===R_CANDADO){                                                  // STACK: each candado extends the PIN — the border holds still
     const now=Date.now();
-    if(peligroEnd>now){ peligroEnd+=PEL_WINDOW; peligroCount++; }
-    else { peligroEnd=now+PEL_WINDOW; peligroCount=1; }
-    peligroPending=true; document.body.classList.add('danger');
-    flash('Peligro ×'+peligroCount+' · sobrevive limpio','bonus'); }
-  else if(r===R_SHIELD){                                                   // STACK: each shield extends the grace window — bumps cost 0 hearts while it's up
-    const now=Date.now();
-    if(shieldEnd>now){ shieldEnd+=SHIELD_WINDOW; shieldCount++; }
-    else { shieldEnd=now+SHIELD_WINDOW; shieldCount=1; }
-    document.body.classList.add('shielded');
-    flash('Escudo ×'+shieldCount,'bonus'); } }
+    if(candadoUntil>now){ candadoUntil+=CANDADO_MS; candadoCount++; }
+    else { candadoUntil=now+CANDADO_MS; candadoCount=1; }
+    document.body.classList.add('candado');
+    flash('Candado ×'+candadoCount+' · borde fijado','bonus'); } }
 // DESVIAR: auto-charges over time (bar in the button); spend a charge to jump the purple
 // border to the OPPOSITE side and restart its 5s dwell. The clock keeps running — Desviar
 // controls the hazard, it doesn't stop time. (freezeCharges/freezeFill are reused as the
@@ -1729,10 +1747,6 @@ function startTimer(){ if(finished) return; stopTimer(); startedAt=Date.now()-el
   timerId=setInterval(()=>{ const now=Date.now();
     if(now<freezeEnd){ startedAt=now-elapsed*1000; }                                  // frozen: hold elapsed AND pause the charge
     else { if(document.body.classList.contains('frozen')) document.body.classList.remove('frozen'); elapsed=Math.floor((now-startedAt)/1000); }   // (freeze charge is advanced per-frame in pulseLoop)
-    if(!peligroOn() && document.body.classList.contains('danger')){
-      document.body.classList.remove('danger');
-      if(peligroPending){ peligroPending=false; const rew=0.5*Math.max(1,peligroCount); addLife(rew); flash('Sobreviviste · +'+_fmtHalf(rew)+' vida','success'); } peligroCount=0; }
-    if(!shieldOn() && document.body.classList.contains('shielded')){ document.body.classList.remove('shielded'); shieldCount=0; }   // grace ended — and your hands are still going fast…
     renderStatus(); renderRank(); renderBeans(); renderHot(); renderFreeze(); if(elapsed%5===0) saveState(); },1000);
   if(!pulseRAF) pulseRAF=requestAnimationFrame(pulseLoop); }
 function applyGateState(){ const gate=document.getElementById('start-gate'); if(!gate) return;
@@ -1806,8 +1820,9 @@ function renderStatus(){
   const setFx=(id,on,val)=>{ const t=document.getElementById(id); if(!t) return; t.classList.toggle('on',on); const v=t.querySelector('.fbox-val'); if(v) v.textContent=val; };
   const rOn=rachaLeft>0; document.body.classList.toggle('racha-on', rOn);   // yellow board tint while a streak is live
   setFx('fb-racha', rOn, rOn?((rachaTotal-rachaLeft)+'/'+rachaTotal):'—');
-  const pOn=peligroOn(); setFx('fb-peligro', pOn, pOn?(Math.max(0,Math.ceil((peligroEnd-Date.now())/1000))+'s'):'—');
-  const shOn=shieldOn(); setFx('fb-shield', shOn, shOn?(Math.max(0,Math.ceil((shieldEnd-Date.now())/1000))+'s'):'—');
+  let giroLeft=0; for(const p of PIECES){ if(!firedP[p.id]&&ROLE[p.id]===R_GIRO) giroLeft++; }   // how many border-jumps still sit on the board
+  setFx('fb-giro', giroLeft>0, giroLeft>0?('×'+giroLeft):'—');
+  const cdOn=candadoOn(); setFx('fb-candado', cdOn, cdOn?(Math.max(0,Math.ceil((candadoUntil-Date.now())/1000))+'s'):'—');
   // Borde (beam) countdown — seconds until it jumps to the next edge (like Cascada's "Nuevo")
   if(started && !finished){ const into=(((elapsed-beamBaseTime-HOT_GRACE)%PERIOD)+PERIOD)%PERIOD; setFx('fb-borde', true, into<HOT_DWELL?(Math.max(1,Math.ceil(HOT_DWELL-into))+'s'):'—'); }
   else setFx('fb-borde', false, '—');
@@ -1847,13 +1862,13 @@ function tapPiece(pid){
   // only matters for an arrow that would OTHERWISE launch cleanly.
   if(!pieceClear(pid)){
     mistakes++; combo=0;
-    if(started && !finished) loseLife(peligroOn()?PEL_COST:BUMP_COST);                     // ½ heart per bump, doubled to 1 during a Peligro window
+    if(started && !finished) loseLife(BUMP_COST);                     // ½ heart per bump
     computeScore(); saveState();
     const bp=PIECES[pid], vx=DC[bp.dir], vy=DR[bp.dir];
     const hit=nearestCollision(pid); let adv=34;
     if(hit){ const [r1,c1]=rc(hit.from),[r2,c2]=rc(hit.to); adv=Math.max(20,(Math.abs(r1-r2)+Math.abs(c1-c2)-1)*U+34); }
     const line=g.querySelector('.pline'), hd=g.querySelector('.phead'); const T=Math.max(300,Math.round(adv*1.5));
-    const safe=shieldOn(); g.classList.add(safe?'blocked-safe':'blocked');   // under a shield a bump is harmless → no red alarm
+    g.classList.add('blocked');
     if(line) line.animate([{strokeDashoffset:'0px'},{strokeDashoffset:(-adv)+'px',offset:.45},{strokeDashoffset:'0px'}],{duration:T,easing:'ease-in-out'});
     if(hd) hd.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(adv*vx)+'px,'+(adv*vy)+'px)',offset:.45},{transform:'translate(0px,0px)'}],{duration:T,easing:'ease-in-out'});
     if(DCFG.blockHint && !safe) findBlockers(pid).forEach(bid=>{ setTimeout(()=>{ const bg=document.getElementById('pc-'+bid); if(!bg) return; bg.classList.add('blocker'); setTimeout(()=>bg.classList.remove('blocker'),600); }, Math.max(0,T*0.45-120)); });
@@ -1906,6 +1921,7 @@ function genBoard(n){
   _fr=new Array(PIECES.length); FIRE_ORDER.forEach((pid,i)=>_fr[pid]=i);
   ROLE=new Array(PIECES.length).fill(0); assignRoles(sk);
   firedP=new Array(PIECES.length).fill(false); TOTALC=0; solved=false; busy=false;
+  setBeamTempo(n);   // v3: the border escalates — shorter dwell each board, two-sided on 4–5
 }
 // Swap a fresh board in mid-run and re-render it.
 function loadBoard(n){ genBoard(n); buildBoard(); renderStatus(); renderRank(); renderHot(); renderFreeze(); }
@@ -2090,7 +2106,7 @@ function resetToday(){
   training = dailyDone();   // once the daily is locked, every reset is a PRACTICE run
   firedP=new Array(PIECES.length).fill(false); mistakes=0; hintsUsed=0; solved=false; finished=false; busy=false;
   elapsed=0; startedAt=null; started=false; combo=0; lastLaunch=0; stopTimer();
-  lives=HEARTS_MAX; rachaLeft=-1; rachaTotal=0; rachaCount=0; peligroEnd=0; peligroCount=0; shieldEnd=0; shieldCount=0; freezeEnd=0; freezeCharges=0; freezeFill=0; peligroPending=false; beamBaseIndex=0; beamBaseTime=0; document.body.classList.remove('frozen','danger','shielded','racha-on','over');
+  lives=HEARTS_MAX; rachaLeft=-1; rachaTotal=0; rachaCount=0; candadoUntil=0; candadoCount=0; giroFlashT=0; freezeEnd=0; freezeCharges=0; freezeFill=0; beamBaseIndex=0; beamBaseTime=0; document.body.classList.remove('frozen','candado','racha-on','over');
   document.body.classList.toggle('training', training);
   genBoard(1);   // a run always restarts from board 1
   LS.removeItem(DSCOPE+'-result-shown-'+ISO);   // (the daily lock, -counted-, is kept)
@@ -2171,12 +2187,12 @@ boot();
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect x="30" y="24" width="172" height="74" rx="7" fill="none" stroke="var(--ink-line)" stroke-width="3"/><rect class="tv-beam" x="30" y="18" width="60" height="8" rx="4" fill="#662E9B"/></svg></div>
         <h3>El borde</h3>
-        <p>Una barra <b style="color:#662E9B">morada</b> recorre la orilla como un tren. No puedes salir por donde est&aacute; — <b>espera o desv&iacute;ala</b>.</p>
+        <p>Una barra <b style="color:#662E9B">morada</b> recorre la orilla como un tren. <b>Se acelera cada tablero</b> y al final ocupa <b>dos lados</b>. No puedes salir por donde est&aacute; — <b>espera o desv&iacute;ala</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="26" x2="74" y2="26" stroke="#F9C80E" stroke-width="9"/><polyline points="64,16 84,26 64,36" stroke="#F9C80E" stroke-width="9"/></g><text x="98" y="31" font-size="15" font-weight="700" fill="#C99700">Racha &middot; +&frac12;&#10084;</text><g><line x1="20" y1="56" x2="74" y2="56" stroke="#EA3546" stroke-width="9"/><polyline points="64,46 84,56 64,66" stroke="#EA3546" stroke-width="9"/></g><text x="98" y="61" font-size="15" font-weight="700" fill="#EA3546">Peligro &middot; &times;2</text><g><line x1="20" y1="86" x2="74" y2="86" stroke="#4ECDC4" stroke-width="9"/><polyline points="64,76 84,86 64,96" stroke="#4ECDC4" stroke-width="9"/></g><text x="98" y="91" font-size="15" font-weight="700" fill="#3BB6AE">Escudo &middot; 0&#10084;</text></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="26" x2="74" y2="26" stroke="#F9C80E" stroke-width="9"/><polyline points="64,16 84,26 64,36" stroke="#F9C80E" stroke-width="9"/></g><text x="98" y="31" font-size="15" font-weight="700" fill="#C99700">Racha &middot; +&frac12;&#10084;</text><g><line x1="20" y1="56" x2="74" y2="56" stroke="#EA3546" stroke-width="9"/><polyline points="64,46 84,56 64,66" stroke="#EA3546" stroke-width="9"/></g><text x="98" y="61" font-size="15" font-weight="700" fill="#EA3546">Giro &middot; salta</text><g><line x1="20" y1="86" x2="74" y2="86" stroke="#8E5DC8" stroke-width="9"/><polyline points="64,76 84,86 64,96" stroke="#8E5DC8" stroke-width="9"/></g><text x="98" y="91" font-size="15" font-weight="700" fill="#8E5DC8">Candado &middot; fija 6s</text></svg></div>
         <h3>Flechas especiales</h3>
-        <p><b style="color:#C99700">Amarilla</b> da corazones, <b style="color:#EA3546">roja</b> es peligro (cuesta el doble) y <b style="color:#3BB6AE">cian</b> es escudo (choques gratis). T&uacute; eliges cu&aacute;ndo.</p>
+        <p>Las especiales <b>mueven el borde</b>: la <b style="color:#EA3546">roja (Giro)</b> lo hace saltar YA, la <b style="color:#8E5DC8">morada (Candado)</b> lo fija 6&nbsp;s. La <b style="color:#C99700">amarilla (Racha)</b> da corazones por jugar limpio. T&uacute; eliges cu&aacute;ndo.</p>
       </section>
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-fz-board" x="46" y="10" width="140" height="56" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="4" width="50" height="7" rx="3.5" fill="#662E9B"/><rect x="136" y="65" width="50" height="7" rx="3.5" fill="#662E9B" opacity=".35"/><path d="M116 52 V28 M108 36 L116 26 L124 36" fill="none" stroke="#662E9B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><rect x="46" y="80" width="140" height="22" rx="11" fill="none" stroke="#662E9B" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="82" width="136" height="18" rx="9" fill="#d9c9ee"/></svg></div>
