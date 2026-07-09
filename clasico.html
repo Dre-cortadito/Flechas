@@ -112,7 +112,7 @@
   .freeze-btn.ready::after { content:''; position:absolute; inset:0; border-radius:14px; pointer-events:none; z-index:2; box-shadow:inset 0 0 0 11px var(--accent); }
   .freeze-btn:not(.ready){ cursor:default; }
   .freeze-btn:active { transform:scale(.98); }
-  .piece.enfoque .pline, .piece.enfoque .phead { stroke:#F9C80E !important; animation:enfpulse 1s ease infinite; }
+  .piece.enfoque .pline, .piece.enfoque .phead { stroke:#801a6f !important; animation:enfpulse 1s ease infinite; }
   @keyframes enfpulse { 0%,100%{ opacity:1; } 50%{ opacity:.5; } }
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }
@@ -133,7 +133,7 @@
   .board::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; z-index:17;
     box-shadow:inset 0 0 0 11px var(--accent); opacity:0; transition:opacity .25s ease, box-shadow .2s ease; }
   .board.enf-ready::after { opacity:1; }
-  .board.enf-active::after { opacity:1; box-shadow:inset 0 0 0 11px #F9C80E; animation:enfpulse 1s ease infinite; }
+  .board.enf-active::after { opacity:1; box-shadow:inset 0 0 0 11px #801a6f; animation:enfpulse 1s ease infinite; }
 
   .toast { position:absolute; top:14px; left:50%; transform:translate(-50%,-8px); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:#fff; font:800 13px var(--font-ui); letter-spacing:.4px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .2s ease, transform .2s ease; }
   .toast.show { opacity:1; transform:translate(-50%,0); }
