@@ -95,7 +95,8 @@
   /* Board keeps its 7:9 shape (so the gate/empty state has height). The inner fills it via ABSOLUTE
      inset (a definite box) rather than height:100% — that avoids the iOS Safari quirk where a
      percentage-height child of an aspect-ratio box renders too tall and clips the bottom row. */
-  .board { position:relative; width:100%; aspect-ratio:7/8; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear; }
+  .board { position:relative; width:100%; aspect-ratio:7/8; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear, box-shadow .2s ease; }
+  .board.frz-ready { box-shadow:inset 0 0 0 11px var(--accent); }   /* Congelar charged/full → blue edge turns on (like Clásico's ready ring) */
   .timer { transition:color .15s linear; }
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }   /* fills the definite inner box; clips launches at the edge */
@@ -321,7 +322,7 @@
     <div class="freeze">
       <button class="freeze-btn" id="freeze-btn" type="button" aria-label="Congelar">
         <span class="fill" id="freeze-fill"></span>
-        <span class="ficon" id="freeze-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g stroke-width="2.2"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></g></svg></span>
+        <span class="ficon" id="freeze-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><g id="sf-arm"><path d="M12 12 L12 2.1"/><path d="M9.4 4.6 L12 2.1 L14.6 4.6"/><path d="M12 7 L15.5 3.5"/><path d="M12 7 L8.5 3.5"/><path d="M12 10 L14.3 7.7"/><path d="M12 10 L9.7 7.7"/></g></defs><use href="#sf-arm"/><use href="#sf-arm" transform="rotate(60 12 12)"/><use href="#sf-arm" transform="rotate(120 12 12)"/><use href="#sf-arm" transform="rotate(180 12 12)"/><use href="#sf-arm" transform="rotate(240 12 12)"/><use href="#sf-arm" transform="rotate(300 12 12)"/></svg></span>
         <span class="fnum" id="freeze-num"></span>
       </button>
     </div>
@@ -651,13 +652,13 @@
   function updateFreeze(){ const btn=$('freeze-btn'), num=$('freeze-num'), fill=$('freeze-fill'), tm=$('timer'); const fz=Date.now()<frozenUntil;
     if(fz){ const rem=frozenUntil-Date.now(); num.textContent=Math.ceil(rem/1000);
       fill.style.transform='scaleX('+Math.max(0,rem/FREEZE_DUR).toFixed(3)+')';   // the bar DRAINS over the 5 s — that's the countdown
-      btn.classList.add('frozen'); btn.classList.remove('ready');
+      btn.classList.add('frozen'); btn.classList.remove('ready'); board.classList.remove('frz-ready');
       const cs=getComputedStyle(board); const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC';
       board.style.background=DK;            // STATIC frozen colour — no pulse
       if(tm) tm.style.color='#0062E3'; }
     else { btn.classList.remove('frozen'); board.style.background=''; if(tm) tm.style.color='';
-      if(freezeReady){ freezeVisual=1; fill.style.transform='scaleX(1)'; btn.classList.add('ready'); }
-      else { freezeVisual += (freezeCharge-freezeVisual)*0.18; if(Math.abs(freezeCharge-freezeVisual)<0.002) freezeVisual=freezeCharge; fill.style.transform='scaleX('+Math.max(0,freezeVisual).toFixed(3)+')'; btn.classList.remove('ready'); } } }
+      if(freezeReady){ freezeVisual=1; fill.style.transform='scaleX(1)'; btn.classList.add('ready'); board.classList.add('frz-ready'); }
+      else { freezeVisual += (freezeCharge-freezeVisual)*0.18; if(Math.abs(freezeCharge-freezeVisual)<0.002) freezeVisual=freezeCharge; fill.style.transform='scaleX('+Math.max(0,freezeVisual).toFixed(3)+')'; btn.classList.remove('ready'); board.classList.remove('frz-ready'); } } }
 
   // ================= loop =================
   function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
