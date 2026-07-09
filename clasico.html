@@ -62,7 +62,7 @@
   .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
 
   /* ===== Rank bar (standard) — driven by finish TIME ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 16px; margin:0 auto 2px; cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 0; margin:0 auto 2px;   /* STANDARD (2026-07-08, Dre): zero side padding — label flush with the board's LEFT edge, chevron flush with the RIGHT */ cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
   @media (hover:hover){ .rank-bar:hover { background:var(--paper); } .rank-bar:hover .rank-label, .rank-bar:hover .rank-chev { color:var(--accent); } }
   .rank-bar.open .rank-chev { transform:rotate(180deg); }
   .rank-marker { position:absolute; top:50%; width:3px; height:26px; background:var(--accent); border-radius:2px; transform:translate(-50%,-50%); z-index:4; pointer-events:none; opacity:.95; transition:background .25s ease; }

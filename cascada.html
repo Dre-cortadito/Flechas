@@ -61,7 +61,7 @@
   .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
 
   /* ===== Rank bar (standard) — driven by points ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 16px; margin:0 auto 2px; cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 0; margin:0 auto 2px;   /* STANDARD (2026-07-08, Dre): zero side padding — label flush with the board's LEFT edge, chevron flush with the RIGHT */ cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
   @media (hover:hover){ .rank-bar:hover { background:var(--paper); } .rank-bar:hover .rank-label, .rank-bar:hover .rank-chev { color:var(--accent); } }
   .rank-bar.open .rank-chev { transform:rotate(180deg); }
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
@@ -519,9 +519,15 @@
       let best=null,bd=-1; for(const cand of avail){ const a=_pcCenter(cand); let md=1e9; for(const q of placed){ const b=_pcCenter(q); const d=(a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1]); if(d<md)md=d; } md+=rng()*0.01; if(md>bd){ bd=md; best=cand; } } return best; };
     const slots=[]; for(let k=0;k<nFreeze+nShield+nFrenzy;k++){ const p=pick(); if(!p) break; p.role=99; placed.push(p); slots.push(p); }
     slots.sort((x,y)=>{ const a=_pcCenter(x),b=_pcCenter(y); return (a[0]-b[0])||(a[1]-b[1]); });
-    const cnt=[nFreeze,nShield,nFrenzy], rol=['freeze','shield','frenzy'], deal=[];
-    for(let i=0; deal.length<slots.length; i++){ const c=i%3; if(cnt[c]>0){ deal.push(rol[c]); cnt[c]--; } }
-    slots.forEach((p,k)=>{ p.role=deal[k]; }); }
+    // Spacing-aware deal (v2): the old cycle exhausted shield/frenzy early, so the tail slots
+    // were ALL freeze — and adjacent in board order = blue clusters. Now each slot takes the
+    // colour whose nearest same-colour assigned slot is FARTHEST away.
+    const cnt=[nFreeze,nShield,nFrenzy], rol=['freeze','shield','frenzy'], done=[];
+    for(const p of slots){ const a=_pcCenter(p); let best=-1, bd=-1;
+      for(let c=0;c<3;c++){ if(cnt[c]<=0) continue;
+        let md=1e9; for(const q of done){ if(q.role!==rol[c]) continue; const b=_pcCenter(q); const d=(a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1]); if(d<md)md=d; }
+        if(md>bd){ bd=md; best=c; } }
+      p.role=rol[best]; cnt[best]--; done.push(p); } }
   function frenzyActive(){ return Date.now()<frenzyUntil; }
   // ---- the specials show their state in the bottom status box (no prompts over the board) ----
   function updateShieldHUD(){ const t=$('t-escudo'), v=$('escudo-v'); if(!t) return; t.classList.toggle('on', shields>0); if(v) v.textContent=shields>0?('×'+shields):'—'; }

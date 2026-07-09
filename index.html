@@ -95,7 +95,7 @@
   .lower-spacer { flex:1 1 0; min-height:0; display:flex; align-items:center; justify-content:center; }
 
   /* ===== RANK BAR (standard) ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 16px; margin:0 auto 2px; cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 0; margin:0 auto 2px;   /* STANDARD (2026-07-08, Dre): zero side padding — label flush with the board's LEFT edge, chevron flush with the RIGHT */ cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
   @media (hover:hover){ .rank-bar:hover { background:var(--paper); } .rank-bar:hover .rank-label, .rank-bar:hover .rank-chev { color:var(--accent); } }
   .rank-bar.open .rank-chev { transform:rotate(180deg); }
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px;
@@ -1481,9 +1481,15 @@ function assignRoles(seedBase){
   // every colour spread over the whole board and stops one colour zoning to a side (the old bug:
   // farthest-point seeded each colour in its own region — orange left, red right, cyan bottom).
   slots.sort((x,y)=>{ const a=_pcCenter(x), b=_pcCenter(y); return (a[0]-b[0])||(a[1]-b[1]); });
-  const cnt=[nAmber,nRed,nShield], rol=[R_RACHA,R_GIRO,R_CANDADO], deal=[];
-  for(let i=0; deal.length<slots.length; i++){ const c=i%3; if(cnt[c]>0){ deal.push(rol[c]); cnt[c]--; } }
-  slots.forEach((id,k)=>{ ROLE[id]=deal[k]; });
+  // Spacing-aware deal (v2, matches Cascada): each slot takes the colour whose nearest
+  // same-colour assigned slot is FARTHEST away — no same-colour clusters when one colour
+  // outnumbers the others.
+  const cnt=[nAmber,nRed,nShield], rol=[R_RACHA,R_GIRO,R_CANDADO], done=[];
+  for(const id of slots){ const a=_pcCenter(id); let best=-1, bd=-1;
+    for(let c=0;c<3;c++){ if(cnt[c]<=0) continue;
+      let md=1e9; for(const q of done){ if(ROLE[q]!==rol[c]) continue; const b=_pcCenter(q); const d=(a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1]); if(d<md)md=d; }
+      if(md>bd){ bd=md; best=c; } }
+    ROLE[id]=rol[best]; cnt[best]--; done.push(id); }
 }
 assignRoles(ISO);   // board 1's specials
 const HEARTS_MAX=3, HEART_CAP=3, HEART_BONUS=8;          // 3 hearts = LIVES (lose all → game over). NO banking past 3 — save heart-givers for when you're hurt. (HEART_BONUS kept only for legacy share math, unused in scoring)
