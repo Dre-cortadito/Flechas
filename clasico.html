@@ -216,6 +216,46 @@
   .tut-dot.on{ background:var(--accent); }
   .tut-next{ display:block; margin:0 auto; padding:11px 32px; border-radius:999px; border:none; background:var(--accent); color:#fff; font:700 15px var(--font-ui); cursor:pointer; }
   .tut-open-btn{ display:inline-flex; align-items:center; gap:7px; margin:2px 0 12px; padding:9px 16px; border-radius:999px; border:2px solid var(--accent); background:transparent; color:var(--accent); font:700 14px var(--font-ui); cursor:pointer; }
+
+  /* ===== Left info panel (desktop only) ===== */
+  .game-aside{ display:none; flex-direction:column; gap:22px; text-align:left; max-width:300px; }
+  .game-aside .ga-block{ border-top:1px solid var(--ink-line); padding-top:16px; }
+  .game-aside .ga-block:first-child{ border-top:none; padding-top:0; }
+  .game-aside h4{ font-family:var(--font-display); font-weight:800; font-size:20px; letter-spacing:-.2px; margin:0 0 6px; color:var(--ink); }
+  .game-aside p{ margin:0; color:var(--ink-soft); font-size:14px; line-height:1.6; }
+  .game-aside b{ color:var(--accent); }
+
+  /* ===== Desktop layout (≥1024px): full masthead + 3-column game ===== */
+  @media (min-width:1024px){
+    .page-header{ height:auto; padding:14px 40px; gap:28px; }
+    .page-logo{ width:44px; height:44px; }
+    .wordmark{ font-size:40px; }
+    .header-nav{ gap:26px; }
+    .header-nav a{ font-size:16px; }
+    .header-home{ width:42px; height:42px; }
+    .header-home svg{ width:21px; height:21px; }
+    .more{ width:42px; height:42px; }
+    .more svg{ width:24px; height:24px; }
+
+    .stage{
+      display:grid; align-items:start; justify-content:center;
+      column-gap:44px; row-gap:30px;
+      grid-template-columns:minmax(220px,300px) minmax(430px,470px) minmax(230px,300px);
+      grid-template-areas:
+        "rank rank rank"
+        "left board rail-a"
+        "left board rail-b"
+        "left board rail-c";
+      max-width:1180px; margin:0 auto;
+      padding-top:calc(var(--header-h) + 46px);
+    }
+    .stage > .rank-bar{ grid-area:rank; width:100%; max-width:none; margin:0; }
+    .game-aside{ display:flex; grid-area:left; align-self:start; }
+    .stage > .board-wrap{ grid-area:board; width:100%; max-width:none; margin:0; }
+    .stage > .meta{ grid-area:rail-a; width:100%; max-width:none; margin:0; }
+    .stage > .statusbox{ grid-area:rail-b; width:100%; max-width:none; margin:0; }
+    .stage > .freeze{ grid-area:rail-c; width:100%; max-width:none; margin:0; align-self:start; }
+  }
 </style>
 </head>
 <body data-theme="light">
@@ -242,6 +282,20 @@
   </header>
 
   <div class="stage">
+    <aside class="game-aside" id="game-aside" aria-hidden="true">
+      <div class="ga-block">
+        <h4>Cómo jugar</h4>
+        <p>Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta). Vacía el tablero entero, lo más rápido que puedas.</p>
+      </div>
+      <div class="ga-block">
+        <h4>Enfoque</h4>
+        <p>El botón bajo el tablero se <b>llena solo</b> (~20&nbsp;s). Úsalo para resaltar <b>5&nbsp;s</b> las flechas que <b>ya pueden salir</b>. El reloj no se detiene.</p>
+      </div>
+      <div class="ga-block">
+        <h4>Navegar</h4>
+        <p>El tablero es grande: <b>pellizca</b> para acercar, <b>arrastra</b> para recorrerlo y toca <b>⌖</b> (o doble clic) para volver a verlo entero.</p>
+      </div>
+    </aside>
     <div class="rank-bar" id="rank-bar" role="button" tabindex="0" aria-label="Ver rangos">
       <span class="rank-label" id="rank-label">Listo</span>
       <div class="rank-track" id="rank-track"><div class="rank-track-line"></div></div>
