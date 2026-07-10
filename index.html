@@ -348,10 +348,10 @@
 
   /* ===== LANDING ===== */
   .landing { position:fixed; inset:0; z-index:50; background:var(--bg); display:flex; flex-direction:column;
-    align-items:center; justify-content:flex-start; text-align:center; padding:24px; overflow:auto; }
+    align-items:center; justify-content:center; text-align:center; padding:24px; overflow:auto; }
   body.game-active .landing { display:none; }
-  /* top-anchored stack on a steady 16px rhythm (LANDING-STANDARD) */
-  .landing-inner { display:flex; flex-direction:column; align-items:center; gap:16px; width:100%; margin-top:clamp(14px,5vh,56px); }
+  /* vertically-centered stack on a steady 16px rhythm */
+  .landing-inner { display:flex; flex-direction:column; align-items:center; gap:16px; width:100%; margin:auto 0; }
   /* mode tabs — 4 equal columns */
   .land-tabs { display:grid; grid-template-columns:repeat(5,1fr); width:min(440px,96vw); margin:0 auto 2px; }
   .land-tab { justify-self:center; padding:8px 4px 11px; font:700 13.5px var(--font-ui); letter-spacing:.6px;
