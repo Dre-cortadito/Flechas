@@ -97,7 +97,7 @@
      inset (a definite box) rather than height:100% — that avoids the iOS Safari quirk where a
      percentage-height child of an aspect-ratio box renders too tall and clips the bottom row. */
   .board { position:relative; width:100%; aspect-ratio:7/8; background:var(--board-bg); border-radius:18px; overflow:hidden; transition:background .15s linear, box-shadow .2s ease; }
-  .board.frz-ready { box-shadow:inset 0 0 0 11px var(--accent); }   /* Congelar charged/full → blue edge turns on (like Clásico's ready ring) */
+  .board.fz-active { box-shadow:inset 0 0 0 11px var(--accent); }   /* Freeze ACTIVE (pressed) → solid blue border. The ONLY board-level effect. */
   .timer { transition:color .15s linear; }
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }   /* fills the definite inner box; clips launches at the edge */
@@ -113,13 +113,9 @@
   .piece.sp-shield .pline, .piece.sp-shield .phead { stroke:#b5abea; }   /* deep cyan — Escudo. Same geometry as normal arrows, ONLY the color changes (family rule) */
   .piece.sp-frenzy .pline, .piece.sp-frenzy .phead { stroke:#F2711C; }   /* orange — Frenesí */
   .piece.sp-freeze .pline, .piece.sp-freeze .phead { stroke:#0062E3; }   /* blue — Congelar */
-  .board.frenzy::before { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; z-index:17; box-shadow:inset 0 0 0 6px #F2711C; opacity:.85; }   /* Frenesí active → orange inset ring */
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
-  /* combo live → the board BACKGROUND turns yellow (the Borde yellow); fades in when the combo turns on. */
-  .board.hot { background:#FDE68A; }
-  /* whole board cleared → the same pink (accent-2) ring PULSES once as a celebration */
-  .board.clearflash { animation:boardclear .9s ease; }
-  @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:#EA3546;} 100%{ background:var(--board-bg);} }   /* whole board pulses the intense heart pink ONCE on a full clear */
+  /* Persistent effects (combo / frenesí / shield) live ONLY in the status-bar
+     compartments below — the board stays pale blue with its normal border. */
   /* last seconds before a refresh: surviving arrows pulse to warn they're about to fall away */
   /* (arrows no longer blink before a refresh — the refresh bar + "Nuevo" countdown are the warning) */
 
@@ -147,6 +143,10 @@
   .stile.frenesi .sval { color:var(--ink-soft); transition:color .15s; }
   .stile.frenesi.on .sval { color:#F2711C; }         /* Frenesí active → orange */
   .stile.frenesi .sbar { background:#F2711C; }       /* its countdown bar is orange, not the combo yellow */
+  /* Each effect softly fills ITS OWN compartment (never the whole bar) so several can show at once */
+  .stile.combo.on   { background:rgba(249,200,14,.18); }   /* Combo → soft yellow */
+  .stile.escudo.on  { background:rgba(181,171,234,.24); }  /* Escudo → soft lavender */
+  .stile.frenesi.on { background:rgba(242,113,28,.16); }   /* Frenesí → soft orange */
 
   .freeze { width:min(94vw,400px); margin:14px auto 0; }
   .freeze-btn { width:100%; height:60px; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:0 12px; border-radius:14px; cursor:pointer; color:#0062E3; background:rgba(0,98,227,.05); border:2px solid #0062E3; }   /* FIXED height — snowflake can grow without resizing the bar */
@@ -537,7 +537,7 @@
     else { if(v) v.textContent='—'; if(bar) bar.style.transform='scaleX(0)'; } }
   function applySpecial(role){ if(!role||role===99) return;
     if(role==='shield'){ shields=Math.min(SHIELD_MAX, shields+1); updateShieldHUD(); }
-    else if(role==='frenzy'){ frenzyUntil=Date.now()+FRENZY_MS; board.classList.add('frenzy'); updateFrenesi(); }
+    else if(role==='frenzy'){ frenzyUntil=Date.now()+FRENZY_MS; updateFrenesi(); }
     else if(role==='freeze'){ if(!freezeReady){ freezeCharge=Math.min(1,freezeCharge+FREEZE_BLUE_SECS/FREEZE_FILL); if(freezeCharge>=1) freezeReady=true; updateFreeze(); } } }
 
   // ================= geometry / rendering (head leads, body trains) =================
@@ -580,9 +580,7 @@
         if(lives<HEARTS_MAX){ lives=Math.min(HEARTS_MAX, lives+0.5); renderLives(); rwd='+½ ❤'; }
         else { pausedMs+=BOARD_TIME_BONUS*1000; timeLeft+=BOARD_TIME_BONUS; $('timer').textContent=fmt(Math.ceil(timeLeft)); $('timer').classList.toggle('low', timeLeft<=15); rwd='+'+BOARD_TIME_BONUS+'s ⏱'; }
         const bd=$('boards-done'); if(bd) bd.textContent=boardsClear;
-        board.classList.remove('clearflash'); void board.offsetWidth; board.classList.add('clearflash');   // pink ring pulses once
-        setTimeout(()=>{ try{ board.classList.remove('clearflash'); }catch(e){} },950);
-        $('score').textContent=points; renderRank(); showToast('¡Tablero limpio! +'+BOARD_BONUS+' · '+rwd); refreshAt=Date.now()+260; }   // cleared the whole board → bonus + reward, fresh one cascades in
+        $('score').textContent=points; renderRank(); showToast('¡Tablero limpio! +'+BOARD_BONUS+' · '+rwd); refreshAt=Date.now()+260; }   // cleared the whole board → bonus + reward (feedback via toast; board stays stable)
     } else {                                                       // BLOCKED — the arrow charges up to the one in its way, then bounces back
       const g=p.el, v=p._v; let steps=0, r=p.head.r+DYn[p.dir], c=p.head.c+DXn[p.dir];
       while(r>=0&&r<ROWS&&c>=0&&c<COLS){ const o=ownerMap.get(key(r,c)); if(o!==undefined && o!==p.id) break; steps++; r+=DYn[p.dir]; c+=DXn[p.dir]; }   // walk past own body to the real blocker
@@ -611,7 +609,7 @@
 
   // ================= status box =================
   function renderCombo(pop){ const m=multNow(); const tile=$('t-combo'), x=$('combo-x'); if(!tile) return;
-    x.textContent='×'+m; const on=running&&!over&&m>1; tile.classList.toggle('on',on); board.classList.toggle('hot',on);
+    x.textContent='×'+m; const on=running&&!over&&m>1; tile.classList.toggle('on',on);   /* combo shows only in its compartment, not on the board */
     if(pop&&on){ tile.classList.remove('pop'); void tile.offsetWidth; tile.classList.add('pop'); } }
   function renderStatus(){ const cl=$('cleared'); if(cl) cl.textContent=cleared; }
   function showToast(t){ const el=$('toast'); if(!el) return; el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>{ try{el.classList.remove('show');}catch(e){} },1300); }
@@ -649,15 +647,14 @@
   function useFreeze(){ if(!freezeReady||!running||over) return; frozenUntil=Date.now()+FREEZE_DUR; freezeCharge=0; freezeReady=false; freezeVisual=0; updateFreeze(); }
   function lerpHex(a,b,t){ a=a.trim();b=b.trim(); const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16); const r=Math.round((pa>>16)+(( pb>>16)-(pa>>16))*t),g=Math.round(((pa>>8)&255)+((( pb>>8)&255)-((pa>>8)&255))*t),bl=Math.round((pa&255)+((pb&255)-(pa&255))*t); return 'rgb('+r+','+g+','+bl+')'; }
   function updateFreeze(){ const btn=$('freeze-btn'), num=$('freeze-num'), fill=$('freeze-fill'), tm=$('timer'); const fz=Date.now()<frozenUntil;
+    board.classList.toggle('fz-active', fz);   // Freeze active → solid blue border; board background never changes
     if(fz){ const rem=frozenUntil-Date.now(); num.textContent=Math.ceil(rem/1000);
       fill.style.transform='scaleX('+Math.max(0,rem/FREEZE_DUR).toFixed(3)+')';   // the bar DRAINS over the 5 s — that's the countdown
-      btn.classList.add('frozen'); btn.classList.remove('ready'); board.classList.remove('frz-ready');
-      const cs=getComputedStyle(board); const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC';
-      board.style.background=DK;            // STATIC frozen colour — no pulse
+      btn.classList.add('frozen'); btn.classList.remove('ready');
       if(tm) tm.style.color='#0062E3'; }
-    else { btn.classList.remove('frozen'); board.style.background=''; if(tm) tm.style.color='';
-      if(freezeReady){ freezeVisual=1; fill.style.transform='scaleX(1)'; btn.classList.add('ready'); board.classList.add('frz-ready'); }
-      else { freezeVisual += (freezeCharge-freezeVisual)*0.18; if(Math.abs(freezeCharge-freezeVisual)<0.002) freezeVisual=freezeCharge; fill.style.transform='scaleX('+Math.max(0,freezeVisual).toFixed(3)+')'; btn.classList.remove('ready'); board.classList.remove('frz-ready'); } } }
+    else { btn.classList.remove('frozen'); if(tm) tm.style.color='';
+      if(freezeReady){ freezeVisual=1; fill.style.transform='scaleX(1)'; btn.classList.add('ready'); }
+      else { freezeVisual += (freezeCharge-freezeVisual)*0.18; if(Math.abs(freezeCharge-freezeVisual)<0.002) freezeVisual=freezeCharge; fill.style.transform='scaleX('+Math.max(0,freezeVisual).toFixed(3)+')'; btn.classList.remove('ready'); } } }
 
   // ================= loop =================
   function fmt(s){ const m=Math.floor(s/60); return m+':'+String(Math.max(0,s)%60).padStart(2,'0'); }
@@ -673,7 +670,7 @@
         const bar=$('refresh-bar'); bar.style.transform='scaleX('+Math.max(0,Math.min(1,tToRef/REFRESH_MS)).toFixed(3)+')'; bar.classList.toggle('warn', tToRef<=WARN_MS);
         const ni=$('nextin'); if(ni) ni.textContent=Math.max(0,Math.ceil(tToRef/1000)); $('t-next').classList.toggle('warn', tToRef<=WARN_MS); } }
     if(combo>0 && now-lastClearAt>COMBO_WINDOW){ combo=0; renderCombo(false); }
-    board.classList.toggle('frenzy', frenzyActive()); updateFrenesi();
+    updateFrenesi();
     { const cb=$('combo-bar'); if(cb) cb.style.transform='scaleX('+(multNow()>1?Math.max(0,1-(now-lastClearAt)/COMBO_WINDOW):0).toFixed(3)+')'; }   // always drive it — reset to 0 when the combo ends so it can't freeze halfway
     if(!fz && !freezeReady){ freezeCharge=Math.min(1, freezeCharge+(dt/1000)/FREEZE_FILL); if(freezeCharge>=1) freezeReady=true; }
     updateFreeze(); if(transitioning && !fz){ $('timer').style.color='var(--accent)'; }   // clock paused for the cascade → timer goes teal
