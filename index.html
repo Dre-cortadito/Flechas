@@ -2054,7 +2054,7 @@ function maybeCelebrate(){
 }
 function launchConfetti(n){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  n=Math.min(n||45, 60);
+  n=Math.min(n||20, 26);
   requestAnimationFrame(()=>{
     const colors=['#662E9B','#F9C80E','#E76210','#9D4EDD','#EA3546','#4E1660'];
     const box=document.createElement('div'); box.className='confetti-box';
