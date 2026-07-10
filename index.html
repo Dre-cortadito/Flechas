@@ -3,7 +3,7 @@
   Flechas — a Cortadito News daily game.
   Single self-contained file. Built from _kit/starter-template.html and follows
   _kit/DESIGN-SYSTEM.md + _kit/LANDING-STANDARD.md.
-  Mode: Clásico. Each arrow is a multi-cell SHAPE (straight / L / zig-zag) drawn
+  Mode: Borde. Each arrow is a multi-cell SHAPE (straight / L / zig-zag) drawn
   as one connected line ending in a head. Tap it to fly the whole shape off the
   board in the head's direction; it can only launch if its swept lane is clear of
   other arrows. The daily board is built by reverse-peeling pieces, so it is always
@@ -157,7 +157,7 @@
   .piece.role-freeze .pline, .piece.role-freeze .phead { stroke:#0062E3; }   /* blue — freeze. Same geometry as normal arrows, ONLY the color changes (family rule) */
   .piece.role-racha .pline, .piece.role-racha .phead { stroke:#F9C80E; }   /* yellow — start a clean streak */
   .piece.role-giro .pline, .piece.role-giro .phead { stroke:#E76210; }      /* BURNT ORANGE — Giro: the border JUMPS when you clear it (red stays reserved for mistakes) */
-  .piece.role-candado .pline, .piece.role-candado .phead { stroke:#662E9B; }  /* BORDER purple — Candado wears the exact border color: it IS a border power */
+  .piece.role-candado .pline, .piece.role-candado .phead { stroke:#9D4EDD; }  /* orchid violet — distinct from the deep border purple so a Candado arrow ≠ the beam */
   /* Peligro danger window — a RED wash (red = danger). It's the only red on the board:
      the hot beam is now indigo, so the two never read as the same thing. */
   /* Board-state tints live in the BACKGROUND so they never collide with the purple beam on the edges.
@@ -242,7 +242,7 @@
   .fbox-bar { position:absolute; left:0; bottom:0; height:3px; width:100%; transform-origin:left; transform:scaleX(0); transition:transform .12s linear; z-index:1; }
   .t-racha   .fbox-val { color:#F9C80E; } .t-racha   .fbox-bar { background:#F9C80E; } .t-racha.on   { background:rgba(249,200,14,.18); }
   .t-giro    .fbox-val { color:#E76210; } .t-giro    .fbox-bar { background:#E76210; } .t-giro.on    { background:rgba(231,98,16,.15); }
-  .t-candado .fbox-val { color:#662E9B; } .t-candado .fbox-bar { background:#662E9B; } .t-candado.on { background:rgba(102,46,155,.15); }
+  .t-candado .fbox-val { color:#9D4EDD; } .t-candado .fbox-bar { background:#9D4EDD; } .t-candado.on { background:rgba(157,78,221,.16); }
   .t-borde   .fbox-val { color:#662E9B; } .t-borde   .fbox-bar { background:#662E9B; }
   /* heart-change delta (right of the hearts) — +½ / −1 / +2, green gain, red loss */
   .heart-delta { font:900 14px var(--font-ui); white-space:nowrap; opacity:0; transition:opacity .15s; }
@@ -550,11 +550,11 @@
       </div>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#E76210" d="M14 20 L92 20"/><path style="stroke:#E76210" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt"><b style="color:#E76210">Naranja · Giro.</b> Al despejarla, el borde <b>salta al siguiente lado AHORA</b>. Un arma si la usas a tiempo — una trampa si no. Con un <b style="color:#662E9B">Candado</b> activo, el candado <b>absorbe el giro</b> (el borde no se mueve); solo <b>Desviar</b> rompe el candado.</div>
+        <div class="txt"><b style="color:#E76210">Naranja · Giro.</b> Al despejarla, el borde <b>salta al siguiente lado AHORA</b>. Un arma si la usas a tiempo — una trampa si no. Con un <b style="color:#9D4EDD">Candado</b> activo, el candado <b>absorbe el giro</b> (el borde no se mueve); solo <b>Desviar</b> rompe el candado.</div>
       </div>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#662E9B" d="M14 20 L92 20"/><path style="stroke:#662E9B" d="M78 8 L100 20 L78 32"/></svg></div>
-        <div class="txt"><b style="color:#662E9B">Morada · Candado.</b> Al despejarla, el borde queda <b>fijado 6 s</b> (se apila) — una ventana segura para cosechar los lados abiertos.</div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#9D4EDD" d="M14 20 L92 20"/><path style="stroke:#9D4EDD" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="txt"><b style="color:#9D4EDD">Violeta · Candado.</b> Al despejarla, el borde queda <b>fijado 6 s</b> (se apila) — una ventana segura para cosechar los lados abiertos.</div>
       </div>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40" fill="none" stroke="#662E9B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><line x1="40" y1="5" x2="80" y2="5"/><line x1="40" y1="35" x2="80" y2="35"/><path d="M60 28 V14"/><path d="M52 19 L60 10 L68 19"/></svg></div>
@@ -563,7 +563,7 @@
       <h3>El borde</h3>
       <div class="legend-row">
         <div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="98" y="4" width="11" height="32" rx="4" fill="#662E9B"/><path style="stroke:var(--arrow)" d="M14 20 L72 20"/><path style="stroke:var(--arrow)" d="M58 9 L78 20 L58 31"/></svg></div>
-        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> saltando de lado. <b>Se acelera con cada tablero</b> (6 s → 4 s) y en los tableros <b>4 y 5 ocupa DOS lados contiguos</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera, fíjala con un <b style="color:#662E9B">Candado</b> o <b>desvíala</b>.</div>
+        <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> saltando de lado. <b>Se acelera con cada tablero</b> (6 s → 4 s) y en los tableros <b>4 y 5 ocupa DOS lados contiguos</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera, fíjala con un <b style="color:#9D4EDD">Candado</b> o <b>desvíala</b>.</div>
       </div>
       <h3>Rango y puntuación</h3>
       <p class="muted">Tu puntuación es <b>el tiempo total</b> de despejar los <b>5 tableros</b>, sin trucos: el <b>⏱ reloj</b> con el que terminas el quinto. <b>No hay puntos</b> — solo el reloj. Más <b>rápido</b> = mejor rango, y como un choque puede acabar la partida (a 0 corazones), hay que ir <b>rápido pero limpio</b>. Diez rangos, de <b>Debutante</b> (más de 8:40) a <b style="color:var(--accent)">Maestro/a</b> (por debajo de ~1:52). Hay un <b style="color:var(--accent)">Reto del día</b>: termina por debajo del tiempo objetivo y celebra con un <b style="color:var(--accent)">¡Buen sorbo!</b></p>
@@ -687,11 +687,10 @@ const RETO_MIN=0, RETO_MAX=0;
 // Rank is awarded by SOLVE TIME (faster = higher). Cutoffs = max seconds.
 // A run is 5 boards; rank = TOTAL time across all five, so the cutoffs are scaled up
 // for a full run (≈3× a single board). Tune after playtesting a real run.
-// Total time across the 5-board run. Tightened to realistic run lengths (a full run is
-// roughly 4–12 min); the bottom rank is now "slower than 13:00", not the old 20-min nonsense.
-// Total time across the 5-board run. Recalibrated: a ~2:00 casual run lands at Eminente,
-// Maestro now demands a near-optimal sub-1:52. (Tune with real run times.)
-const TIME_CUTOFFS=[{i:9,max:112},{i:8,max:130},{i:7,max:155},{i:6,max:185},{i:5,max:225},{i:4,max:275},{i:3,max:340},{i:2,max:420},{i:1,max:520},{i:0,max:Infinity}];
+// Total time across the 5-board run (max seconds per rank). Retuned so Maestro is a strong-but-fair
+// run rather than near-optimal: Maestro ≤2:20, and beating the daily META (2:30–3:30) lands you
+// around Increíble–Eminente. Challenging, not a wall.
+const TIME_CUTOFFS=[{i:9,max:140},{i:8,max:160},{i:7,max:185},{i:6,max:215},{i:5,max:255},{i:4,max:305},{i:3,max:370},{i:2,max:450},{i:1,max:560},{i:0,max:Infinity}];
 function rankForTime(t){ for(const c of TIME_CUTOFFS) if(t<=c.max) return c.i; return 0; }
 function timeMaxFor(idx){ for(const c of TIME_CUTOFFS) if(c.i===idx) return c.max; return Infinity; }
 // "Flechas #N" — daily number from a fixed epoch
