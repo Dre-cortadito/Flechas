@@ -22,7 +22,7 @@
   /* Disable mobile double-tap-to-zoom everywhere (keeps pinch-zoom for
      accessibility). Lowest specificity, so per-element touch-action rules
      like 'touch-action: none' on drag areas still win. */
-  * { touch-action: manipulation; }
+  * { touch-action: manipulation; -webkit-tap-highlight-color:transparent; }
 
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --freeze-fill:#9CCCEC;
