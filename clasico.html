@@ -77,6 +77,8 @@
   .rank-dot.passed { background:var(--ink); }
   .rank-dot.current { width:24px; height:24px; background:var(--accent); color:#fff; font:700 11px var(--font-ui); display:flex; align-items:center; justify-content:center; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .35s ease; }
   .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; transition:transform .2s, color .15s; }
+  .rank-meta { width:min(94vw,400px); margin:-4px auto 12px; text-align:center; font:700 10.5px var(--font-ui); letter-spacing:.9px; text-transform:uppercase; color:var(--ink-soft); }
+  .rank-meta b { color:var(--accent); font-variant-numeric:tabular-nums; }
 
   .meta { width:min(94vw,400px); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:0 auto 14px; }   /* Racimo-style breathing (2026-07-08) */
   .side { line-height:1.05; }
@@ -249,6 +251,7 @@
       <div class="rank-track" id="rank-track"><div class="rank-track-line"></div></div>
       <span class="rank-chev">▾</span>
     </div>
+    <div class="rank-meta"><span>Meta de hoy</span> · <b id="fx-reto">—</b></div>
     <div class="meta">
       <div class="side is-left"><div class="lives-row" id="lives-row" aria-label="Vidas"></div></div>
       <div class="timer" id="timer">0:00</div>
@@ -270,9 +273,9 @@
     </div>
 
     <div class="statusbox" id="statusbox">
-      <div class="stile"><div class="sval" id="fx-left">—</div><div class="slbl">Restantes</div></div>
       <div class="stile choques" id="t-choques"><div class="sval" id="fx-choques">0</div><div class="slbl">Choques</div></div>
-      <div class="stile reto"><div class="sval" id="fx-reto">—</div><div class="slbl">Meta de hoy</div></div>
+      <div class="stile"><div class="sval" id="fx-prec">100%</div><div class="slbl">Precisión</div></div>
+      <div class="stile"><div class="sval" id="fx-ritmo">—</div><div class="slbl">Ritmo</div></div>
     </div>
 
     <div class="freeze">
@@ -519,7 +522,7 @@
   function retoTarget(){ const r=mulberry32(fnv('clasico-reto-'+ISO)); return 75+Math.round(r()*75); }
 
   // ================= runtime state =================
-  let board=null, occ=null, snakes={}, remaining=0, choques=0;
+  let board=null, occ=null, snakes={}, remaining=0, choques=0, totalArrows=0;
   let running=false, over=false, finished=false, training=false, started=false;
   let totalMs=0, lastTick=0, rafId=null, lives=HEARTS_MAX, bestSecs=0;
   let svg=null, layer=null;
@@ -755,8 +758,11 @@
   function loseHeart(){ lives=Math.max(0,lives-HEART_BLOCK_COST); renderLives(); const lr=$('lives-row'); if(lr){ lr.classList.add('spill'); setTimeout(()=>{ try{lr.classList.remove('spill');}catch(e){} },320); } if(lives<=0) endGame('spill'); }
 
   // ================= status / counts =================
-  function renderCounts(){ const a=$('fx-left'), b=$('left-n'); if(a) a.textContent=remaining; if(b) b.textContent=remaining;
-    const c=$('fx-choques'); if(c) c.textContent=choques; const t=$('t-choques'); if(t) t.classList.toggle('dirty', choques>0); }
+  function renderCounts(){ const b=$('left-n'); if(b) b.textContent=remaining;
+    const c=$('fx-choques'); if(c) c.textContent=choques; const t=$('t-choques'); if(t) t.classList.toggle('dirty', choques>0);
+    const cleared=Math.max(0, totalArrows-remaining), denom=cleared+choques;
+    const p=$('fx-prec'); if(p) p.textContent=(denom>0?Math.round(cleared/denom*100):100)+'%';
+    const r=$('fx-ritmo'); if(r) r.textContent=(cleared>0 && started)?(totalMs/1000/cleared).toFixed(1)+' s':'—'; }
   function showToast(t){ const el=$('toast'); if(!el) return; el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>{ try{el.classList.remove('show');}catch(e){} },1300); }
 
   // ================= rank bar (by finish time) =================
@@ -794,7 +800,7 @@
     if(started) totalMs+=dt; $('timer').textContent=fmt(totalMs);
     if(started && !enfReady && Date.now()>=enfUntil){ enfCharge=Math.min(1, enfCharge+(dt/1000)/ENF_FILL); if(enfCharge>=1){ enfCharge=1; enfReady=true; } }
     updateEnfoque();
-    const _rs=Math.floor(totalMs/1000); if(_rs!==loop._lastRankS){ loop._lastRankS=_rs; renderRank(); }   // live rank decay, once per second (Racimo-standard glide)
+    const _rs=Math.floor(totalMs/1000); if(_rs!==loop._lastRankS){ loop._lastRankS=_rs; renderRank(); renderCounts(); }   // live rank decay + live Ritmo, once per second
     rafId=requestAnimationFrame(loop); }
 
   // ================= start / end =================
@@ -807,7 +813,7 @@
     // build occupancy + live snake map
     occ=new Int16Array(W*H).fill(-1); snakes={};
     for(const s of board.snakes){ const cp={id:s.id, dir:s.dir, cells:s.cells.map(c=>({r:c.r,c:c.c}))}; snakes[s.id]=cp; for(const cl of cp.cells) occ[cl.r*W+cl.c]=cp.id; }
-    remaining=board.snakes.length;
+    remaining=board.snakes.length; totalArrows=board.snakes.length;
     renderBoard(); renderLives(); renderCounts(); renderRank();
     $('timer').textContent='0:00'; $('fx-reto').textContent='≤ '+fmtSec(retoTarget());
     const _tb=$('train-badge'); clearTimeout(_tb._t); _tb.classList.toggle('show', training);
