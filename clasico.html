@@ -326,7 +326,7 @@
     <div class="statusbox" id="statusbox">
       <div class="stile"><div class="sval" id="fx-left">—</div><div class="slbl">Restantes</div></div>
       <div class="stile choques" id="t-choques"><div class="sval" id="fx-choques">0</div><div class="slbl">Choques</div></div>
-      <div class="stile reto"><div class="sval" id="fx-reto">—</div><div class="slbl">Reto del día</div></div>
+      <div class="stile reto"><div class="sval" id="fx-reto">—</div><div class="slbl">Meta de hoy</div></div>
     </div>
 
     <div class="freeze">
@@ -863,7 +863,7 @@
     for(const s of board.snakes){ const cp={id:s.id, dir:s.dir, cells:s.cells.map(c=>({r:c.r,c:c.c}))}; snakes[s.id]=cp; for(const cl of cp.cells) occ[cl.r*W+cl.c]=cp.id; }
     remaining=board.snakes.length;
     renderBoard(); renderLives(); renderCounts(); renderRank();
-    $('timer').textContent='0:00'; $('fx-reto').textContent=fmtSec(retoTarget());
+    $('timer').textContent='0:00'; $('fx-reto').textContent='≤ '+fmtSec(retoTarget());
     const _tb=$('train-badge'); clearTimeout(_tb._t); _tb.classList.toggle('show', training);
     if(training) _tb._t=setTimeout(()=>{ try{ _tb.classList.remove('show'); }catch(e){} }, 2200);   // v9.6: brief tag while the board settles — hidden during play
     $('gate').classList.add('hidden');
