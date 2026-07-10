@@ -326,6 +326,13 @@
   .goal-mark { width:72px; height:72px; margin:0 auto 14px; display:block; }
   .goal-headline { font-family:var(--font-display); font-size:34px; margin:0 0 6px; color:#1a1614; }
   .goal-headline.maestro { color:var(--accent); }
+  /* finish celebration — confetti burst (self-contained, no libs) */
+  .confetti-box { position:fixed; inset:0; pointer-events:none; z-index:80; overflow:hidden; }
+  .confetti { position:absolute; top:-18px; width:8px; height:13px; opacity:.95; will-change:transform; border-radius:1px;
+    animation-name:conffall; animation-timing-function:cubic-bezier(.22,.6,.5,1); animation-fill-mode:forwards; }
+  @keyframes conffall { from { transform:translate3d(0,-20px,0) rotateZ(0deg); opacity:1; }
+    to { transform:translate3d(var(--sway,0px),106vh,0) rotateZ(760deg); opacity:.85; } }
+  @media (prefers-reduced-motion: reduce){ .confetti { display:none; } }
   .goal-subhead { color:#6b6660; margin:0 0 18px; }
   /* Buen-sorbo result breakdown — seconds math on top, rank pill under, colour-highlighted */
   #goal-sub { display:flex; flex-direction:column; align-items:center; gap:6px; margin:2px 0 18px; }
@@ -2044,7 +2051,23 @@ function maybeCelebrate(){
     + '<div class="gb-rank">'+RANK_NAMES[idx]+'</div>'
     + (mistakes===0?'<div class="gb-clean">Sin choques</div>':'<div class="gb-note">'+mistakes+' choque'+(mistakes===1?'':'s')+'</div>')
     + (training?'<div class="gb-note">Entrenamiento · no cuenta para hoy</div>':'');
+  if(head) head.classList.toggle('maestro', idx===9);
   if(!LS.getItem(key)){ LS.setItem(key,'1'); setTimeout(()=>openGoal('goal-panel'),450); }
+  if(!training){ setTimeout(()=>launchConfetti((idx===9?110:beat?85:55)), 480); }   // a real payoff for finishing the run
+}
+function launchConfetti(n){ n=n||60;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colors=['#662E9B','#F9C80E','#E76210','#9D4EDD','#EA3546','#4E1660'];
+  const box=document.createElement('div'); box.className='confetti-box'; document.body.appendChild(box);
+  for(let i=0;i<n;i++){ const p=document.createElement('i'); p.className='confetti';
+    const c=colors[(Math.random()*colors.length)|0];
+    p.style.left=(Math.random()*100)+'vw'; p.style.background=c;
+    p.style.setProperty('--sway', ((Math.random()*140-70)|0)+'px');
+    p.style.animationDuration=(1.7+Math.random()*1.7).toFixed(2)+'s';
+    p.style.animationDelay=(Math.random()*0.5).toFixed(2)+'s';
+    if(Math.random()<0.32) p.style.borderRadius='50%';
+    box.appendChild(p); }
+  setTimeout(()=>box.remove(), 4200);
 }
 
 /* ============================ FEEDBACK / MODALS / THEME ============================ */
