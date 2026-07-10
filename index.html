@@ -492,7 +492,7 @@
     <!-- Sudoku-Mini-style meta row over the board: hearts left · timer center · earned time right -->
     <div class="flx-meta">
       <div class="flx-meta-slot is-left">
-        <div class="lives-row" id="lives-row" aria-label="Vidas"></div>
+        <div class="lives-row" id="lives-row" role="img" aria-live="polite" aria-label="Vidas"></div>
         <span class="heart-delta" id="heart-delta"></span>
       </div>
       <div class="flx-timer" id="flx-timer">0:00</div>
@@ -1514,7 +1514,8 @@ function renderLives(){ const el=document.getElementById('lives-row'); if(!el) r
   for(let i=0;i<HEARTS_MAX;i++){
     const svg = (i<full) ? heartSVG(true,true) : (i===full && half) ? heartSVG(true,false) : heartSVG(false,false);
     h+='<span class="heart">'+svg+'</span>'; }
-  el.innerHTML=h; el.classList.toggle('spilled', lives<=0); }
+  el.innerHTML=h; el.classList.toggle('spilled', lives<=0);
+  el.setAttribute('aria-label', 'Vidas: '+(Math.round(lives*2)/2)+' de '+HEARTS_MAX); }
 // No more +½ / −1 pops or text prompts on Borde — the HEARTS THEMSELVES react (Cascada-style):
 // they shake when you lose one and pop up when you earn one.
 function _fmtHalf(a){ const w=Math.floor(a), h=(a-w)>=0.5; return ((w?w:'')+(h?'½':''))||'0'; }
@@ -2112,7 +2113,7 @@ function setLandMode(m){ const d=LAND_MODES[m]; if(!d) return; landMode=m;
   document.getElementById('land-logo').innerHTML=d.logo;
   document.getElementById('land-name').textContent=d.title;
   document.getElementById('land-tagline').textContent=d.tag;
-  document.querySelectorAll('.land-tab').forEach(t=>t.classList.toggle('active', t.getAttribute('data-mode')===m));
+  document.querySelectorAll('.land-tab').forEach(t=>{ const on=t.getAttribute('data-mode')===m; t.classList.toggle('active', on); t.setAttribute('aria-selected', on?'true':'false'); });
   const lbl=document.querySelector('#land-reto-row .lbl'), val=document.getElementById('land-reto'), play=document.getElementById('play-btn');
   if(d.ready){ play.textContent='Jugar'; play.classList.remove('is-soon'); play.disabled=false;
     if(m==='cascada'){ lbl.textContent='Reto del día'; val.textContent='2:00'; }
