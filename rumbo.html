@@ -432,7 +432,7 @@
   const BU=100, BCOLS=13, BROWS=10, BCOVER=0.62, BMIN=3;   // denser Cascada board — solving a board is the real cost of a shortcut
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // time (seconds) edges; CUT[k] ascending. k=0 -> Maestro(rank 9, t=0), k=9 -> Debutante(rank 0). rank = 9 - band.
-  const CUT=[0,30,42,56,72,90,110,134,162,195];
+  const CUT=[0,48,62,78,96,116,140,168,200,240];   // retuned: Maestro ≤48s (was 30) — challenging vs the 55–95s daily reto, not a wall
   const TOP=9;
 
   // ---- state ----

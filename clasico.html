@@ -382,7 +382,7 @@
   const HEARTS_MAX=3, HEART_BLOCK_COST=0.5;
   const RANK_NAMES=['Debutante','Eficiente','Constante','Diligente','Admirable','Excelente','Increíble','Brillante','Eminente','Maestro/a'];
   // max SECONDS to EARN each rank (index aligns with RANK_NAMES; lower time = higher rank). Provisional — calibrate to real solves.
-  const TIME_MAX=[Infinity,1225,940,760,610,520,430,370,295,250];   // v9.5: +10s flat vs v9 — clock from board-settle (breathe off the clock); provisional
+  const TIME_MAX=[Infinity,520,400,320,270,230,195,165,145,130];   // retuned: realistic single-board clear times; Maestro ≤130s (2:10) — a strong run, and no longer looser than the daily reto
   const TOP=RANK_NAMES.length-1;
   const DR=[-1,0,1,0], DC=[0,1,0,-1];                  // 0=U 1=R 2=D 3=L
 
