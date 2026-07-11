@@ -34,8 +34,8 @@
     --accent:#4faa66; --accent-deep:#8fd3a0; --accent-soft:#123020; --accent-2:#5f7d55; --error:#EA3546;
     --board-bg:#16241a; --arrow:#c9e6cf; --clear:#157145;
   }
-  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
-  html { overscroll-behavior:none; }
+  html,body { margin:0; min-height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }   /* body grows with content + scrolls (Borde parity), instead of pinning to the large viewport */
+  html { height:100%; overscroll-behavior:none; }
   body { display:flex; flex-direction:column; align-items:center; overscroll-behavior:none; }
 
   .page-header { position:fixed; top:0; left:0; right:0; z-index:40; height:var(--header-h); display:flex; align-items:center; justify-content:space-between; gap:24px; padding:0 18px; background:var(--bg); border-bottom:1px solid var(--ink-line); }
@@ -60,10 +60,10 @@
   @media (max-width:620px){ .wordmark{ display:none; } .header-nav{ gap:18px; } }
   @media (max-width:400px){ .header-nav{ gap:13px; } .header-nav a{ font-size:13px; } }
 
-  .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px);   /* rank bar top at 66px — EXACT Racimo geometry */ padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
+  .stage { width:100%; min-height:100dvh; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px);   /* rank bar top at 66px — EXACT Racimo geometry */ padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }   /* 100dvh + scroll → button clears the URL bar (Borde parity) */
   /* Shared lower-column width: shrinks by AVAILABLE HEIGHT on short screens (board is 7/8,
      same as Borde/Cascada) so the whole stack clears the URL bar. Never exceeds the 400px cap. */
-  :root { --gw: min(94vw, 400px, calc((100dvh - 346px) * 7 / 8)); }
+  :root { --gw: min(94vw, 400px); }   /* full Borde width; the stack fits via 100dvh + a small scroll (below) */
 
   /* ===== Rank bar (standard) — driven by finish TIME ===== */
   .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:8px 0; margin:0 auto 10px;   /* STANDARD (2026-07-08, Dre): zero side padding — label flush with the board's LEFT edge, chevron flush with the RIGHT */ cursor:pointer; user-select:none; border-radius:999px; background:transparent; transition:background .15s, color .15s; }
