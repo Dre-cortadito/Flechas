@@ -208,7 +208,7 @@
   .btn.ghost { color:var(--ink); background:var(--paper); border:1.5px solid var(--ink-line); box-shadow:none; padding:13px 32px; font-size:16px; }
   .btn.ghost:active { transform:scale(.97); }
   .go-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
-  .modal-ov { position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(14,20,18,.55); }
+  .modal-ov { position:fixed; top:var(--header-h); left:0; right:0; bottom:0; z-index:80; display:none; align-items:flex-start; justify-content:center; padding:24px 16px 40px; background:rgba(14,20,18,.55); overflow:auto; overscroll-behavior:contain; }   /* start below the fixed header so the menu bar stays lit (Racimo standard) */
   .modal-ov.open { display:flex; }
   .cstat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .cstat { background:var(--bg); border:1.5px solid var(--ink-line); border-radius:12px; padding:12px 10px; text-align:center; }

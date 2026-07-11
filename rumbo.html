@@ -270,7 +270,7 @@
   .go-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
 
   /* ===== Modals ===== */
-  .modal-ov { position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(20,18,14,.55); overscroll-behavior:contain; overflow:auto; }
+  .modal-ov { position:fixed; top:var(--header-h); left:0; right:0; bottom:0; z-index:80; display:none; align-items:flex-start; justify-content:center; padding:24px 16px 40px; background:rgba(20,18,14,.55); overscroll-behavior:contain; overflow:auto; }   /* start below the fixed header so the menu bar stays lit (Racimo standard) */
   body[data-theme="black"] .modal-ov { background:rgba(0,0,0,.78); }
   .modal-ov.open { display:flex; }
   .modal { position:relative; background:var(--paper); border:1.5px solid var(--ink-line); border-radius:16px; padding:26px 28px; max-width:380px; width:100%; max-height:85vh; overflow:auto; }
