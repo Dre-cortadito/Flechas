@@ -91,7 +91,11 @@
 
   /* ===== MAIN / game layout ===== */
   main { padding-top:var(--rank-top); padding-bottom:max(16px, env(safe-area-inset-bottom)); max-width:720px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; box-sizing:border-box; }
-  .rank-bar, .board-wrap, .status-line { flex:none; }
+  .rank-bar, .board-wrap, .status-line, .prog-box { flex:none; }
+  /* Shared thin progress bar (Borde/Cascada/Clásico standard): board → prog bar → status → button */
+  .prog-box { width:min(94vw,400px); margin:10px auto 0; padding:5px; background:var(--paper); border:2px solid var(--ink-soft); border-radius:10px; }
+  .prog-box .prog-track { height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
+  .prog-box .prog-bar { display:block; height:100%; width:100%; background:var(--accent); border-radius:5px; transform-origin:left; transform:scaleX(0); transition:transform .35s ease; }
   .feedback-zone { position:relative; flex:0 0 auto; height:26px; display:flex; align-items:center; justify-content:center; padding:0 16px; }
   .lower-spacer { flex:1 1 0; min-height:0; display:flex; align-items:center; justify-content:center; }
 
@@ -219,7 +223,7 @@
      One verb — ⇅ Desviar (jumps the purple border to the OPPOSITE side and restarts
      its 5s dwell). The clock does NOT pause — that's Cascada's power, not Borde's. */
   .flx-actions { display:flex; align-items:center; justify-content:center;
-    width:min(94vw,400px); margin:14px auto 0; }
+    width:min(94vw,400px); margin:12px auto 0; }
   .act-btn { position:relative; overflow:hidden; flex:1; height:60px; display:inline-flex; align-items:center; justify-content:center;
     padding:0 12px; border-radius:14px;   /* FIXED height — family standard (Cascada/Clásico) */
     cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
@@ -241,7 +245,7 @@
   /* ===== Status box — ONE compartment per effect (Cascada model): value + label + a bottom
      countdown bar, and a soft fill in its own colour when active. Several can show at once;
      nothing recolours the whole board. ===== */
-  .flx-box { width:min(94vw,400px); margin:14px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--ink-soft); border-radius:14px; overflow:hidden; }
+  .flx-box { width:min(94vw,400px); margin:12px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--ink-soft); border-radius:14px; overflow:hidden; }
   .fbox-tile { position:relative; overflow:hidden; padding:8px 6px 11px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; transition:background .15s; }
   .fbox-tile + .fbox-tile::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px; background:var(--ink-soft); z-index:2; }
   .fbox-val { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
@@ -508,6 +512,8 @@
       <div class="flx-meta-slot is-right" aria-label="Tablero"><div class="flx-count" id="flx-count"><div class="n" id="flx-left">1/5</div><div class="l">Tablero</div></div><span class="word-feedback" id="word-feedback"></span></div>
     </div>
     <div class="board-wrap"><div class="board-panel" id="board-panel"><div id="board"></div><i class="wall" id="wall0"></i><i class="wall" id="wall1"></i><div class="flx-toast" id="flx-toast"></div><div class="start-gate" id="start-gate" hidden><div class="start-target" id="flx-objetivo">Objetivo de hoy · —</div><button class="start-btn" id="start-btn" type="button">Empezar</button></div></div></div>
+    <!-- Shared thin progress bar: progress through the 5-board run (board N/5). -->
+    <div class="prog-box" aria-hidden="true"><span class="prog-track"><i class="prog-bar" id="prog-borde"></i></span></div>
     <!-- One status bar: each effect owns a compartment (value + label + its own countdown bar,
          soft-filled in its colour when active). No duplicate strip; nothing tints the board. -->
     <div class="flx-box" id="flx-box" aria-label="Estado">
@@ -1842,6 +1848,7 @@ function renderStatus(){
   if(started && !finished){ const into=(((elapsed-beamBaseTime-HOT_GRACE)%PERIOD)+PERIOD)%PERIOD; setFx('fb-borde', true, into<HOT_DWELL?(Math.max(1,Math.ceil(HOT_DWELL-into))+'s'):'—'); }
   else setFx('fb-borde', false, '—');
   const lc=document.getElementById('flx-left'); if(lc) lc.textContent=boardNum+'/'+RUN_BOARDS;
+  const pb=document.getElementById('prog-borde'); if(pb) pb.style.transform='scaleX('+(Math.max(0,Math.min(1,boardNum/RUN_BOARDS)))+')';   // board N of 5 → N/5
 }
 
 /* ============================ INTERACTION ============================ */

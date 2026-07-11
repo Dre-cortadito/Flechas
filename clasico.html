@@ -103,7 +103,7 @@
   /* Charge action bar BELOW the board — the family-standard power button (exact Cascada
      freeze-btn dimensions). Clásico's verb: 👁 Enfoque — highlights every arrow whose lane
      is clear for 3 s. Auto-charges (~20 s), one charge, green like the game. */
-  .freeze { width:min(94vw,400px); margin:14px auto 0; }
+  .freeze { width:min(94vw,400px); margin:12px auto 0; }
   .freeze-btn { width:100%; height:60px; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:0 12px; border-radius:14px; cursor:pointer; color:var(--accent); background:rgba(11,97,48,.06); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }   /* FIXED height — the eye can grow without changing the bar */
   .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--accent-soft); transform-origin:left; transform:scaleX(0); z-index:0; }
   .freeze-btn.active .fill { background:#e6d1e2; }   /* while it drains over the 5s window → light pink */
@@ -141,7 +141,11 @@
   .train-badge.show { opacity:1; }
 
   /* ===== Status box under the board ===== */
-  .statusbox { width:min(94vw,400px); margin:14px auto 0; display:grid; grid-template-columns:repeat(3,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
+  /* Shared thin progress bar (Borde/Cascada/Clásico standard): board completion, green */
+  .prog-box { width:min(94vw,400px); margin:10px auto 0; padding:5px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; }
+  .prog-box .prog-track { height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
+  .prog-box .prog-bar { display:block; height:100%; width:100%; background:var(--accent); border-radius:5px; transform-origin:left; transform:scaleX(0); transition:transform .35s ease; }
+  .statusbox { width:min(94vw,400px); margin:12px auto 0; display:grid; grid-template-columns:repeat(3,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
   .stile { position:relative; padding:8px 6px 9px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
   .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }
   .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
@@ -149,7 +153,7 @@
   .stile.reto .sval { color:var(--accent); }
   .stile.choques.dirty .sval { color:var(--error); }
 
-  .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; background:var(--board-bg); border-radius:18px; text-align:center; padding:26px; }
+  .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:11px; background:var(--board-bg); border-radius:18px; text-align:center; padding:20px; }
   .gate.hidden { display:none; }
   .gate h2 { font:800 28px var(--font-display); margin:0; }
   .gate p b { color:var(--accent); }
@@ -270,6 +274,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Shared thin progress bar: board completion (fills as arrows are cleared). -->
+    <div class="prog-box" aria-hidden="true"><span class="prog-track"><i class="prog-bar" id="prog-clasico"></i></span></div>
 
     <div class="statusbox" id="statusbox">
       <div class="stile choques" id="t-choques"><div class="sval" id="fx-choques">0</div><div class="slbl">Choques</div></div>
@@ -762,6 +769,7 @@
   function renderCounts(){ const b=$('left-n'); if(b) b.textContent=remaining;
     const c=$('fx-choques'); if(c) c.textContent=choques; const t=$('t-choques'); if(t) t.classList.toggle('dirty', choques>0);
     const cleared=Math.max(0, totalArrows-remaining), denom=cleared+choques;
+    const pb=$('prog-clasico'); if(pb) pb.style.transform='scaleX('+(totalArrows>0?(cleared/totalArrows):0)+')';   // completion: fills as arrows clear
     const p=$('fx-prec'); if(p) p.textContent=(denom>0?Math.round(cleared/denom*100):100)+'%';
     const r=$('fx-ritmo'); if(r) r.textContent=(cleared>0 && started)?(totalMs/1000/cleared).toFixed(1)+' s':'—'; }
   function showToast(t){ const el=$('toast'); if(!el) return; el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>{ try{el.classList.remove('show');}catch(e){} },1300); }
