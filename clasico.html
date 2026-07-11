@@ -77,8 +77,6 @@
   .rank-dot.passed { background:var(--ink); }
   .rank-dot.current { width:24px; height:24px; background:var(--accent); color:#fff; font:700 11px var(--font-ui); display:flex; align-items:center; justify-content:center; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .35s ease; }
   .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; transition:transform .2s, color .15s; }
-  .rank-meta { width:min(94vw,400px); margin:-4px auto 12px; text-align:center; font:700 10.5px var(--font-ui); letter-spacing:.9px; text-transform:uppercase; color:var(--ink-soft); }
-  .rank-meta b { color:var(--accent); font-variant-numeric:tabular-nums; }
 
   .meta { width:min(94vw,400px); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:0 auto 14px; }   /* Racimo-style breathing (2026-07-08) */
   .side { line-height:1.05; }
@@ -251,7 +249,6 @@
       <div class="rank-track" id="rank-track"><div class="rank-track-line"></div></div>
       <span class="rank-chev">▾</span>
     </div>
-    <div class="rank-meta"><span>Meta de hoy</span> · <b id="fx-reto">—</b></div>
     <div class="meta">
       <div class="side is-left"><div class="lives-row" id="lives-row" aria-label="Vidas"></div></div>
       <div class="timer" id="timer">0:00</div>
@@ -815,7 +812,7 @@
     for(const s of board.snakes){ const cp={id:s.id, dir:s.dir, cells:s.cells.map(c=>({r:c.r,c:c.c}))}; snakes[s.id]=cp; for(const cl of cp.cells) occ[cl.r*W+cl.c]=cp.id; }
     remaining=board.snakes.length; totalArrows=board.snakes.length;
     renderBoard(); renderLives(); renderCounts(); renderRank();
-    $('timer').textContent='0:00'; $('fx-reto').textContent='≤ '+fmtSec(retoTarget());
+    $('timer').textContent='0:00';
     const _tb=$('train-badge'); clearTimeout(_tb._t); _tb.classList.toggle('show', training);
     if(training) _tb._t=setTimeout(()=>{ try{ _tb.classList.remove('show'); }catch(e){} }, 2200);   // v9.6: brief tag while the board settles — hidden during play
     $('gate').classList.add('hidden');
@@ -891,7 +888,6 @@
   // ================= boot =================
   applyTheme((lsGet('clasico-theme')==='black')?'black':'light');
   bestSecs=+(lsGet('clasico-best-'+ISO)||0); lives=HEARTS_MAX; renderLives(); renderRank();
-  $('fx-reto').textContent=fmtSec(retoTarget());
   if(lsGet('clasico-done-'+ISO)){ const bs=+(lsGet('clasico-best-'+ISO)||0); const gg=$('gate');
     if(gg) gg.innerHTML='<h2>Clásico</h2><p>Ya completaste el reto de hoy'+(bs>0?' en <b>'+fmt(bs*1000)+'</b>':'')+'. Puedes <b>entrenar</b> con tableros nuevos.</p><button class="btn" id="start-btn2" type="button">Entrenar</button>';
     const b2=$('start-btn2'); if(b2) b2.addEventListener('click', ()=>startGame(true)); }
