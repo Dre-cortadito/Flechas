@@ -103,16 +103,20 @@
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }   /* fills the definite inner box; clips launches at the edge */
   .lyr { will-change:transform; }
   .piece { cursor:pointer; }
-  .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .18s; }
+  /* Arrow colour flows through --ac so the shaft (stroke) and the solid triangular head (fill) share one colour. */
+  @property --ac { syntax:'<color>'; inherits:true; initial-value:#1c1c1c; }
+  .piece { --ac:var(--arrow); }
+  .piece .pline { fill:none; stroke:var(--ac); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .18s; }
+  .piece .phead { fill:var(--ac); stroke:var(--ac); stroke-width:2.5; stroke-linejoin:round; stroke-linecap:round; transition:fill .18s, stroke .18s; }   /* solid filled triangular chevron */
   .piece .phit { fill:none; stroke:transparent; stroke-width:62; stroke-linecap:round; stroke-linejoin:round; }
-  .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error) !important; }   /* a mistake (bump) → red */
-  .piece.firing .pline, .piece.firing .phead { stroke:#157145 !important; }   /* successful launch → green as it leaves */
-  .piece.blocked-safe .pline, .piece.blocked-safe .phead { stroke:#a600ae !important; }   /* bump ABSORBED by the shield → cyan, no heart lost */
+  .piece.blocked { --ac:var(--error) !important; }   /* a mistake (bump) → red */
+  .piece.firing { --ac:#157145 !important; }   /* successful launch → green as it leaves */
+  .piece.blocked-safe { --ac:#a600ae !important; }   /* bump ABSORBED by the shield → cyan, no heart lost */
   /* combo live → arrows STAY black (the board ring is the racha indicator); specials keep their role colour */
   /* ===== Special arrows — solid role colour, a touch thicker (Borde style) ===== */
-  .piece.sp-shield .pline, .piece.sp-shield .phead { stroke:#a600ae; }   /* deep cyan — Escudo. Same geometry as normal arrows, ONLY the color changes (family rule) */
-  .piece.sp-frenzy .pline, .piece.sp-frenzy .phead { stroke:#F2711C; }   /* orange — Frenesí */
-  .piece.sp-freeze .pline, .piece.sp-freeze .phead { stroke:#0062E3; }   /* blue — Congelar */
+  .piece.sp-shield { --ac:#a600ae; }   /* deep cyan — Escudo. Same geometry as normal arrows, ONLY the color changes (family rule) */
+  .piece.sp-frenzy { --ac:#F2711C; }   /* orange — Frenesí */
+  .piece.sp-freeze { --ac:#0062E3; }   /* blue — Congelar */
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
   /* Persistent effects (combo / frenesí / shield) live ONLY in the status-bar
      compartments below — the board stays pale blue with its normal border. */
@@ -189,6 +193,7 @@
   .legend-cell { width:54px; height:40px; flex:none; border-radius:8px; background:var(--board-bg); display:flex; align-items:center; justify-content:center; }
   .legend-cell svg { width:90%; height:90%; }
   .legend-cell svg path { fill:none; stroke:var(--arrow); stroke-width:8.5; stroke-linecap:round; stroke-linejoin:round; }
+  .legend-cell svg .lh { fill:var(--arrow); stroke-width:2.5; stroke-linejoin:round; }   /* solid filled triangular chevron head (rules legend) */
   .legend-row .txt { font-size:14px; line-height:1.45; color:var(--ink); }
   .modal h2 { font:800 24px var(--font-display); margin:0 0 12px; }
   .modal p { font-size:14px; line-height:1.6; color:var(--ink); margin:0 0 10px; }
@@ -332,13 +337,13 @@
     <h2>Cascada</h2>
     <button class="tut-open-btn" style="display:none" onclick="openTutorial()">▶ Ver tutorial animado</button>
     <p>El modo arcade: <b>2 minutos</b> para sumar todos los puntos que puedas.</p>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path style="stroke:var(--arrow)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha para <b>lanzarla por su punta</b>. Solo sale si su <b>carril hasta el borde está libre</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path style="stroke:#157145" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al salir <b style="color:#157145">destella en verde</b> y suma puntos.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> una flecha <b>tapada</b> rebota, <b>corta el combo</b> y cuesta <b style="color:#EA3546">½ corazón</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path class="lh" style="fill:var(--arrow);stroke:var(--arrow)" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt">Toca una flecha para <b>lanzarla por su punta</b>. Solo sale si su <b>carril hasta el borde está libre</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path class="lh" style="fill:#157145;stroke:#157145" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt">Al salir <b style="color:#157145">destella en verde</b> y suma puntos.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path class="lh" style="fill:#EA3546;stroke:#EA3546" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt"><b>Choque:</b> una flecha <b>tapada</b> rebota, <b>corta el combo</b> y cuesta <b style="color:#EA3546">½ corazón</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#F9C80E" stroke-width="5"/><text x="60" y="28" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="20" fill="#C99700">&times;3</text></svg></div><div class="txt"><b style="color:#C99700">Combo.</b> Despeja <b>rápido y seguido</b> (×2, ×3…) — más combo, más puntos. El borde se enciende en <b style="color:#C99700">amarillo</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#a600ae" d="M14 20 L92 20"/><path style="stroke:#a600ae" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#a600ae">Escudo (cian).</b> Despéjala y guardas un escudo: tu <b>próximo choque cuesta 0 corazones</b> y <b>no corta el combo</b>. Se <b>acumulan hasta 3</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#F2711C" d="M14 20 L92 20"/><path style="stroke:#F2711C" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#F2711C">Frenesí (naranja).</b> Despéjala y ganas <b>5 s a doble puntos</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#0062E3" d="M14 20 L92 20"/><path style="stroke:#0062E3" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b style="color:#0062E3">Congelar (azul).</b> El congelador carga <b>lento solo</b>; las flechas azules lo llenan casi todo (~3 = un congelado).</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#a600ae" d="M14 20 L92 20"/><path class="lh" style="fill:#a600ae;stroke:#a600ae" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt"><b style="color:#a600ae">Escudo (cian).</b> Despéjala y guardas un escudo: tu <b>próximo choque cuesta 0 corazones</b> y <b>no corta el combo</b>. Se <b>acumulan hasta 3</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#F2711C" d="M14 20 L92 20"/><path class="lh" style="fill:#F2711C;stroke:#F2711C" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt"><b style="color:#F2711C">Frenesí (naranja).</b> Despéjala y ganas <b>5 s a doble puntos</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#0062E3" d="M14 20 L92 20"/><path class="lh" style="fill:#0062E3;stroke:#0062E3" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt"><b style="color:#0062E3">Congelar (azul).</b> El congelador carga <b>lento solo</b>; las flechas azules lo llenan casi todo (~3 = un congelado).</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="34" y="23" width="52" height="13" rx="3" fill="var(--ink-line)"/><rect x="34" y="5" width="52" height="13" rx="3" fill="var(--accent)"/></svg></div><div class="txt">Cada <b>30 s</b> cae un <b>tablero nuevo</b> que empuja al viejo. Lo que no despejes, <b>se va</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="#EA3546" stroke-width="5"/><text x="60" y="27" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="17" fill="var(--accent)">+25</text></svg></div><div class="txt"><b>Tablero limpio:</b> despeja uno entero → <b style="color:var(--accent)">+25</b>, borde rosa y <b>+½ corazón</b> (o <b>+5 s</b> si vas lleno).</div></div>
     <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#0062E3">❄ Congelar.</b> Se llena solo; <b>para el reloj y el cambio de tablero 5 s</b>.</div></div>
@@ -545,8 +550,14 @@
   function polyLen(pts){ let s=0; for(let i=1;i<pts.length;i++) s+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return s; }
   function polyD(pts){ return pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' '); }
   function distToBorder(tip,v){ if(v[1]>0) return ROWS*U-tip[1]; if(v[1]<0) return tip[1]; if(v[0]>0) return COLS*U-tip[0]; return tip[0]; }
-  function headChevD(tip,v){ const px=-v[1],py=v[0], w=31, bk=31; const tx=tip[0]+v[0]*22, ty=tip[1]+v[1]*22;   /* Borde parity: vertex +22, 45° legs L=31 */
-    return 'M '+(tx-v[0]*bk+px*w).toFixed(1)+' '+(ty-v[1]*bk+py*w).toFixed(1)+' L '+tx.toFixed(1)+' '+ty.toFixed(1)+' L '+(tx-v[0]*bk-px*w).toFixed(1)+' '+(ty-v[1]*bk-py*w).toFixed(1); }
+  function headChevD(tip,v){ const px=-v[1],py=v[0]; const tx=tip[0]+v[0]*22, ty=tip[1]+v[1]*22;   /* shaft-end reference (old chevron vertex) */
+    /* Solid filled triangular chevron (Borde parity): apex ahead of the shaft tip so the
+       round cap is swallowed → crisp point; wide straight back edge; closed with Z → filled. */
+    const FRONT=12, BACK=22, HW=21;
+    const ax=tx+v[0]*FRONT, ay=ty+v[1]*FRONT;
+    const l1x=tx-v[0]*BACK+px*HW, l1y=ty-v[1]*BACK+py*HW;
+    const l2x=tx-v[0]*BACK-px*HW, l2y=ty-v[1]*BACK-py*HW;
+    return 'M '+l1x.toFixed(1)+' '+l1y.toFixed(1)+' L '+ax.toFixed(1)+' '+ay.toFixed(1)+' L '+l2x.toFixed(1)+' '+l2y.toFixed(1)+' Z'; }
   function trackData(p){ const v=[DXn[p.dir],DYn[p.dir]]; let pts;
     if(p.cells.length===1){ const [x,y]=center(p.head.r,p.head.c); pts=[[x-v[0]*32,y-v[1]*32],[x,y]]; }
     else { const isHead0=(p.head.r===p.cells[0].r && p.head.c===p.cells[0].c); const order=isHead0?p.cells.slice().reverse():p.cells; pts=order.map(cl=>center(cl.r,cl.c)); }

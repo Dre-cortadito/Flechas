@@ -111,18 +111,19 @@
   .freeze-btn .ficon svg { width:52px; height:52px; display:block; }
   .freeze-btn:not(.ready){ cursor:default; }
   .freeze-btn:active { transform:scale(.98); }
-  .piece.enfoque .pline, .piece.enfoque .phead { stroke:#801a6f !important; animation:enfpulse 1s ease infinite; }
+  .piece.enfoque { --ac:#801a6f !important; }
+  .piece.enfoque .pline, .piece.enfoque .phead { animation:enfpulse 1s ease infinite; }
   @keyframes enfpulse { 0%,100%{ opacity:1; } 50%{ opacity:.5; } }
   #board-inner { position:absolute; inset:14px; }
   #bsvg { display:block; width:100%; height:100%; overflow:hidden; }
-  .piece { cursor:pointer; }
-  .piece .pline { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
-  .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }   /* open chevron, stroke 14 — exact Borde/Cascada parity */
+  /* Arrow colour flows through --ac so the shaft (stroke) and the solid triangular head (fill) share one colour. */
+  @property --ac { syntax:'<color>'; inherits:true; initial-value:#0b6130; }
+  .piece { cursor:pointer; --ac:var(--arrow); }
+  .piece .pline { fill:none; stroke:var(--ac); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, opacity .15s; }
+  .piece .phead { fill:var(--ac); stroke:var(--ac); stroke-width:2.5; stroke-linejoin:round; stroke-linecap:round; transition:fill .12s, stroke .12s, opacity .15s; }   /* solid filled triangular chevron */
   .piece .phit { fill:none; stroke:transparent; stroke-width:96; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
-  .piece.blocked .pline { stroke:var(--error) !important; }
-  .piece.blocked .phead { stroke:var(--error) !important; }
-  .piece.firing .pline { stroke:var(--clear) !important; }
-  .piece.firing .phead { stroke:var(--clear) !important; }
+  .piece.blocked { --ac:var(--error) !important; }
+  .piece.firing { --ac:var(--clear) !important; }
   .piece.gone .pline, .piece.gone .phead { opacity:0; }
   .board.clearflash { animation:boardclear .9s ease; }
   @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:var(--accent-soft);} 100%{ background:var(--board-bg);} }
@@ -170,6 +171,7 @@
   .legend-cell { width:54px; height:40px; flex:none; border-radius:8px; background:var(--board-bg); display:flex; align-items:center; justify-content:center; }
   .legend-cell svg { width:90%; height:90%; }
   .legend-cell svg path { fill:none; stroke:var(--arrow); stroke-width:8.5; stroke-linecap:round; stroke-linejoin:round; }
+  .legend-cell svg .lh { fill:var(--arrow); stroke-width:2.5; stroke-linejoin:round; }   /* solid filled triangular chevron head (rules legend) */
   .legend-row .txt { font-size:14px; line-height:1.45; color:var(--ink); }
   .rank-row { display:flex; justify-content:space-between; align-items:center; padding:7px 11px; border-radius:8px; font-size:14px; }
   .rank-row .rname { font-weight:600; }
@@ -287,9 +289,9 @@
     <h2>Clásico</h2>
     <button class="tut-open-btn" style="display:none" onclick="openTutorial()">▶ Ver tutorial animado</button>
     <p>El modo puro: un solo tablero enredado. <b>Desenrédalo entero</b>, rápido y limpio.</p>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path style="stroke:var(--arrow)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta). El tablero es un lienzo grande: <b>pellizca</b> para acercar y <b>arrastra</b> para moverte.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--clear)" d="M14 20 L92 20"/><path style="stroke:var(--clear)" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt">Al despejarla <b style="color:var(--clear)">destella en verde</b> y desaparece — deja hueco para otras.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div><div class="txt"><b>Choque:</b> tocar una flecha <b>tapada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">½ corazón</b>. 3 corazones = 6 choques.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path class="lh" style="fill:var(--arrow);stroke:var(--arrow)" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt">Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta). El tablero es un lienzo grande: <b>pellizca</b> para acercar y <b>arrastra</b> para moverte.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--clear)" d="M14 20 L92 20"/><path class="lh" style="fill:var(--clear);stroke:var(--clear)" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt">Al despejarla <b style="color:var(--clear)">destella en verde</b> y desaparece — deja hueco para otras.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path class="lh" style="fill:#EA3546;stroke:#EA3546" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt"><b>Choque:</b> tocar una flecha <b>tapada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">½ corazón</b>. 3 corazones = 6 choques.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40" aria-hidden="true"><defs><mask id="enf-eye-lg"><rect width="120" height="40" fill="#fff"/><circle cx="56.5" cy="17.5" r="3.4" fill="#000"/></mask></defs><path d="M60 6.5c-8.8 0-15.5 6.3-18.4 12.8C44.5 25.8 51.2 32 60 32s15.5-6.2 18.4-12.7C75.5 12.8 68.8 6.5 60 6.5Z" fill="none" stroke="var(--accent)" stroke-width="4.2"/><circle cx="60" cy="20.3" r="8.8" fill="var(--accent)" mask="url(#enf-eye-lg)"/></svg></div><div class="txt"><b>👁 Enfoque:</b> el botón bajo el tablero se <b>llena solo</b> (~20 s). Úsalo para resaltar <b>3 s</b> las flechas que <b>ya pueden salir</b>. Una carga — el reloj no se detiene.</div></div>
     <div class="legend-row"><div class="legend-cell" style="font-size:22px;">🏁</div><div class="txt"><b>Meta:</b> vacía el tablero entero. Tu <b>rango es el tiempo</b> — el reloj arranca en cuanto el tablero <b>se asienta</b>, justo tras <b>Empezar</b>. <b>Más rápido, mejor rango.</b></div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Despejar solo <b>quita</b> flechas, nunca traba el tablero. Tu <b>primer intento</b> cuenta como el reto de hoy; después puedes <b>entrenar</b> con tableros nuevos.</p>
@@ -530,11 +532,13 @@
   function polyD(pts){ return pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' '); }
   // chevron head at the head cell, pointing in dir d
   function headChevD(head, d){ const v=[DC[d],DR[d]]; const [x,y]=center(head.r,head.c);
-    const tx=x+v[0]*22, ty=y+v[1]*22;                 // vertex ON the line end — body runs into the V
-    const Ld=31, Lw=31, px=-v[1], py=v[0];            // balanced 45° chevron, L=31 — matches the logo + Cascada/Borde parity
-    return 'M '+(tx+(-v[0]*Ld+px*Lw)).toFixed(1)+' '+(ty+(-v[1]*Ld+py*Lw)).toFixed(1)
-         +' L '+tx.toFixed(1)+' '+ty.toFixed(1)
-         +' L '+(tx+(-v[0]*Ld-px*Lw)).toFixed(1)+' '+(ty+(-v[1]*Ld-py*Lw)).toFixed(1); }
+    const tx=x+v[0]*22, ty=y+v[1]*22;                 // shaft-end reference (old chevron vertex)
+    // Solid filled triangular chevron (Borde parity): apex ahead of the shaft tip so the
+    // round cap is swallowed → crisp point; wide straight back edge; closed with Z → filled.
+    const FRONT=12, BACK=22, HW=21, px=-v[1], py=v[0];
+    return 'M '+(tx-v[0]*BACK+px*HW).toFixed(1)+' '+(ty-v[1]*BACK+py*HW).toFixed(1)
+         +' L '+(tx+v[0]*FRONT).toFixed(1)+' '+(ty+v[1]*FRONT).toFixed(1)
+         +' L '+(tx-v[0]*BACK-px*HW).toFixed(1)+' '+(ty-v[1]*BACK-py*HW).toFixed(1)+' Z'; }
   // body path: from TAIL to HEAD through cell centres, then a short stub toward the head chevron so line + head meet
   function polyLen(pts){ let n=0; for(let i=1;i<pts.length;i++) n+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return n; }
   function distToBorder(pt,v){ if(v[1]>0) return H*U-pt[1]; if(v[1]<0) return pt[1]; if(v[0]>0) return W*U-pt[0]; return pt[0]; }

@@ -250,11 +250,14 @@
   .panel { position:absolute; inset:0; }
   .panel.hidden, .dpad.hidden { display:none; }
   #panel svg { display:block; width:100%; height:100%; }
-  .piece { cursor:pointer; }
-  .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:13; stroke-linecap:round; stroke-linejoin:round; transition:stroke .15s; }
+  /* Arrow colour flows through --ac so the shaft (stroke) and the solid triangular head (fill) share one colour. */
+  @property --ac { syntax:'<color>'; inherits:true; initial-value:#1c1c1c; }
+  .piece { cursor:pointer; --ac:var(--arrow); }
+  .piece .pline { fill:none; stroke:var(--ac); stroke-width:13; stroke-linecap:round; stroke-linejoin:round; transition:stroke .15s; }
+  .piece .phead { fill:var(--ac); stroke:var(--ac); stroke-width:2.5; stroke-linejoin:round; stroke-linecap:round; transition:fill .15s, stroke .15s; }   /* solid filled triangular chevron */
   .piece .phit { fill:none; stroke:transparent; stroke-width:60; stroke-linecap:round; stroke-linejoin:round; }
-  .piece.firing .pline, .piece.firing .phead { stroke:#157145; }
-  .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }
+  .piece.firing { --ac:#157145; }
+  .piece.blocked { --ac:var(--error); }
   /* ===== Gate / start + result ===== */
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:color-mix(in srgb, var(--board-bg) 72%, transparent); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); border-radius:12px; text-align:center; padding:24px; }
   .gate.hidden { display:none; }
@@ -881,8 +884,11 @@
   function bPolyLen(pts){ let s=0; for(let i=1;i<pts.length;i++) s+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); return s; }
   function bPolyD(pts){ return pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' '); }
   function bDistBorder(tip,v){ if(v[1]>0) return BROWS*BU-tip[1]; if(v[1]<0) return tip[1]; if(v[0]>0) return BCOLS*BU-tip[0]; return tip[0]; }
-  function bHeadChev(tip,v){ const px=-v[1],py=v[0], w=21,bk=23; const tx=tip[0]+v[0]*20,ty=tip[1]+v[1]*20;
-    return 'M '+(tx-v[0]*bk+px*w).toFixed(1)+' '+(ty-v[1]*bk+py*w).toFixed(1)+' L '+tx.toFixed(1)+' '+ty.toFixed(1)+' L '+(tx-v[0]*bk-px*w).toFixed(1)+' '+(ty-v[1]*bk-py*w).toFixed(1); }
+  function bHeadChev(tip,v){ const px=-v[1],py=v[0]; const tx=tip[0]+v[0]*20,ty=tip[1]+v[1]*20;   /* shaft-end reference (old chevron vertex) */
+    /* Solid filled triangular chevron (Borde parity, scaled for the smaller maze arrows):
+       apex ahead of the shaft tip → crisp point; wide straight back edge; closed with Z → filled. */
+    const FRONT=10, BACK=20, HW=19;
+    return 'M '+(tx-v[0]*BACK+px*HW).toFixed(1)+' '+(ty-v[1]*BACK+py*HW).toFixed(1)+' L '+(tx+v[0]*FRONT).toFixed(1)+' '+(ty+v[1]*FRONT).toFixed(1)+' L '+(tx-v[0]*BACK-px*HW).toFixed(1)+' '+(ty-v[1]*BACK-py*HW).toFixed(1)+' Z'; }
   function bTrack(p){ const v=[Dx[p.dir],Dy[p.dir]]; let pts;
     if(p.cells.length===1){ const [x,y]=bcenter(p.head.r,p.head.c); pts=[[x-v[0]*32,y-v[1]*32],[x,y]]; }
     else { const isHead0=(p.head.r===p.cells[0].r&&p.head.c===p.cells[0].c); const order=isHead0?p.cells.slice().reverse():p.cells; pts=order.map(cl=>bcenter(cl.r,cl.c)); }

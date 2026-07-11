@@ -304,6 +304,7 @@
     display:flex; align-items:center; justify-content:center; }
   .legend-cell svg { width:90%; height:90%; }
   .legend-cell svg path { fill:none; stroke:var(--arrow); stroke-width:8.5; stroke-linecap:round; stroke-linejoin:round; }
+  .legend-cell svg .lh { fill:var(--arrow); stroke-width:2.5; stroke-linejoin:round; }   /* solid filled triangular chevron head (rules legend) */
   .legend-row .txt { font-size:14px; color:var(--ink); }
   /* Rangos list */
   .rank-row { display:flex; justify-content:space-between; padding:8px 10px; border-bottom:1px solid var(--ink-line); font-size:14px; }
@@ -539,19 +540,19 @@
       <p class="muted">La flecha sale <b>como un tren</b>: la punta primero, y el cuerpo la sigue por su propio camino. Solo importa lo que esté <b>delante de la punta</b> — si otra flecha está en ese carril, <b>choca</b> y rebota, y la flecha que estorba <b>parpadea en rojo</b>. Despeja el tablero lanzándolas en el orden correcto.</p>
       <h3>Las flechas</h3>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path d="M10 20 L95 20"/><path d="M80 8 L98 20 L80 32"/></svg></div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path d="M10 20 L95 20"/><path class="lh" d="M80 8 L98 20 L80 32 Z"/></svg></div>
         <div class="txt">Una flecha <b>lista</b> — su carril a la orilla está libre. <b>Tócala para lanzarla.</b></div>
       </div>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path d="M14 32 L14 14 L70 14"/><path d="M58 4 L78 14 L58 24"/></svg></div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path d="M14 32 L14 14 L70 14"/><path class="lh" d="M58 4 L78 14 L58 24 Z"/></svg></div>
         <div class="txt">Tienen <b>distintas formas</b> (recta, en L, zigzag) y salen por su <b>punta</b>.</div>
       </div>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path style="stroke:#157145" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#157145" d="M14 20 L92 20"/><path class="lh" style="fill:#157145;stroke:#157145" d="M78 8 L100 20 L78 32 Z"/></svg></div>
         <div class="txt">Al salir, la flecha <b style="color:#157145">destella en verde</b> y abandona el tablero.</div>
       </div>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path style="stroke:#EA3546" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path class="lh" style="fill:#EA3546;stroke:#EA3546" d="M78 8 L100 20 L78 32 Z"/></svg></div>
         <div class="txt"><b>Choque:</b> si el carril está bloqueado, <b>rebota</b> y ambas <b style="color:#EA3546">parpadean en rojo</b> — cuesta <b>½ corazón</b>.</div>
       </div>
       <h3>Corazones = tus vidas</h3>
@@ -559,15 +560,15 @@
       <h3>Flechas especiales</h3>
       <p class="muted">Cada tablero trae unas pocas, <b>repartidas por todo el tablero</b>. Tú decides <b>cuándo</b> despejarlas.</p>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#F9C80E" d="M14 20 L92 20"/><path style="stroke:#F9C80E" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#F9C80E" d="M14 20 L92 20"/><path class="lh" style="fill:#F9C80E;stroke:#F9C80E" d="M78 8 L100 20 L78 32 Z"/></svg></div>
         <div class="txt"><b style="color:#C99700">Amarilla · Racha.</b> Empieza una racha de <b>6 lanzamientos limpios → +½ corazón</b>. Se apila. Un choque la rompe y cuesta <b>½ extra</b>.</div>
       </div>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#E76210" d="M14 20 L92 20"/><path style="stroke:#E76210" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#E76210" d="M14 20 L92 20"/><path class="lh" style="fill:#E76210;stroke:#E76210" d="M78 8 L100 20 L78 32 Z"/></svg></div>
         <div class="txt"><b style="color:#E76210">Naranja · Giro.</b> Al despejarla, el borde <b>salta al siguiente lado AHORA</b>. Un arma si la usas a tiempo — una trampa si no. Con un <b style="color:#9D4EDD">Candado</b> activo, el candado <b>absorbe el giro</b> (el borde no se mueve); solo <b>Desviar</b> rompe el candado.</div>
       </div>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#9D4EDD" d="M14 20 L92 20"/><path style="stroke:#9D4EDD" d="M78 8 L100 20 L78 32"/></svg></div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#9D4EDD" d="M14 20 L92 20"/><path class="lh" style="fill:#9D4EDD;stroke:#9D4EDD" d="M78 8 L100 20 L78 32 Z"/></svg></div>
         <div class="txt"><b style="color:#9D4EDD">Violeta · Candado.</b> Al despejarla, el borde queda <b>fijado 6 s</b> (se apila) — una ventana segura para cosechar los lados abiertos.</div>
       </div>
       <div class="legend-row">
@@ -576,7 +577,7 @@
       </div>
       <h3>El borde</h3>
       <div class="legend-row">
-        <div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="98" y="4" width="11" height="32" rx="4" fill="#662E9B"/><path style="stroke:var(--arrow)" d="M14 20 L72 20"/><path style="stroke:var(--arrow)" d="M58 9 L78 20 L58 31"/></svg></div>
+        <div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="98" y="4" width="11" height="32" rx="4" fill="#662E9B"/><path style="stroke:var(--arrow)" d="M14 20 L72 20"/><path class="lh" style="fill:var(--arrow);stroke:var(--arrow)" d="M58 9 L78 20 L58 31 Z"/></svg></div>
         <div class="txt">Una <b style="color:#662E9B">barra morada</b> recorre la <b>orilla del tablero</b> saltando de lado. <b>Se acelera con cada tablero</b> (6 s → 4 s) y en los tableros <b>4 y 5 ocupa DOS lados contiguos</b>. Una flecha hacia donde está <b>rebota</b> (sin penalización) — espera, fíjala con un <b style="color:#9D4EDD">Candado</b> o <b>desvíala</b>.</div>
       </div>
       <h3>Rango y puntuación</h3>
