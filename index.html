@@ -136,28 +136,35 @@
   .board-panel { background:var(--board-bg); border-radius:18px; padding:14px; width:min(94vw,400px); overflow:hidden; transition:background .15s linear, box-shadow .18s ease, filter .25s ease; }
   #asvg { display:block; width:100%; height:auto; overflow:visible; }
   .piece { cursor:pointer; }
-  .piece .pline, .piece .phead { fill:none; stroke:var(--arrow); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .15s; pointer-events:none; }
+  /* Arrow colour flows through --ac so the shaft (stroke) and the solid triangular
+     head (fill) always share one colour; registered so it can animate/transition. */
+  @property --ac { syntax:'<color>'; inherits:true; initial-value:#1c1c1c; }
+  .piece { --ac:var(--arrow); }
+  .piece .pline { fill:none; stroke:var(--ac); stroke-width:14; stroke-linecap:round; stroke-linejoin:round; transition:stroke .15s; pointer-events:none; }
+  /* Solid filled triangular chevron head — thin same-colour stroke w/ round joins softens the corners */
+  .piece .phead { fill:var(--ac); stroke:var(--ac); stroke-width:4; stroke-linejoin:round; stroke-linecap:round; transition:fill .15s, stroke .15s; pointer-events:none; }
   .piece .phit { fill:none; stroke:#000; stroke-opacity:0; stroke-width:80; stroke-linecap:round; stroke-linejoin:round; pointer-events:stroke; }
   /* exit animation driven by WAAPI (linear, synced tip+body); board-edge clip
      makes pieces vanish physically as they cross out. */
-  .piece.blocked .pline, .piece.blocked .phead { stroke:var(--error); }                       /* bump (blocked by another arrow) → red */
-  .piece.beam-blocked .pline, .piece.beam-blocked .phead { stroke:#662E9B !important; }       /* blocked by the beam → purple (matches the beam); wins over amber/red role colors */
+  .piece.blocked { --ac:var(--error); }                       /* bump (blocked by another arrow) → red */
+  .piece.beam-blocked { --ac:#662E9B !important; }            /* blocked by the beam → purple (matches the beam); wins over amber/red role colors */
   .piece.beam-blocked .pline { filter:none !important; }
-  .piece.firing .pline, .piece.firing .phead { stroke:#157145 !important; }                               /* successful launch → green as it leaves; wins over role colors */
+  .piece.firing { --ac:#157145 !important; }                  /* successful launch → green as it leaves; wins over role colors */
   .piece.firing .pline { filter:none !important; }
   .piece.freedpulse .pline, .piece.freedpulse .phead { animation:freedpulse .7s ease; }
-  @keyframes freedpulse { 0%,100%{ stroke:var(--arrow); } 45%{ stroke:var(--accent); } }
+  @keyframes freedpulse { 0%,100%{ --ac:var(--arrow); } 45%{ --ac:var(--accent); } }
   .bean { opacity:.95; pointer-events:none; stroke:#fff; stroke-width:1; }
-  .piece.blocker .pline, .piece.blocker .phead { stroke:var(--error); }   /* the arrow that blocks you just turns red and back — no blink, same as the one hitting it */
+  .piece.blocker { --ac:var(--error); }   /* the arrow that blocks you just turns red and back — no blink, same as the one hitting it */
   .blockline { fill:none; stroke:var(--error); stroke-width:5; stroke-linecap:round;
     stroke-dasharray:14 11; opacity:.85; pointer-events:none; animation:blocklinefade .75s ease forwards; }
   @keyframes blocklinefade { 0%{opacity:.85;} 70%{opacity:.85;} 100%{opacity:0;} }
-  .piece.hintpulse .pline, .piece.hintpulse .phead { stroke:var(--accent); animation:hintstroke 1s ease-in-out infinite; }
+  .piece.hintpulse { --ac:var(--accent); }
+  .piece.hintpulse .pline { animation:hintstroke 1s ease-in-out infinite; }
   /* ===== Special colored arrows — a touch thicker, SOLID colour (no glow). ===== */
-  .piece.role-freeze .pline, .piece.role-freeze .phead { stroke:#0062E3; }   /* blue — freeze. Same geometry as normal arrows, ONLY the color changes (family rule) */
-  .piece.role-racha .pline, .piece.role-racha .phead { stroke:#F9C80E; }   /* yellow — start a clean streak */
-  .piece.role-giro .pline, .piece.role-giro .phead { stroke:#E76210; }      /* BURNT ORANGE — Giro: the border JUMPS when you clear it (red stays reserved for mistakes) */
-  .piece.role-candado .pline, .piece.role-candado .phead { stroke:#9D4EDD; }  /* orchid violet — distinct from the deep border purple so a Candado arrow ≠ the beam */
+  .piece.role-freeze { --ac:#0062E3; }   /* blue — freeze. Same geometry as normal arrows, ONLY the color changes (family rule) */
+  .piece.role-racha { --ac:#F9C80E; }   /* yellow — start a clean streak */
+  .piece.role-giro { --ac:#E76210; }      /* BURNT ORANGE — Giro: the border JUMPS when you clear it (red stays reserved for mistakes) */
+  .piece.role-candado { --ac:#9D4EDD; }  /* orchid violet — distinct from the deep border purple so a Candado arrow ≠ the beam */
   /* Peligro danger window — a RED wash (red = danger). It's the only red on the board:
      the hot beam is now indigo, so the two never read as the same thing. */
   /* Board-state tints live in the BACKGROUND so they never collide with the purple beam on the edges.
@@ -1773,10 +1780,13 @@ function polyD(pts){ return 'M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).
 function polyLen(pts){ let L=0; for(let i=1;i<pts.length;i++) L+=Math.abs(pts[i][0]-pts[i-1][0])+Math.abs(pts[i][1]-pts[i-1][1]); return L; }
 function distToBorder(x,y,vx,vy){ if(vx>0) return GRID_C*U-x; if(vx<0) return x; if(vy>0) return GRID_R*U-y; return y; }
 function headD(tip,v){
-  const back=[-v[0],-v[1]], perp=[-v[1],v[0]], L=31;   // larger heads so direction reads at a glance
-  const a=[tip[0]+(back[0]+perp[0])*L, tip[1]+(back[1]+perp[1])*L];
-  const b=[tip[0]+(back[0]-perp[0])*L, tip[1]+(back[1]-perp[1])*L];
-  return 'M'+a[0].toFixed(1)+' '+a[1].toFixed(1)+' L'+tip[0].toFixed(1)+' '+tip[1].toFixed(1)+' L'+b[0].toFixed(1)+' '+b[1].toFixed(1);
+  // Solid filled triangular chevron: wide straight back edge (base a→b), sharp centered
+  // point (tip). Closed with Z so .phead renders as a filled triangle (see CSS).
+  const back=[-v[0],-v[1]], perp=[-v[1],v[0]];
+  const DEP=30, HW=24;   // depth (point → back edge) and half-width of the base
+  const a=[tip[0]+back[0]*DEP+perp[0]*HW, tip[1]+back[1]*DEP+perp[1]*HW];
+  const b=[tip[0]+back[0]*DEP-perp[0]*HW, tip[1]+back[1]*DEP-perp[1]*HW];
+  return 'M'+a[0].toFixed(1)+' '+a[1].toFixed(1)+' L'+tip[0].toFixed(1)+' '+tip[1].toFixed(1)+' L'+b[0].toFixed(1)+' '+b[1].toFixed(1)+' Z';
 }
 function pieceSVG(p){
   const d=drawData(p);
