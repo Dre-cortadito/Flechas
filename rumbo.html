@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <!--
   Flechas · Rumbo — a Cortadito News daily game.
-  TOP: a daily maze you DRIVE with a d-pad. You can only move while the movement clock has time.
-  BOTTOM: a tiny arrow board (Cascada's rule). Clearing it banks +5s of movement time. The clock
-  drains continuously, so the skill is SOLVE FAST to keep running. Reach the exit; lowest total
-  time = highest rank. Ceiling model: you start at Maestro/a and drop as the clock climbs.
-  Single self-contained file. Maze + board stream are deterministic from the date (Reto del día).
+  A daily stealth-maze you DRIVE with a d-pad. Activate every Nodo to power the exit, then
+  reach it — while real-time guards, cameras and spotlights patrol. Getting spotted costs
+  ½ heart + a time penalty and sends you back to base. SIGILO cloaks you; HACK charges up to
+  disable a threat. Total run time counts (no clock to manage); lowest time = highest rank.
+  Single self-contained file. Maze + threat layout are deterministic from the date (Reto del día).
 -->
 <html lang="es">
 <head>
@@ -78,7 +78,7 @@
   .rank-marker.done { background:var(--success); }
   .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; }
 
-  /* ===== Meta row: elapsed · movement clock · boards ===== */
+  /* ===== Meta row: vidas · tiempo · reto ===== */
   .meta { width:var(--gw); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:0 auto 4px; }
   .side { line-height:1.05; }
   .side.is-left { justify-self:start; text-align:left; }
@@ -86,8 +86,8 @@
   .side .n { font:800 22px var(--font-display); font-variant-numeric:tabular-nums; color:var(--ink); }
   .side .l { font:700 9px var(--font-ui); letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-soft); }
   .clock { font:800 clamp(30px,8vw,42px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; color:var(--ink); transition:color .15s linear; }
-  .clock.low { color:var(--error); animation:cpulse .5s ease-in-out infinite; }
-  @keyframes cpulse { 50%{ opacity:.45; } }
+  /* finish celebration — canvas confetti burst (self-contained, GPU-drawn) */
+  .confetti-box { position:fixed; inset:0; pointer-events:none; z-index:80; }
   /* bottom = a Borde-style info bar (Nodos · Salida · Visto · Puertas) with the D-pad below it */
   .bottom { width:var(--gw); margin:6px auto 0; display:flex; flex-direction:column; gap:9px; }
   .statusbar { width:100%; box-sizing:border-box; display:grid; grid-template-columns:1fr 1.75fr 1fr; align-items:center; background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
@@ -343,7 +343,7 @@
       <div class="maze" id="maze">
         <div class="gate" id="gate">
           <h2>Rumbo</h2>
-          <p>Llega a la salida lo más rápido posible. En el camino hay <b>atajos</b> cerrados por una puerta: ¿<b>despejas su tablero</b> para cortar camino, o das <b>la vuelta</b>? Depende de lo rápido que resuelvas.</p>
+          <p>Activa todos los <b>nodos</b> para encender la salida y llega a ella lo más rápido posible. Guardias, cámaras y focos vigilan: si te <b>detectan</b>, pierdes tiempo y vuelves al inicio. Usa <b>Sigilo</b> y <b>Hack</b> para escapar.</p>
           <button class="btn" id="start-btn" type="button">Empezar</button>
         </div>
       </div>
@@ -353,7 +353,7 @@
       <div class="bottom" id="ctl-row">
         <div class="statusbar">
           <div class="stile"><div class="sval" id="ss-nodos">0/3</div><div class="slbl">Nodos</div></div>
-          <div class="stile alert"><div class="ss-alert idle" id="ss-alert">Sigilo</div></div>
+          <div class="stile alert"><div class="ss-alert idle" id="ss-alert" role="status" aria-live="polite">Sigilo</div></div>
           <div class="stile ex">
             <div class="ex-normal"><div class="sval" id="ss-exit">Cerrada</div><div class="slbl" id="ss-exit-lbl">Salida</div></div>
             <div class="ex-chase"><div class="pt"><span>Huye</span><b id="pt-flee">10s</b></div><div class="pt"><span>Oculto</span><b id="pt-hide">5s</b></div></div>
@@ -1212,17 +1212,43 @@
     document.body.classList.add('game-active'); sizeAll(); buildBigPad(); placeDot(true); showMove(); drawHUD();
     $('gate').classList.add('hidden');
     if(rafId) cancelAnimationFrame(rafId); started=true; rafId=requestAnimationFrame(loop); }
+  function launchConfetti(n){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    n=n||90;
+    const colors=['#1c1c1c','#0aa39a','#b03434','#e8b84b','#157145','#5e5e5e'];
+    const cv=document.createElement('canvas'); cv.className='confetti-box';
+    const W=window.innerWidth, H=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
+    cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+    document.body.appendChild(cv);
+    const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+    const P=[];
+    for(let i=0;i<n;i++) P.push({ x:Math.random()*W, y:-20-Math.random()*H*0.3,
+      w:5+Math.random()*5, h:8+Math.random()*8, vx:(Math.random()-0.5)*1.6,
+      vy:2.2+Math.random()*3, rot:Math.random()*6.28, vr:(Math.random()-0.5)*0.32,
+      c:colors[(Math.random()*colors.length)|0] });
+    const t0=performance.now(); let raf;
+    (function frame(t){
+      const dt=t-t0; ctx.clearRect(0,0,W,H); let alive=false;
+      const a= dt>2200 ? Math.max(0,1-(dt-2200)/700) : 1;
+      for(const p of P){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.045; p.rot+=p.vr;
+        if(p.y<H+24) alive=true;
+        ctx.save(); ctx.globalAlpha=a; ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+        ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); }
+      if(alive && dt<3200) raf=requestAnimationFrame(frame); else cv.remove();
+    })(t0);
+  }
   function winGame(){ if(won||lost) return; won=true; running=false; lightMeter=0; setAlarm(false,0); endPursuitVisuals(); elapsedMs=runMs; if(rafId) cancelAnimationFrame(rafId);
     const secs=Math.floor(elapsedMs/1000); finalRank=rankFromTime(secs); const hit=secs<=retoSecs;
     recordStats(secs, finalRank, hit);
     const best=bestToday(); const isBest=(best===null||secs<best); if(isBest) lsSet('rumbo-best-'+ISO, String(secs));
     updateRank();
+    setTimeout(()=>launchConfetti(finalRank===TOP?130:hit?95:70), 260);
     const head = finalRank===TOP ? '<h2 class="accent">¡Maestro/a del laberinto!</h2>'
                : hit ? '<h2>¡Buen sorbo!</h2>' : '<h2>¡Llegaste!</h2>';
     const brand='<svg class="brand" viewBox="0 0 120 120" aria-hidden="true"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M34 88 H86" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M78 79 L90 88 L78 97" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const g=$('gate'); g.classList.remove('hidden');
     g.innerHTML=brand+head+'<div class="v">'+fmt(secs)+'</div><div class="vlbl">'+RANK_NAMES[finalRank]+(hit?' · ✅ reto':'')+'</div>'
-      +'<p>'+boards+' tablero'+(boards===1?'':'s')+' despejado'+(boards===1?'':'s')+'.'+(isBest?'<br>¡Tu mejor tiempo de hoy! 🎉':(best!==null?'<br>Mejor de hoy: <b>'+fmt(best)+'</b>':''))+'</p>'
+      +'<p>'+doorsOpened+' puerta'+(doorsOpened===1?'':'s')+' abierta'+(doorsOpened===1?'':'s')+'.'+(isBest?'<br>¡Tu mejor tiempo de hoy! 🎉':(best!==null?'<br>Mejor de hoy: <b>'+fmt(best)+'</b>':''))+'</p>'
       +'<div class="go-row"><button class="btn" id="again-btn" type="button">Jugar de nuevo</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
     $('again-btn').addEventListener('click', startGame); $('share-btn').addEventListener('click', doShare); }
 
@@ -1232,7 +1258,7 @@
     const lines=[ longDate(), '', '🧩 Rumbo · Flechas', '', '⏱️ '+fmt(secs),
       (finalRank===TOP?'👑 ¡Maestro/a del laberinto!':'🏆 Rango: '+RANK_NAMES[finalRank]),
       (secs<=retoSecs?'✅ ¡Reto del día logrado!':'📌 Reto del día'),
-      '🧱 '+boards+' tableros', '', 'https://cortadito.news' ];
+      '🚪 '+doorsOpened+' puerta'+(doorsOpened===1?'':'s'), '', 'https://cortadito.news' ];
     const txt=lines.join('\n');
     if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>{ const b=$('share-btn'); if(b) b.textContent='Copiado'; }).catch(()=>{}); } }
@@ -1255,8 +1281,7 @@
     lsSet('rumbo-stats', JSON.stringify(s)); }
   function renderRanks(){ const list=$('ranks-list'); const cur=won?finalRank:rankFromTime(elapsedSecs());
     $('ranks-reto').textContent=fmt(retoSecs); const b=bestToday(); $('ranks-best').textContent=(b===null?'—':fmt(b));
-    let h=''; for(let i=9;i>=0;i--){ const lo=CUT[9-i]; const hi=(9-i===0)?0:CUT[9-i-1];
-      const range=(i===9)?('≤ '+fmt(CUT[1])):(i===0?('> '+fmt(CUT[9])):('≤ '+fmt(CUT[9-i+1])));
+    let h=''; for(let i=9;i>=0;i--){
       h+='<div class="rl-row'+(i===cur&&won?' cur':'')+'"><span>'+RANK_NAMES[i]+'</span><span class="rt">'+rangeFor(i)+'</span></div>'; }
     list.innerHTML=h; }
   function rangeFor(i){ // i is rank index 9..0; band k=9-i ; you're rank i while CUT[k] < t <= CUT[k+1]
@@ -1275,6 +1300,7 @@
   $('rules-x').addEventListener('click', ()=>openOv('rules-ov',false));
   $('rules-ov').addEventListener('click', e=>{ if(e.target===$('rules-ov')) openOv('rules-ov',false); });
   $('rank-bar').addEventListener('click', ()=>openRanks(true));
+  $('rank-bar').addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openRanks(true); } });
   $('ranks-link').addEventListener('click', ()=>openRanks(true));
   $('ranks-x').addEventListener('click', ()=>openRanks(false));
   $('ranks-ov').addEventListener('click', e=>{ if(e.target===$('ranks-ov')) openRanks(false); });

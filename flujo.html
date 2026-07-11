@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   Flechas · Flujo — a Cortadito News daily game (PRESSURE mode).
-  A grid of pipe tiles. TAP a tile to rotate it 90°. Water pushes out of the SOURCE and
+  A grid of pipe tiles. TAP two tiles to SWAP their positions. Water pushes out of the SOURCE and
   creeps through whatever pipes are connected; you must complete the circuit to the SINK
   before the flow front spills out an open end (a FUGA = +8s). 5 boards, each with a faster
   flow. FREEZE pauses the creeping water (but not your clock) while you work. Ranked on the
@@ -195,6 +195,8 @@
   .toast { position:absolute; top:14px; left:50%; transform:translate(-50%,-8px); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:#fff; font:800 13px var(--font-ui); letter-spacing:.4px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .2s ease, transform .2s ease; }
   .toast.show { opacity:1; transform:translate(-50%,0); }
   .toast.leak { background:var(--error); }
+  /* finish celebration — canvas confetti burst (self-contained, GPU-drawn) */
+  .confetti-box { position:fixed; inset:0; pointer-events:none; z-index:80; }
 
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; background:var(--board-bg); border-radius:18px; text-align:center; padding:26px; }
   .gate.hidden { display:none; }
@@ -282,7 +284,7 @@
     <div class="board-wrap">
       <div class="board" id="board">
         <div id="board-inner"></div>
-        <div class="toast" id="toast"></div>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
         <div class="gate" id="gate">
           <h2>Flujo</h2>
           <p><b>Intercambia</b> tuberías (toca dos para cambiarlas de lugar) y lleva el agua de la <b>fuente</b> al <b>desagüe</b> antes de que se derrame. <b>5 tableros</b> con muros, fugas y trampas. Te cronometra de principio a fin.</p>
@@ -725,6 +727,31 @@
     renderLives(); setStatus(); renderRank(); updateFreeze();
     $('gate').classList.add('hidden'); rafId=requestAnimationFrame(loop);
   }
+  function launchConfetti(n){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    n=n||90;
+    const colors=['#2E8BC0','#EA3546','#e8b84b','#1B5E86','#3fae8e','#9CCCEC'];
+    const cv=document.createElement('canvas'); cv.className='confetti-box';
+    const W=window.innerWidth, H=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
+    cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+    document.body.appendChild(cv);
+    const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+    const P=[];
+    for(let i=0;i<n;i++) P.push({ x:Math.random()*W, y:-20-Math.random()*H*0.3,
+      w:5+Math.random()*5, h:8+Math.random()*8, vx:(Math.random()-0.5)*1.6,
+      vy:2.2+Math.random()*3, rot:Math.random()*6.28, vr:(Math.random()-0.5)*0.32,
+      c:colors[(Math.random()*colors.length)|0] });
+    const t0=performance.now(); let raf;
+    (function frame(t){
+      const dt=t-t0; ctx.clearRect(0,0,W,H); let alive=false;
+      const a= dt>2200 ? Math.max(0,1-(dt-2200)/700) : 1;
+      for(const p of P){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.045; p.rot+=p.vr;
+        if(p.y<H+24) alive=true;
+        ctx.save(); ctx.globalAlpha=a; ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+        ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); }
+      if(alive && dt<3200) raf=requestAnimationFrame(frame); else cv.remove();
+    })(t0);
+  }
   function endGame(fail){ if(over) return; over=true; running=false; failed=!!fail; if(rafId) cancelAnimationFrame(rafId); board.classList.remove('frozen');
     const secs=Math.round(elapsedSecs()); bestSecs0=secs;
     const g=$('gate'); g.classList.remove('hidden');
@@ -735,6 +762,7 @@
     const prev=+(lsGet('flujo-best-'+ISO)||0); const isBest=!prev||secs<prev; if(isBest){ bestSecs=secs; lsSet('flujo-best-'+ISO,String(secs)); } else bestSecs=prev;
     recordStats(secs);
     const idx=rankFromTime(secs); renderRank(); $('timer').textContent=fmt(secs);
+    setTimeout(()=>launchConfetti(idx===TOP?130:idx>=7?95:70), 260);
     g.innerHTML='<h2>¡Completado!</h2><div class="v">'+fmt(secs)+'</div><div class="vlbl">'+RANK_NAMES[idx]+'</div>'
       +'<p>5 tableros · '+leaks+' fuga'+(leaks===1?'':'s')+'.<br>'+(isBest?'¡Mejor tiempo de hoy! 🎉':'Mejor de hoy: <b>'+fmt(bestSecs)+'</b>')+'</p>'
       +'<div class="go-row"><button class="btn" id="again-btn" type="button">Jugar de nuevo</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
@@ -769,6 +797,7 @@
   $('rules-x').addEventListener('click', ()=>openRules(false));
   $('rules-ov').addEventListener('click', e=>{ if(e.target===$('rules-ov')) openRules(false); });
   $('rank-bar').addEventListener('click', ()=>openRanks(true));
+  $('rank-bar').addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openRanks(true); } });
   $('ranks-link').addEventListener('click', ()=>openRanks(true));
   $('ranks-x').addEventListener('click', ()=>openRanks(false));
   $('ranks-ov').addEventListener('click', e=>{ if(e.target===$('ranks-ov')) openRanks(false); });
