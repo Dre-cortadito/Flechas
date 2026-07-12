@@ -50,7 +50,7 @@
     font-family:var(--font-ui); -webkit-text-size-adjust:100%;
     opacity:0; transition:opacity .2s ease; }
   body.ready { opacity:1; }
-  body.game-active { min-height:100dvh; overscroll-behavior:none; }   /* allow a small scroll so the freeze button clears the URL bar */
+  body.game-active { height:100dvh; overflow:hidden; overscroll-behavior:none; }   /* lock to the viewport — no scroll (Rumbo standard) */
 
   /* ===== HEADER (standard: title-block left, home button FIRST in right nav) ===== */
   .page-header { position:fixed; top:0; left:0; right:0; z-index:40; height:var(--header-h);

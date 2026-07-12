@@ -34,9 +34,9 @@
     --accent:#4faa66; --accent-deep:#8fd3a0; --accent-soft:#123020; --accent-2:#5f7d55; --error:#EA3546;
     --board-bg:#16241a; --arrow:#c9e6cf; --clear:#157145;
   }
-  html,body { margin:0; min-height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }   /* body grows with content + scrolls (Borde parity), instead of pinning to the large viewport */
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { height:100%; overscroll-behavior:none; }
-  body { display:flex; flex-direction:column; align-items:center; overscroll-behavior:none; }
+  body { display:flex; flex-direction:column; align-items:center; overscroll-behavior:none; height:100dvh; overflow:hidden; }   /* lock to the viewport — no scroll (Rumbo standard) */
 
   .page-header { position:fixed; top:0; left:0; right:0; z-index:40; height:var(--header-h); display:flex; align-items:center; justify-content:space-between; gap:24px; padding:0 18px; background:var(--bg); border-bottom:1px solid var(--ink-line); }
   .title-block { display:flex; align-items:center; gap:11px; min-width:0; }
