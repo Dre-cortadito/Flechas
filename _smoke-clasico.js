@@ -134,11 +134,14 @@ for (const seed of seeds) {
     const ba = line1.animations[0];
     if (!ba || parseFloat(ba.kf[1].strokeDashoffset) !== -126) probs.push('bounce: no −dist slide on crash');
   }
-  // state colors present in CSS: green on clear, red on crash, for BOTH shaft and head
-  for (const rule of ['.piece.firing .pline', '.piece.firing .phead', '.piece.blocked .pline', '.piece.blocked .phead'])
-    if (!html.includes(rule)) probs.push('missing CSS state rule: ' + rule);
-  if (!/\.piece\.firing \.pline \{ stroke:var\(--clear\)/.test(html)) probs.push('firing pline not green');
-  if (!/\.piece\.blocked \.pline \{ stroke:var\(--error\)/.test(html)) probs.push('blocked pline not red');
+  // state colors via the --ac custom property (ab0f62d mechanism):
+  // pline strokes and phead fills follow --ac; firing/blocked override it.
+  if (!/\.piece \.pline \{[^}]*stroke:var\(--ac\)/.test(html)) probs.push('pline not driven by --ac');
+  if (!/\.piece \.phead \{[^}]*fill:var\(--ac\)/.test(html)) probs.push('phead not driven by --ac');
+  if (!/\.piece\.firing \{ --ac:var\(--clear\)/.test(html)) probs.push('firing does not set --ac to clear-green');
+  if (!/\.piece\.blocked \{ --ac:var\(--error\)/.test(html)) probs.push('blocked does not set --ac to error-red');
+  if (!/--clear:#157145/.test(html)) probs.push('clear green is not the shared #157145');
+  if (!/--error:#EA3546/.test(html)) probs.push('error red is not the shared #EA3546');
 
   if (probs.length) { console.error('✗ ' + seed + ' — ' + probs.join(' · ')); failed = true; }
   else console.log('✓ ' + seed + ' — ' + r.board.snakes.length + ' pieces · '
