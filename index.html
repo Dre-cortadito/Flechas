@@ -1578,7 +1578,7 @@ function rachaTick(){ if(rachaLeft<0) return; rachaLeft--;
 // v3 GAUNTLET: the border ESCALATES across the run — each board sits a bit less, and on
 // boards 4–5 it grows to cover TWO adjacent sides. The run visibly tightens.
 function dwellFor(n){ return [6,5,4.5,4.5,4][Math.min(4,Math.max(0,n-1))]; }
-function twoSided(){ return boardNum>=4; }
+function twoSided(){ return false; }   /* only ONE (visible) edge is ever hot — never bounce off an unrendered second border */
 let HOT_DWELL=dwellFor(1); const HOT_GRACE=0;    // each edge sits STATIC for dwellFor(board) seconds (the countdown)…
 const MOVE_DUR=0.8; let PERIOD=HOT_DWELL+MOVE_DUR;   // …then a separate ~0.8s MOVE to the next edge. One full cycle = PERIOD.
 // Rebase the beam clock when the tempo changes (board handoff): pin the CURRENT side as the
