@@ -1686,18 +1686,18 @@ function applyRole(pid){ const r=ROLE[pid];
   if(r===R_RACHA){                                                         // STACK: each amber adds RACHA_NEED to the requirement AND the reward
     if(rachaLeft>0){ rachaLeft+=RACHA_NEED; rachaTotal+=RACHA_NEED; rachaCount++; }
     else { rachaLeft=RACHA_NEED; rachaTotal=RACHA_NEED; rachaCount=1; }
-    flash('Racha ×'+rachaCount+' · '+rachaTotal+' limpias','bonus'); }
+    }
   else if(r===R_GIRO){                                                     // the border JUMPS to the next side NOW — dwell restarts there
-    if(candadoOn()){ flash('El candado absorbe el giro','bonus'); }        // RULE: the lock absorbs jumps — a pinned window can't be ruined by an accidental Giro
+    if(candadoOn()){ /* the lock absorbs the jump — border stays put */ }  // RULE: the lock absorbs jumps — a pinned window can't be ruined by an accidental Giro
     else { beamBaseIndex=hotIndex()+1; beamBaseTime=elapsed;
       beamIntroT=Date.now(); giroFlashT=Date.now();                        // walls re-glow in → the jump reads instantly
-      renderHot(); flash('¡Giro! El borde salta','bonus'); } }
+      renderHot(); } }
   else if(r===R_CANDADO){                                                  // STACK: each candado extends the PIN — the border holds still
     const now=Date.now();
     if(candadoUntil>now){ candadoUntil+=CANDADO_MS; candadoCount++; }
     else { candadoUntil=now+CANDADO_MS; candadoCount=1; }
     document.body.classList.add('candado');
-    flash('Candado ×'+candadoCount+' · borde fijado','bonus'); } }
+    } }
 // DESVIAR: auto-charges over time (bar in the button); spend a charge to jump the purple
 // border to the OPPOSITE side and restart its 5s dwell. The clock keeps running — Desviar
 // controls the hazard, it doesn't stop time. (freezeCharges/freezeFill are reused as the
@@ -1919,7 +1919,6 @@ function tapPiece(pid){
     if(line) line.animate([{strokeDashoffset:'0px'},{strokeDashoffset:(-mv)+'px',offset:.45},{strokeDashoffset:'0px'}],{duration:T,easing:'ease-in-out'});
     if(hd)   hd.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(mv*p._vx)+'px,'+(mv*p._vy)+'px)',offset:.45},{transform:'translate(0px,0px)'}],{duration:T,easing:'ease-in-out'});
     setTimeout(()=>{ try{g.classList.remove('beam-blocked');}catch(e){} }, T+40);
-    flash('Borde cerrado · rebota','bonus');
     return;
   }
   // LAUNCH — commit immediately so the next tap registers instantly (no input lock)

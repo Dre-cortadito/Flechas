@@ -24,15 +24,15 @@
 <style>
   * { touch-action:manipulation; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   :root {
-    --bg:#ffffff; --paper:#fffdf5; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#f1e8d4; --box-edge:#8a847f; --on-accent:#1a1410;
-    --accent:#ffb703; --accent-deep:#b26a00; --accent-soft:#fff1cc; --accent-2:#e0a63c; --error:#EA3546;
-    --board-bg:#fff1cc; --arrow:#141210; --clear:#e07a00;
+    --bg:#ffffff; --paper:#fffaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#f2e4da; --box-edge:#8a847f; --on-accent:#ffffff;
+    --accent:#f25506; --accent-deep:#b23a00; --accent-soft:#ffe3d3; --accent-2:#f2894e; --error:#EA3546;
+    --board-bg:#ffe3d3; --arrow:#141210; --clear:#0b6130;   /* success flash stays GREEN (semantic), red error unchanged */
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
-    --bg:#100d07; --paper:#1a160e; --ink:#f3efe4; --ink-soft:#8b857a; --ink-line:#2a2417; --box-edge:#8b857a; --on-accent:#1a1410;
-    --accent:#ffca3a; --accent-deep:#ffe08a; --accent-soft:#2e2410; --accent-2:#c8912f; --error:#EA3546;
-    --board-bg:#241d10; --arrow:#efe4c9; --clear:#ffb703;
+    --bg:#100b07; --paper:#1a1109; --ink:#f3ece4; --ink-soft:#8b827a; --ink-line:#2a1d13; --box-edge:#8b827a; --on-accent:#ffffff;
+    --accent:#ff5a12; --accent-deep:#ff9a66; --accent-soft:#331a0d; --accent-2:#c85a2a; --error:#EA3546;
+    --board-bg:#291810; --arrow:#efe0d4; --clear:#157145;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { height:100%; overscroll-behavior:none; }
@@ -107,9 +107,9 @@
      freeze-btn dimensions). Clásico's verb: 👁 Enfoque — highlights every arrow whose lane
      is clear for 3 s. Auto-charges (~20 s), one charge, green like the game. */
   .freeze { width:var(--gw); margin:12px auto 0; }
-  .freeze-btn { width:100%; height:60px; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:0 12px; border-radius:14px; cursor:pointer; color:var(--accent-deep); background:rgba(255,183,3,.10); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }   /* FIXED height — the eye can grow without changing the bar */
+  .freeze-btn { width:100%; height:60px; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:0 12px; border-radius:14px; cursor:pointer; color:var(--accent-deep); background:rgba(242,85,6,.09); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }   /* FIXED height — the eye can grow without changing the bar */
   .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--accent-soft); transform-origin:left; transform:scaleX(0); z-index:0; }
-  .freeze-btn.active .fill { background:#f7e4b0; }   /* while it drains over the 5s window → light amber */
+  .freeze-btn.active .fill { background:#ffd9c2; }   /* while it drains over the 5s window → light orange */
   .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:52px; }
   .freeze-btn .ficon svg { width:52px; height:52px; display:block; }
   .freeze-btn:not(.ready){ cursor:default; }
