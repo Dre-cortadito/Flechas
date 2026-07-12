@@ -181,8 +181,8 @@
      fully disappears between pulses — it only ever breathes from full to dim. */
   .board-panel .wall { position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; z-index:5; }
   /* brief event toast (transient — the board itself stays stable) */
-  .flx-toast { position:absolute; top:14px; left:50%; transform:translate(-50%,-8px); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:#fff; font:800 13px var(--font-ui); letter-spacing:.3px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .18s ease, transform .18s ease; }
-  .flx-toast.show { opacity:1; transform:translate(-50%,0); }
+  .flx-toast { position:absolute; top:50%; left:50%; transform:translate(-50%,calc(-50% + 6px)); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:#fff; font:800 13px var(--font-ui); letter-spacing:.3px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .18s ease, transform .18s ease; }
+  .flx-toast.show { opacity:1; transform:translate(-50%,-50%); }
   .flx-toast.bonus { background:var(--accent-2); color:#141210; }
   .flx-toast.err { background:var(--error); }
   .status-line .rch { color:#C77A1E; font-weight:700; }
@@ -1630,6 +1630,9 @@ function renderHot(){ const bp=document.getElementById('board-panel'); if(!bp) r
 // each whole second (so the 5th beat lands exactly as the beam moves). Held bright while frozen.
 function lerpHex(a,b,t){ a=a.trim();b=b.trim(); const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16); const r=Math.round((pa>>16)+((pb>>16)-(pa>>16))*t),g=Math.round(((pa>>8)&255)+(((pb>>8)&255)-((pa>>8)&255))*t),bl=Math.round((pa&255)+((pb&255)-(pa&255))*t); return 'rgb('+r+','+g+','+bl+')'; }
 function wallGrad(e){ const d=['to bottom','to left','to top','to right'][e]||'to bottom'; return 'linear-gradient('+d+', #662E9B 0, #662E9B 11px, rgba(102,46,155,0) 11px)'; }   // SOLID 11px bar (hard edge, no fade) — pulsing/crossfade still come from the layer opacity
+// Only touch the (repaint-heavy) gradient background when it actually changes — the edge is
+// constant across a whole dwell/slide, so this avoids a full board repaint every rAF (fixes lag).
+function setWallBg(el,str){ if(el && el._bg!==str){ el._bg=str; el.style.background=str; } }
 // Opacity of a wall vs seconds since its dwell began. Rises in (overlapping the previous edge's
 // fade-out), holds static ~3s, pulses full↔0.5 (never off), then fades out (covered by the next edge).
 function wallPresence(age){ if(age<=-1 || age>=HOT_DWELL) return 0;
@@ -1663,12 +1666,12 @@ function pulseLoop(){ try{ const bp=document.getElementById('board-panel'); cons
     const intro=beamIntroT?Math.min(1,(now-beamIntroT)/450):1;   // the whole beam glows IN over ~0.45s when you press Empezar
     if(w0&&w1){
       if(s<0){ w0.style.opacity='0'; w1.style.opacity='0'; w0.style.transform=''; w1.style.transform=''; }
-      else if(frozen){ w0.style.background=wallGrad(s); w0.style.opacity=intro.toFixed(3); w0.style.transform=''; w1.style.opacity='0'; w1.style.transform=''; }
+      else if(frozen){ setWallBg(w0,wallGrad(s)); w0.style.opacity=intro.toFixed(3); w0.style.transform=''; w1.style.opacity='0'; w1.style.transform=''; }
       else { const frac=Math.max(0,Math.min(0.999,(now-startedAt)/1000-elapsed));
         const bx=elapsed+frac-beamBaseTime-HOT_GRACE; const kf=Math.floor(bx/PERIOD), into=bx-kf*PERIOD; const k=beamBaseIndex+kf;
         const eK=((HOT_START+HOT_DIR*k)%4+4)%4, eN=((HOT_START+HOT_DIR*(k+1))%4+4)%4;
         const layA=(k%2===0)?w0:w1, layB=(k%2===0)?w1:w0;   // pin each dwell to a layer by parity
-        layA.style.background=wallGrad(eK); layB.style.background=wallGrad(eN);
+        setWallBg(layA,wallGrad(eK)); setWallBg(layB,wallGrad(eN));
         if(into<HOT_DWELL){ layA.style.transform=''; layA.style.opacity=intro.toFixed(3); layB.style.opacity='0'; layB.style.transform=''; }   /* STATIC for the full 5s — solid, no slide */
         else { const p=(into-HOT_DWELL)/MOVE_DUR, fK=beamFwd(eK), fN=beamFwd(eN);   // then it MOVES: outgoing edge trains OFF; incoming edge trains IN around the corner
           layA.style.transform='translate('+(fK[0]*p*100).toFixed(2)+'%,'+(fK[1]*p*100).toFixed(2)+'%)'; layA.style.opacity=intro.toFixed(3);
