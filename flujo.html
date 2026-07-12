@@ -230,11 +230,15 @@
   .modal h3 { margin:18px 0 6px; font-size:15px; }
   .modal p { font-size:14px; line-height:1.6; color:var(--ink); margin:0 0 10px; }
   .modal .x { position:absolute; top:12px; right:12px; width:32px; height:32px; border:none; background:transparent; color:var(--ink-soft); font-size:20px; cursor:pointer; }
-  .rank-row { display:flex; justify-content:space-between; align-items:center; padding:7px 11px; border-radius:8px; font-size:14px; }
-  .rank-row .rname { font-weight:600; }
-  .rank-row .rband { color:var(--ink-soft); font-variant-numeric:tabular-nums; font-weight:600; }
-  .rank-row.current { background:var(--accent-soft); }
-  .rank-row.current .rname { color:var(--accent-deep); font-weight:800; }
+  /* Rangos list — shared Racimo standard */
+  .ranks-cols { display:flex; justify-content:space-between; font-size:10px; text-transform:uppercase; letter-spacing:1.8px; font-weight:700; color:var(--ink-soft); border-bottom:1px solid var(--ink-line); padding:0 0 8px; margin:2px 0 6px; }
+  .rank-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:999px; font-size:14px; }
+  .rank-row .name, .rank-row .score { font-weight:500; color:var(--ink); }
+  .rank-row .score { font-variant-numeric:tabular-nums; color:var(--ink-soft); }
+  .rank-row.current { background:var(--accent); }
+  .rank-row.current .name, .rank-row.current .score { color:#fff; font-weight:700; }
+  .rank-row.is-top .name { color:var(--accent); font-weight:700; }
+  .rank-row.current.is-top .name { color:#fff; }
 
   #rotate-lock { display:none; }
   @media (max-height:480px) and (orientation:landscape){
@@ -333,6 +337,7 @@
   <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
     <h2>Rangos</h2>
     <p>Tu rango lo decide el <b>tiempo total</b> de los 5 tableros (menos es mejor). Récord de hoy: <b id="ranks-best">—</b>.</p>
+    <div class="ranks-cols"><span>Rango</span><span>Tiempo</span></div>
     <div id="ranks-list"></div>
   </div></div>
 
@@ -706,7 +711,7 @@
     const lbl=$('rank-label'); if(lbl){ lbl.textContent=(!running&&!over)?'Listo':RANK_NAMES[idx]; lbl.classList.toggle('at-maestro', (running||over)&&idx===TOP); } }
   function renderRanks(){ const list=$('ranks-list'); if(!list) return; const cur=(running||over)?curIdx():-1; let html='';
     for(let i=TOP;i>=0;i--){ const band=(i===TOP)?('≤ '+fmt(RANK_LADDER[0])):(i===0?('> '+fmt(RANK_LADDER[TOP-1])):(fmt(RANK_LADDER[TOP-i-1])+'–'+fmt(RANK_LADDER[TOP-i])));
-      html+='<div class="rank-row'+(i===cur?' current':'')+'"><span class="rname">'+RANK_NAMES[i]+'</span><span class="rband">'+band+'</span></div>'; }
+      html+='<div class="rank-row'+(i===cur?' current':'')+(i===TOP?' is-top':'')+'"><span class="name">'+RANK_NAMES[i]+'</span><span class="score">'+band+'</span></div>'; }
     list.innerHTML=html; const rb=$('ranks-best'); if(rb) rb.textContent=bestSecs?fmt(bestSecs):'—'; }
 
   // ===== freeze =====

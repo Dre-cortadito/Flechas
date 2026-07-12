@@ -180,11 +180,15 @@
   .legend-cell svg path { fill:none; stroke:var(--arrow); stroke-width:8.5; stroke-linecap:round; stroke-linejoin:round; }
   .legend-cell svg .lh { fill:var(--arrow); stroke-width:2.5; stroke-linejoin:round; }   /* solid filled triangular chevron head (rules legend) */
   .legend-row .txt { font-size:14px; line-height:1.45; color:var(--ink); }
-  .rank-row { display:flex; justify-content:space-between; align-items:center; padding:7px 11px; border-radius:8px; font-size:14px; }
-  .rank-row .rname { font-weight:600; }
-  .rank-row .rband { color:var(--ink-soft); font-variant-numeric:tabular-nums; font-weight:600; }
-  .rank-row.current { background:var(--accent-soft); }
-  .rank-row.current .rname { color:var(--accent-deep); font-weight:800; }
+  /* Rangos list — shared Racimo standard */
+  .ranks-cols { display:flex; justify-content:space-between; font-size:10px; text-transform:uppercase; letter-spacing:1.8px; font-weight:700; color:var(--ink-soft); border-bottom:1px solid var(--ink-line); padding:0 0 8px; margin:2px 0 6px; }
+  .rank-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:999px; font-size:14px; }
+  .rank-row .name, .rank-row .score { font-weight:500; color:var(--ink); }
+  .rank-row .score { font-variant-numeric:tabular-nums; color:var(--ink-soft); }
+  .rank-row.current { background:var(--accent); }
+  .rank-row.current .name, .rank-row.current .score { color:#fff; font-weight:700; }
+  .rank-row.is-top .name { color:var(--accent); font-weight:700; }
+  .rank-row.current.is-top .name { color:#fff; }
   .cstat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .cstat { background:var(--bg); border:1.5px solid var(--ink-line); border-radius:12px; padding:12px 10px; text-align:center; }
   .cstat .cv { font:800 26px var(--font-display); color:var(--ink); line-height:1; }
@@ -310,6 +314,7 @@
   <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
     <h2>Rangos</h2>
     <p>Tu rango lo decide el <b>tiempo</b> en despejar todo el tablero — menos segundos, mejor rango. Mejor de hoy: <b id="ranks-best">—</b>.</p>
+    <div class="ranks-cols"><span>Rango</span><span>Tiempo</span></div>
     <div id="ranks-list"></div>
   </div></div>
 
@@ -805,7 +810,7 @@
     const lbl=$('rank-label'); if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); } }
   function band(i){ if(i===TOP) return '≤ '+fmtSec(TIME_MAX[TOP]); if(i===0) return '> '+fmtSec(TIME_MAX[1]); return fmtSec(TIME_MAX[i+1]+1)+'–'+fmtSec(TIME_MAX[i]); }
   function renderRanks(){ const list=$('ranks-list'); if(!list) return; const cur=curRank(); let html='';
-    for(let i=TOP;i>=0;i--){ const on=(started||finished)&&i===cur; html+='<div class="rank-row'+(on?' current':'')+'"><span class="rname">'+RANK_NAMES[i]+'</span><span class="rband">'+band(i)+'</span></div>'; }
+    for(let i=TOP;i>=0;i--){ const on=(started||finished)&&i===cur; html+='<div class="rank-row'+(on?' current':'')+(i===TOP?' is-top':'')+'"><span class="name">'+RANK_NAMES[i]+'</span><span class="score">'+band(i)+'</span></div>'; }
     list.innerHTML=html; const rb=$('ranks-best'); if(rb) rb.textContent=bestSecs>0?fmt(bestSecs*1000):'—'; }
 
   // ================= loop / timer (count-up) =================

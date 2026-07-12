@@ -312,8 +312,14 @@
   .legend-cell .dv-legend-ico { height:40px; width:auto; display:block; margin:0 auto; }   /* Desviar rules icon = the real button icon */
   .legend-row .txt { font-size:14px; color:var(--ink); }
   /* Rangos list */
-  .rank-row { display:flex; justify-content:space-between; padding:8px 10px; border-bottom:1px solid var(--ink-line); font-size:14px; }
-  .rank-row.current { background:var(--accent); color:#fff; border-radius:6px; }
+  /* Rangos list — shared Racimo standard: header cols, clean pill rows (no dividers), current = accent pill w/ progress, top rank in accent */
+  .ranks-cols { display:flex; justify-content:space-between; font-size:10px; text-transform:uppercase; letter-spacing:1.8px; font-weight:700; color:var(--ink-soft); border-bottom:1px solid var(--ink-line); padding:0 0 8px; margin:2px 0 6px; }
+  .rank-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:999px; font-size:14px; }
+  .rank-row .name, .rank-row .score { font-weight:500; color:var(--ink); }
+  .rank-row .score { font-variant-numeric:tabular-nums; color:var(--ink-soft); }
+  .rank-row.current { background:var(--accent); }
+  .rank-row.current .name, .rank-row.current .score { color:#fff; font-weight:700; }
+  .rank-row.current .progress { display:block; font-size:11px; color:rgba(255,255,255,.85); font-weight:400; margin-top:2px; }
   .rank-row.is-top .name { color:var(--accent); font-weight:700; }
   .rank-row.current.is-top .name { color:#fff; }
   /* stats */
@@ -613,7 +619,8 @@
     <div class="modal">
       <button class="modal-close" data-close>✕</button>
       <h2>Rangos</h2>
-      <p class="muted">Sube de rango acumulando puntos. <span id="rangos-reto"></span></p>
+      <p class="muted"><span id="rangos-reto"></span></p>
+      <div class="ranks-cols"><span>Rango</span><span>Tiempo</span></div>
       <div id="rangos-list"></div>
     </div>
   </div>

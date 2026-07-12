@@ -203,11 +203,16 @@
   .modal h2 { font:800 24px var(--font-display); margin:0 0 12px; }
   .modal p { font-size:14px; line-height:1.6; color:var(--ink); margin:0 0 10px; }
   .modal .x { position:absolute; top:12px; right:12px; width:32px; height:32px; border:none; background:transparent; color:var(--ink-soft); font-size:20px; cursor:pointer; }
-  .rank-row { display:flex; justify-content:space-between; align-items:center; padding:7px 11px; border-radius:8px; font-size:14px; }
-  .rank-row .rname { font-weight:600; }
-  .rank-row .rband { color:var(--ink-soft); font-variant-numeric:tabular-nums; font-weight:600; }
-  .rank-row.current { background:var(--accent-soft); }
-  .rank-row.current .rname { color:var(--accent-deep); font-weight:800; }
+  /* Rangos list — shared Racimo standard */
+  .ranks-cols { display:flex; justify-content:space-between; font-size:10px; text-transform:uppercase; letter-spacing:1.8px; font-weight:700; color:var(--ink-soft); border-bottom:1px solid var(--ink-line); padding:0 0 8px; margin:2px 0 6px; }
+  .rank-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:999px; font-size:14px; }
+  .rank-row .name, .rank-row .score { font-weight:500; color:var(--ink); }
+  .rank-row .score { font-variant-numeric:tabular-nums; color:var(--ink-soft); }
+  .rank-row.current { background:var(--accent); }
+  .rank-row.current .name, .rank-row.current .score { color:#fff; font-weight:700; }
+  .rank-row.current .progress { display:block; font-size:11px; color:rgba(255,255,255,.85); font-weight:400; margin-top:2px; }
+  .rank-row.is-top .name { color:var(--accent); font-weight:700; }
+  .rank-row.current.is-top .name { color:#fff; }
 
   /* ===== Rotate-to-portrait lock (phones in landscape) — accent-matched ===== */
   #rotate-lock { display:none; }
@@ -358,6 +363,7 @@
   <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
     <h2>Rangos</h2>
     <p>Tu rango lo deciden los <b>puntos</b> que sumas en 2:00 (despejes × racha). Récord de hoy: <b id="ranks-best">—</b>.</p>
+    <div class="ranks-cols"><span>Rango</span><span>Puntaje mínimo</span></div>
     <div id="ranks-list"></div>
   </div></div>
 
@@ -643,8 +649,12 @@
     const lbl=$('rank-label'); if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); }
   }
   function renderRanks(){ const list=$('ranks-list'); if(!list) return; const cur=rankNow(); let html='';
-    for(let i=TOP;i>=0;i--){ const band=(i===TOP)?('≥ '+RANK_CUT[i]):(RANK_CUT[i]+'–'+(RANK_CUT[i+1]-1)); const on=(running||over)&&i===cur;
-      html+='<div class="rank-row'+(on?' current':'')+'"><span class="rname">'+RANK_NAMES[i]+'</span><span class="rband">'+band+'</span></div>'; }
+    for(let i=TOP;i>=0;i--){ const band=(i===TOP)?('≥ '+RANK_CUT[i]):(RANK_CUT[i]+'–'+(RANK_CUT[i+1]-1)); const on=(i===cur);
+      let inner='<span class="name">'+RANK_NAMES[i]+'</span><span class="score">'+band+'</span>';
+      if(on){ const diff=(i<TOP)?Math.max(0,RANK_CUT[i+1]-points):0; const toTop=Math.max(0,RANK_CUT[TOP]-points);
+        const prog=(i===TOP)?'¡Lo lograste!':(diff+' al próximo rango · '+toTop+' al '+RANK_NAMES[TOP]);
+        inner='<div style="display:flex;flex-direction:column;flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><span class="name">'+RANK_NAMES[i]+'</span><span class="score">'+band+'</span></div><span class="progress">'+prog+'</span></div>'; }
+      html+='<div class="rank-row'+(on?' current':'')+(i===TOP?' is-top':'')+'">'+inner+'</div>'; }
     list.innerHTML=html; const rb=$('ranks-best'); if(rb) rb.textContent=best>0?best:'—'; }
 
   // ================= refresh (a new board falls from the top and pushes the old one out) =================

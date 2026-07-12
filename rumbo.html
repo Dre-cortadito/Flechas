@@ -297,9 +297,15 @@
   .cdist-row.cur .cdn { color:var(--accent); font-weight:700; }
   .cdist-row.empty { opacity:.5; }
   .cdist-row .cdc { width:56px; text-align:right; color:var(--ink-soft); }
-  .ranklist .rl-row { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--ink-line); font-size:14px; }
-  .ranklist .rl-row.cur { color:var(--accent); font-weight:700; }
-  .ranklist .rl-row .rt { color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+  /* Rangos list — shared Racimo standard */
+  .ranks-cols { display:flex; justify-content:space-between; font-size:10px; text-transform:uppercase; letter-spacing:1.8px; font-weight:700; color:var(--ink-soft); border-bottom:1px solid var(--ink-line); padding:0 0 8px; margin:2px 0 6px; }
+  .rank-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:999px; font-size:14px; }
+  .rank-row .name, .rank-row .score { font-weight:500; color:var(--ink); }
+  .rank-row .score { font-variant-numeric:tabular-nums; color:var(--ink-soft); }
+  .rank-row.current { background:var(--accent); }
+  .rank-row.current .name, .rank-row.current .score { color:#fff; font-weight:700; }
+  .rank-row.is-top .name { color:var(--accent); font-weight:700; }
+  .rank-row.current.is-top .name { color:#fff; }
 
   /* rotate lock */
   #rotate-lock { position:fixed; inset:0; z-index:200; background:var(--bg); display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:30px; }
@@ -403,6 +409,7 @@
   <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
     <h2>Rangos</h2>
     <p>Tu rango lo decide el <b>tiempo total</b> hasta la salida — más rápido, mejor rango. Reto del día: <b id="ranks-reto">—</b>. Mejor de hoy: <b id="ranks-best">—</b>.</p>
+    <div class="ranks-cols"><span>Rango</span><span>Tiempo</span></div>
     <div class="ranklist" id="ranks-list"></div>
   </div></div>
 
@@ -1288,7 +1295,7 @@
   function renderRanks(){ const list=$('ranks-list'); const cur=won?finalRank:rankFromTime(elapsedSecs());
     $('ranks-reto').textContent=fmt(retoSecs); const b=bestToday(); $('ranks-best').textContent=(b===null?'—':fmt(b));
     let h=''; for(let i=9;i>=0;i--){
-      h+='<div class="rl-row'+(i===cur&&won?' cur':'')+'"><span>'+RANK_NAMES[i]+'</span><span class="rt">'+rangeFor(i)+'</span></div>'; }
+      h+='<div class="rank-row'+(i===cur&&won?' current':'')+(i===TOP?' is-top':'')+'"><span class="name">'+RANK_NAMES[i]+'</span><span class="score">'+rangeFor(i)+'</span></div>'; }
     list.innerHTML=h; }
   function rangeFor(i){ // i is rank index 9..0; band k=9-i ; you're rank i while CUT[k] < t <= CUT[k+1]
     const k=9-i; if(i===TOP) return '≤ '+fmt(CUT[1]); if(i===0) return '> '+fmt(CUT[9]); return fmt(CUT[k])+'–'+fmt(CUT[k+1]); }
