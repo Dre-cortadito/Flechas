@@ -114,7 +114,7 @@
   .freeze-btn .ficon svg { width:52px; height:52px; display:block; }
   .freeze-btn:not(.ready){ cursor:default; }
   .freeze-btn:active { transform:scale(.98); }
-  .piece.enfoque { --ac:#801a6f !important; }
+  .piece.enfoque { --ac:var(--accent) !important; }   /* Enfoque highlight blinks in the game accent (orange), not purple */
   .piece.enfoque .pline, .piece.enfoque .phead { animation:enfpulse 1s ease infinite; }
   @keyframes enfpulse { 0%,100%{ opacity:1; } 50%{ opacity:.5; } }
   #board-inner { position:absolute; inset:14px; }
@@ -130,13 +130,12 @@
   .piece.gone .pline, .piece.gone .phead { opacity:0; }
   .board.clearflash { animation:boardclear .9s ease; }
   @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:var(--accent-soft);} 100%{ background:var(--board-bg);} }
-  /* Board inset ring, same 11px thickness as Cascada's yellow combo ring.
-     GREEN = Enfoque charged/ready (border turns on to tell you the button is full).
-     YELLOW = Enfoque active (the 5s window after you press). */
+  /* Board inset ring (11px). Charged/ready = static accent border; active (5s window
+     after you press) = the same accent border, pulsing. Orange throughout — no purple. */
   .board::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; z-index:17;
     box-shadow:inset 0 0 0 11px var(--accent); opacity:0; transition:opacity .25s ease, box-shadow .2s ease; }
   .board.enf-ready::after { opacity:1; }
-  .board.enf-active::after { opacity:1; box-shadow:inset 0 0 0 11px #801a6f; animation:enfpulse 1s ease infinite; }
+  .board.enf-active::after { opacity:1; box-shadow:inset 0 0 0 11px var(--accent); animation:enfpulse 1s ease infinite; }
 
   .toast { position:absolute; top:14px; left:50%; transform:translate(-50%,-8px); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:var(--on-accent); font:800 13px var(--font-ui); letter-spacing:.4px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .2s ease, transform .2s ease; }
   .toast.show { opacity:1; transform:translate(-50%,0); }
