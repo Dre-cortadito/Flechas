@@ -527,8 +527,11 @@
     best=deCluster(best);
     return best || buildOnce(rng); }
 
-  // Reto del día: date-hashed target time in the 75–150 s window (1:15–2:30)
-  function retoTarget(){ const r=mulberry32(fnv('clasico-reto-'+ISO)); return 75+Math.round(r()*75); }
+  // Reto del día: date-hashed target time in the 160–240 s window (2:40–4:00).
+  // Deliberately SLOWER than the Maestro cutoff (130 s) so the goal is ambitious-but-reachable
+  // and the marker lands in the readable middle-right of the track (Admirable→Brillante), not
+  // pinned to the far-right Maestro edge.
+  function retoTarget(){ const r=mulberry32(fnv('clasico-reto-'+ISO)); return 160+Math.round(r()*80); }
 
   // ================= runtime state =================
   let board=null, occ=null, snakes={}, remaining=0, choques=0, totalArrows=0;
