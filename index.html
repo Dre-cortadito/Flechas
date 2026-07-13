@@ -179,7 +179,7 @@
   /* HOT BEAM: TWO purple gradient layers (background+opacity set by JS off the beam clock). The
      outgoing edge fades out as the incoming fades in, so there's never a gap and the wall never
      fully disappears between pulses — it only ever breathes from full to dim. */
-  .board-panel .wall { position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; z-index:5; }
+  .board-panel .wall { position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; z-index:5; will-change:transform,opacity; }
   /* brief event toast (transient — the board itself stays stable) */
   .flx-toast { position:absolute; top:50%; left:50%; transform:translate(-50%,calc(-50% + 6px)); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:#fff; font:800 13px var(--font-ui); letter-spacing:.3px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .18s ease, transform .18s ease; }
   .flx-toast.show { opacity:1; transform:translate(-50%,-50%); }
@@ -576,7 +576,7 @@
       <div class="flx-timer" id="flx-timer">0:00</div>
       <div class="flx-meta-slot is-right" aria-label="Tablero"><div class="flx-count" id="flx-count"><div class="n" id="flx-left">1/5</div><div class="l">Tablero</div></div><span class="word-feedback" id="word-feedback"></span></div>
     </div>
-    <div class="board-wrap"><div class="board-panel" id="board-panel"><div id="board"></div><i class="wall" id="wall0"></i><i class="wall" id="wall1"></i><div class="flx-toast" id="flx-toast"></div><div class="start-gate" id="start-gate" hidden><div class="start-target" id="flx-objetivo">Objetivo de hoy · —</div><button class="start-btn" id="start-btn" type="button">Empezar</button></div></div></div>
+    <div class="board-wrap"><div class="board-panel" id="board-panel"><div id="board"></div><i class="wall" id="wall0"></i><i class="wall" id="wall1"></i><i class="wall" id="wall2"></i><div class="flx-toast" id="flx-toast"></div><div class="start-gate" id="start-gate" hidden><div class="start-target" id="flx-objetivo">Objetivo de hoy · —</div><button class="start-btn" id="start-btn" type="button">Empezar</button></div></div></div>
     <!-- Shared thin progress bar: progress through the 5-board run (board N/5). -->
     <div class="prog-box" aria-hidden="true"><span class="prog-track"><i class="prog-bar" id="prog-borde"></i></span></div>
     <!-- One status bar: each effect owns a compartment (value + label + its own countdown bar,
@@ -1651,7 +1651,7 @@ function rachaTick(){ if(rachaLeft<0) return; rachaLeft--;
 // v3 GAUNTLET: the border ESCALATES across the run — each board sits a bit less, and on
 // boards 4–5 it grows to cover TWO adjacent sides. The run visibly tightens.
 function dwellFor(n){ return [6,5,4.5,4.5,4][Math.min(4,Math.max(0,n-1))]; }
-function twoSided(){ return false; }   /* only ONE (visible) edge is ever hot — never bounce off an unrendered second border */
+function twoSided(){ return boardNum>=4; }   /* boards 4–5: TWO adjacent edges are hot — and BOTH are rendered (three wall layers below) */
 let HOT_DWELL=dwellFor(1); const HOT_GRACE=0;    // each edge sits STATIC for dwellFor(board) seconds (the countdown)…
 const MOVE_DUR=0.8; let PERIOD=HOT_DWELL+MOVE_DUR;   // …then a separate ~0.8s MOVE to the next edge. One full cycle = PERIOD.
 // Rebase the beam clock when the tempo changes (board handoff): pin the CURRENT side as the
@@ -1674,7 +1674,7 @@ function beamBlocksDir(dir){ const s=hotSideNow(); if(s<0) return false; if(dir=
   if(twoSided() && dir===((HOT_START+HOT_DIR*(hotIndex()+1))%4+4)%4) return true;   // boards 4–5: the NEXT edge is hot too
   if(started && !finished){ const frac=Math.max(0,Math.min(0.999,(Date.now()-startedAt)/1000-elapsed));
     const x=elapsed+frac-beamBaseTime-HOT_GRACE, into=x-Math.floor(x/PERIOD)*PERIOD;
-    if(into>=HOT_DWELL){ const k=beamBaseIndex+Math.floor(x/PERIOD); if(dir===((HOT_START+HOT_DIR*(k+1))%4+4)%4) return true; } }   // while it MOVES, the incoming edge also blocks
+    if(into>=HOT_DWELL){ const k=beamBaseIndex+Math.floor(x/PERIOD), inc=twoSided()?2:1; if(dir===((HOT_START+HOT_DIR*(k+inc))%4+4)%4) return true; } }   // while it MOVES, the incoming edge also blocks
   return false; }
 // POSITIONAL beam: the bar is a real object. While it sits, the whole edge blocks; as it SLIDES to the
 // next edge, only the cells still under the bar block — the freed area opens — and the incoming bar
@@ -1683,13 +1683,19 @@ function beamState(){ if(!started||finished||elapsed<HOT_GRACE) return null;
   const frac=Math.max(0,Math.min(0.999,(Date.now()-startedAt)/1000-elapsed));
   const bx=elapsed+frac-beamBaseTime-HOT_GRACE; const kf=Math.floor(bx/PERIOD), into=bx-kf*PERIOD; const k=beamBaseIndex+kf;
   const eK=((HOT_START+HOT_DIR*k)%4+4)%4, eN=((HOT_START+HOT_DIR*(k+1))%4+4)%4;
-  const sliding=into>=HOT_DWELL; return { eK, eN, sliding, p: sliding?(into-HOT_DWELL)/MOVE_DUR:0 }; }   // static for 5s, then slides over MOVE_DUR
+  const sliding=into>=HOT_DWELL; return { eK, eN, eNN:((HOT_START+HOT_DIR*(k+2))%4+4)%4, sliding, p: sliding?(into-HOT_DWELL)/MOVE_DUR:0 }; }   // static for 5s, then slides over MOVE_DUR
 function beamExitFrac(e, headIdx){ const [r,c]=rc(headIdx);   // forward-normalised position of the exit along edge e (0..1)
   const horiz=(e===0||e===2); let frac = horiz ? (GRID_C>1?c/(GRID_C-1):0.5) : (GRID_R>1?r/(GRID_R-1):0.5);
   const f=beamFwd(e); const sgn = horiz ? f[0] : f[1]; if(sgn<0) frac=1-frac; return frac; }
 function beamBlocks(pid){ const st=beamState(); if(!st) return false;
   const dir=PIECES[pid].dir;
-  if(twoSided()) return dir===st.eK || dir===st.eN;                    // boards 4–5: BOTH edges fully hot, sliding or not — harsher and simpler
+  if(twoSided()){                                                        // boards 4–5: the PAIR of edges is hot; during the slide the trailing edge frees up as the new one trains in
+    if(!st.sliding) return dir===st.eK || dir===st.eN;
+    if(dir===st.eN) return true;
+    const fr2=beamExitFrac(dir, headCellOf(PIECES[pid]));
+    if(dir===st.eK) return fr2>=st.p;
+    if(dir===st.eNN) return fr2<=st.p;
+    return false; }
   if(!st.sliding) return dir===st.eK;                                  // sitting: the whole hot edge blocks
   const fr=beamExitFrac(dir, headCellOf(PIECES[pid]));
   if(dir===st.eK) return fr>=st.p;                                     // outgoing bar still covers [p,1]
@@ -1698,7 +1704,8 @@ function beamBlocks(pid){ const st=beamState(); if(!st) return false;
 // Spend a charge to push the beam to the next edge right now (offensive use of the resource).
 function renderHot(){ const bp=document.getElementById('board-panel'); if(!bp) return; const s=hotSideNow();
   // Just pick which edge is lit; its brightness/pulse is driven by pulseLoop() in sync with the beam clock.
-  for(let d=0;d<4;d++) bp.classList.toggle('hot-'+d, s===d); }
+  const s2=(twoSided()&&s>=0)?(((HOT_START+HOT_DIR*(hotIndex()+1))%4+4)%4):-1;
+  for(let d=0;d<4;d++) bp.classList.toggle('hot-'+d, s===d || s2===d); }
 // Drive the wall's pulse from the SAME clock as the beam: one cosine cycle per second, bright on
 // each whole second (so the 5th beat lands exactly as the beam moves). Held bright while frozen.
 function lerpHex(a,b,t){ a=a.trim();b=b.trim(); const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16); const r=Math.round((pa>>16)+((pb>>16)-(pa>>16))*t),g=Math.round(((pa>>8)&255)+(((pb>>8)&255)-((pa>>8)&255))*t),bl=Math.round((pa&255)+((pb&255)-(pa&255))*t); return 'rgb('+r+','+g+','+bl+')'; }
@@ -1735,20 +1742,32 @@ function pulseLoop(){ try{ const bp=document.getElementById('board-panel'); cons
   lastPulseT=now; renderFreeze();
   // Two wall layers cross-fade off the SAME whole-second clock: as the outgoing edge fades out the
   // incoming edge rises in (no gap, no dark frame), and the pulse only breathes full↔dim (never off).
-  { const w0=document.getElementById('wall0'), w1=document.getElementById('wall1'); const s=hotSideNow();
+  { const w0=document.getElementById('wall0'), w1=document.getElementById('wall1'), w2=document.getElementById('wall2'); const s=hotSideNow();
     const intro=beamIntroT?Math.min(1,(now-beamIntroT)/450):1;   // the whole beam glows IN over ~0.45s when you press Empezar
+    const setO=(el,v)=>{ if(el&&el._op!==v){ el._op=v; el.style.opacity=v; } };          // memoized writes — never touch style
+    const setT=(el,v)=>{ if(el&&el._tr!==v){ el._tr=v; el.style.transform=v; } };        // unless the value actually changed
     if(w0&&w1){
-      if(s<0){ w0.style.opacity='0'; w1.style.opacity='0'; w0.style.transform=''; w1.style.transform=''; }
-      else if(frozen){ setWallBg(w0,wallGrad(s)); w0.style.opacity=intro.toFixed(3); w0.style.transform=''; w1.style.opacity='0'; w1.style.transform=''; }
+      if(s<0){ setO(w0,'0'); setO(w1,'0'); setO(w2,'0'); setT(w0,''); setT(w1,''); setT(w2,''); }
+      else if(frozen){ const io=intro.toFixed(3); setWallBg(w0,wallGrad(s)); setO(w0,io); setT(w0,'');
+        if(twoSided()){ const nx=((HOT_START+HOT_DIR*(hotIndex()+1))%4+4)%4; setWallBg(w1,wallGrad(nx)); setO(w1,io); setT(w1,''); } else { setO(w1,'0'); setT(w1,''); }
+        setO(w2,'0'); setT(w2,''); }
       else { const frac=Math.max(0,Math.min(0.999,(now-startedAt)/1000-elapsed));
         const bx=elapsed+frac-beamBaseTime-HOT_GRACE; const kf=Math.floor(bx/PERIOD), into=bx-kf*PERIOD; const k=beamBaseIndex+kf;
-        const eK=((HOT_START+HOT_DIR*k)%4+4)%4, eN=((HOT_START+HOT_DIR*(k+1))%4+4)%4;
-        const layA=(k%2===0)?w0:w1, layB=(k%2===0)?w1:w0;   // pin each dwell to a layer by parity
-        setWallBg(layA,wallGrad(eK)); setWallBg(layB,wallGrad(eN));
-        if(into<HOT_DWELL){ layA.style.transform=''; layA.style.opacity=intro.toFixed(3); layB.style.opacity='0'; layB.style.transform=''; }   /* STATIC for the full 5s — solid, no slide */
-        else { const p=(into-HOT_DWELL)/MOVE_DUR, fK=beamFwd(eK), fN=beamFwd(eN);   // then it MOVES: outgoing edge trains OFF; incoming edge trains IN around the corner
-          layA.style.transform='translate('+(fK[0]*p*100).toFixed(2)+'%,'+(fK[1]*p*100).toFixed(2)+'%)'; layA.style.opacity=intro.toFixed(3);
-          layB.style.transform='translate('+(-fN[0]*(1-p)*100).toFixed(2)+'%,'+(-fN[1]*(1-p)*100).toFixed(2)+'%)'; layB.style.opacity=intro.toFixed(3); } } } } }catch(e){}
+        const eK=((HOT_START+HOT_DIR*k)%4+4)%4, eN=((HOT_START+HOT_DIR*(k+1))%4+4)%4; const io=intro.toFixed(3);
+        if(twoSided()){   // boards 4–5: TWO live walls. Dwell: eK+eN sit. Slide: eK trains OFF, eN holds, eNN trains IN.
+          const eNN=((HOT_START+HOT_DIR*(k+2))%4+4)%4;
+          setWallBg(w0,wallGrad(eK)); setWallBg(w1,wallGrad(eN)); setWallBg(w2,wallGrad(eNN));
+          if(into<HOT_DWELL){ setT(w0,''); setO(w0,io); setT(w1,''); setO(w1,io); setO(w2,'0'); setT(w2,''); }
+          else { const p=(into-HOT_DWELL)/MOVE_DUR, fK=beamFwd(eK), fNN=beamFwd(eNN);
+            setT(w0,'translate('+(fK[0]*p*100).toFixed(2)+'%,'+(fK[1]*p*100).toFixed(2)+'%)'); setO(w0,io);
+            setT(w1,''); setO(w1,io);
+            setT(w2,'translate('+(-fNN[0]*(1-p)*100).toFixed(2)+'%,'+(-fNN[1]*(1-p)*100).toFixed(2)+'%)'); setO(w2,io); } }
+        else { const layA=(k%2===0)?w0:w1, layB=(k%2===0)?w1:w0;   // pin each dwell to a layer by parity
+          setWallBg(layA,wallGrad(eK)); setWallBg(layB,wallGrad(eN)); setO(w2,'0');
+          if(into<HOT_DWELL){ setT(layA,''); setO(layA,io); setO(layB,'0'); setT(layB,''); }   /* STATIC for the full dwell */
+          else { const p=(into-HOT_DWELL)/MOVE_DUR, fK=beamFwd(eK), fN=beamFwd(eN);   // then it MOVES: outgoing edge trains OFF; incoming edge trains IN around the corner
+            setT(layA,'translate('+(fK[0]*p*100).toFixed(2)+'%,'+(fK[1]*p*100).toFixed(2)+'%)'); setO(layA,io);
+            setT(layB,'translate('+(-fN[0]*(1-p)*100).toFixed(2)+'%,'+(-fN[1]*(1-p)*100).toFixed(2)+'%)'); setO(layB,io); } } } } } }catch(e){}
   // three-segment effect bar: each fills its colour on activation and drains as its timer/streak runs down
   try{ const tn=Date.now(), sr=document.getElementById('seg-racha'), sp=document.getElementById('seg-giro'), sh=document.getElementById('seg-candado'), sgB=document.getElementById('seg-borde');
     if(sr) sr.style.transform='scaleX('+(rachaLeft>0?Math.max(0,Math.min(1,rachaLeft/rachaTotal)):0).toFixed(3)+')';
@@ -1778,13 +1797,14 @@ function applyRole(pid){ const r=ROLE[pid];
 // border to the OPPOSITE side and restart its 5s dwell. The clock keeps running — Desviar
 // controls the hazard, it doesn't stop time. (freezeCharges/freezeFill are reused as the
 // charge store so saved games keep their charge across the rename.)
-function renderFreeze(){ const fz=document.getElementById('flx-desviar');
+function renderFreeze(){ const fz=document.getElementById('flx-desviar'); if(!fz) return;
   // The button stays FULL opacity (never the dim "disabled" look); only the ready (glowing)
-  // state is clickable, exactly like Cascada's Congelar.
+  // state is clickable, exactly like Cascada's Congelar. All writes are memoized — this runs every rAF.
   const playing=started && !finished, has=freezeCharges>0 && playing;
-  if(fz){ fz.disabled=!playing; fz.classList.toggle('ready', has);
-    const fillTo = (freezeCharges>=FREEZE_MAX)?1:freezeFill;
-    const f=fz.querySelector('.act-fill'); if(f) f.style.transform='scaleX('+fillTo.toFixed(3)+')'; } }
+  if(fz._dis!==!playing){ fz._dis=!playing; fz.disabled=!playing; }
+  if(fz._rdy!==has){ fz._rdy=has; fz.classList.toggle('ready', has); }
+  const fillTo=(freezeCharges>=FREEZE_MAX)?1:freezeFill, tv='scaleX('+fillTo.toFixed(3)+')';
+  const f=fz._fill||(fz._fill=fz.querySelector('.act-fill')); if(f && f._tr!==tv){ f._tr=tv; f.style.transform=tv; } }
 function useDesviar(){ if(freezeCharges<=0 || finished || !started) return;
   if(hotSideNow()<0) return;                               // border not out yet — nothing to deflect
   freezeCharges--;
