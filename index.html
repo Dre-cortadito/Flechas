@@ -419,6 +419,8 @@
   .tut-dot.on{ background:var(--accent); }
   .tut-next{ display:block; margin:0 auto; padding:11px 32px; border-radius:999px; border:none; background:var(--accent); color:#fff; font:700 15px var(--font-ui); cursor:pointer; }
   .tut-open-btn{ display:inline-flex; align-items:center; gap:7px; margin:2px 0 12px; padding:9px 16px; border-radius:999px; border:2px solid var(--accent); background:transparent; color:var(--accent); font:700 14px var(--font-ui); cursor:pointer; }
+  .tut-again{ display:flex; align-items:center; justify-content:center; gap:8px; margin:12px 0 0; font:500 13px var(--font-ui); color:var(--ink-soft); cursor:pointer; user-select:none; -webkit-user-select:none; }
+  .tut-again input{ width:16px; height:16px; margin:0; accent-color:var(--accent); cursor:pointer; }
   .tv line,.tv polyline{ stroke-width:11; stroke-linecap:round; stroke-linejoin:round; fill:none; }
   @keyframes tvLaunch{ 0%{transform:translateX(0);color:var(--ink);opacity:1} 28%{color:var(--success)} 64%{transform:translateX(116px);color:var(--success);opacity:1} 82%,100%{transform:translateX(152px);opacity:0} }
   .tv-launch{ animation:tvLaunch 2.6s ease-in-out infinite; }
@@ -493,6 +495,7 @@
         <div class="more-menu" id="menu-pop">
           <a class="more-item" id="m-theme" role="button"><span>Tema</span><span class="more-theme-name" id="m-theme-name">Claro</span></a>
           <a class="more-item" id="m-arch" role="button"><span>Arquitectura</span><span class="more-theme-name" id="m-arch-name">Clásico</span></a>
+          <a class="more-item" id="m-tut" role="button"><span>Ver tutorial</span></a>
           <a class="more-item" id="m-share" role="button"><span>Compartir</span></a>
           <a class="more-item more-item-cta" id="m-sub" role="button"><span>Suscribirse al boletín</span></a>
         </div>
@@ -547,7 +550,7 @@
     <div class="modal">
       <button class="modal-close" data-close>✕</button>
       <h2>Cómo jugar</h2>
-      <button class="tut-open-btn" style="display:none" onclick="openTutorial()">▶ Ver tutorial animado</button>
+      <button class="tut-open-btn" onclick="openTutorial()">▶ Ver tutorial animado</button>
       <p><b>Borde</b> es una <b>carrera diaria de 5 tableros</b>, igual para todo el mundo. Despeja un tablero y <b>cae el siguiente</b> — el <b>reloj, los corazones, el borde y el desviador no se reinician</b>: siguen de un tablero al otro. El contador a la derecha del reloj marca <b>Tablero N/5</b>.</p>
       <p>Cada <b>flecha</b> es una forma de varias casillas (recta, en L, en zigzag) que termina en una <b>punta</b>. Tócala para <b>lanzarla</b>: la forma entera sale volando hacia donde apunta la punta y desaparece. Despeja <b>todas</b> las flechas de cada tablero para avanzar.</p>
       <p class="muted">La flecha sale <b>como un tren</b>: la punta primero, y el cuerpo la sigue por su propio camino. Solo importa lo que esté <b>delante de la punta</b> — si otra flecha está en ese carril, <b>choca</b> y rebota, y la flecha que estorba <b>parpadea en rojo</b>. Despeja el tablero lanzándolas en el orden correcto.</p>
@@ -2211,6 +2214,7 @@ function boot(){
     menuBtn.addEventListener('click',e=>{ e.stopPropagation(); toggleMenu(); });
     document.addEventListener('click',e=>{ if(!e.target.closest('.header-nav')) toggleMenu(false); });
     document.getElementById('m-theme').addEventListener('click',()=>{ toggleTheme(); toggleMenu(false); });
+    document.getElementById('m-tut').addEventListener('click',()=>{ toggleMenu(false); if(window.openTutorial) window.openTutorial(); });
     document.getElementById('m-share').addEventListener('click',()=>{ toggleMenu(false); doShare(); });
     document.getElementById('m-sub').addEventListener('click',()=>{ toggleMenu(false); window.open(NEWSLETTER_URL,'_blank'); });
     document.getElementById('land-sub').addEventListener('click',()=>window.open(NEWSLETTER_URL,'_blank'));
@@ -2267,13 +2271,16 @@ boot();
     </div>
     <div class="tut-dots" id="tut-dots"></div>
     <button class="tut-next" id="tut-next">Siguiente</button>
+    <label class="tut-again" for="tut-chk"><input type="checkbox" id="tut-chk"> No volver a mostrar</label>
   </div>
 </div>
 <script>
 (function(){
   var ov=document.getElementById('tut-ov'); if(!ov) return;
-  var track=document.getElementById('tut-track'), dotbox=document.getElementById('tut-dots'), nextb=document.getElementById('tut-next');
+  var KEY='flx-tut-v1';
+  var track=document.getElementById('tut-track'), dotbox=document.getElementById('tut-dots'), nextb=document.getElementById('tut-next'), chk=document.getElementById('tut-chk');
   var slides=track.children, n=slides.length, cur=0;
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
   for(var i=0;i<n;i++){ var d=document.createElement('button'); d.className='tut-dot'; d.setAttribute('aria-label','Paso '+(i+1)); (function(k){ d.onclick=function(){ go(k); }; })(i); dotbox.appendChild(d); }
   function upd(){ var dd=dotbox.children; for(var i=0;i<n;i++) dd[i].className='tut-dot'+(i===cur?' on':''); nextb.textContent=(cur>=n-1)?'¡A jugar!':'Siguiente'; }
   function go(i){ cur=Math.max(0,Math.min(n-1,i)); track.scrollTo({left:cur*track.clientWidth, behavior:'smooth'}); upd(); }
@@ -2281,11 +2288,12 @@ boot();
   nextb.onclick=function(){ if(cur>=n-1) close(); else go(cur+1); };
   document.getElementById('tut-x').onclick=close;
   ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
-  function open(){ ov.classList.add('open'); cur=0; track.scrollLeft=0; upd(); }
-  function close(){ ov.classList.remove('open'); try{ localStorage.setItem('flx-tut-v1','1'); }catch(e){} }
+  function open(){ chk.checked=!!lsGet(KEY); ov.classList.add('open'); cur=0; track.scrollLeft=0; upd(); }
+  function close(){ ov.classList.remove('open'); try{ if(chk.checked) localStorage.setItem(KEY,'1'); else localStorage.removeItem(KEY); }catch(e){} }
   window.openTutorial=open;
   // First-visit auto-open is triggered when the player ENTERS the game (not on the landing) — see play-btn.
-  window.maybeOpenTutorial=function(){ /* tutorial oculto por ahora — código conservado, auto-apertura desactivada */ };
+  // Shows before every first game until "No volver a mostrar" is checked.
+  window.maybeOpenTutorial=function(){ try{ if(!lsGet(KEY)) open(); }catch(e){} };
 })();
 </script>
 </body>
