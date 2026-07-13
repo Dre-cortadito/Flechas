@@ -1951,7 +1951,7 @@ function renderStatus(){
   if(started && !finished){ const into=(((elapsed-beamBaseTime-HOT_GRACE)%PERIOD)+PERIOD)%PERIOD; setFx('fb-borde', true, into<HOT_DWELL?(Math.max(1,Math.ceil(HOT_DWELL-into))+'s'):'—'); }
   else setFx('fb-borde', false, '—');
   const lc=document.getElementById('flx-left'); if(lc) lc.textContent=boardNum+'/'+RUN_BOARDS;
-  const pb=document.getElementById('prog-borde'); if(pb) pb.style.transform='scaleX('+(Math.max(0,Math.min(1,boardNum/RUN_BOARDS)))+')';   // board N of 5 → N/5
+  const pb=document.getElementById('prog-borde'); if(pb) pb.style.transform='scaleX('+((started||finished)?Math.max(0,Math.min(1,boardNum/RUN_BOARDS)):0)+')';   // empty until Empezar; board 1 = 1/5   // board N of 5 → N/5
 }
 
 /* ============================ INTERACTION ============================ */

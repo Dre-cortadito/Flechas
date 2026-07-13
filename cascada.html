@@ -133,7 +133,7 @@
   /* refresh countdown line lives BETWEEN the board and the status box (so the board glow never hides it) */
   .refresh-box { width:var(--gw); margin:8px auto 0; padding:5px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; }   /* shared thin progress bar (board-drop countdown) */
   .refresh-box .refresh-track { height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
-  .refresh-box .refresh-bar { display:block; height:100%; width:100%; background:var(--accent); transform-origin:left; transform:scaleX(1); }
+  .refresh-box .refresh-bar { display:block; height:100%; width:100%; background:var(--accent); transform-origin:left; transform:scaleX(0); }   /* empty until Empezar; the loop fills it (full → drains) once running — matches Borde/Clásico */
   .refresh-box .refresh-bar.warn { background:#EA3546; }   /* board-change countdown: teal, then PINK in the last 5 s */
 
   /* ===== Status box under the board (mirrors the meta row up top) ===== */
@@ -457,6 +457,44 @@
     <div class="stats-ranks" id="stats-ranks"></div>
     <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador, las cookies o el historial del sitio, <b>tus estadísticas se borrarán</b>. Tampoco se sincronizan entre dispositivos: cada navegador tiene su propio registro.</p>
   </div></div>
+
+<div class="modal-ov" id="about-ov"><div class="modal"><button class="x" id="about-x" type="button">✕</button>
+    <h2>Sobre Cascada</h2>
+    <p><strong>Cascada</strong> es el modo arcade de <strong>Flechas</strong>, los acertijos diarios en español de Cortadito News: dos minutos, tableros que caen y todos los puntos que logres sumar.</p>
+    <h3 style="margin:14px 0 6px;font-size:15px;">Cómo se genera</h3>
+    <p>Cada día se genera la cascada de forma <strong>determinista</strong> a partir de la fecha: todos los jugadores reciben los mismos tableros el mismo día, sin servidor. Cada tablero se genera <strong>resoluble</strong>, con jugadas de apertura garantizadas.</p>
+    <h3 style="margin:14px 0 6px;font-size:15px;">Privacidad</h3>
+    <p>Todo se ejecuta en tu navegador. Tu progreso y estadísticas se guardan <strong>solo en este navegador</strong>. No recolectamos datos ni usamos cookies de seguimiento.</p>
+    <p style="margin-top:14px;color:var(--ink-soft);font-size:13px;">Editado y servido con cariño por <b>Cortadito News</b>.</p>
+  </div></div>
+
+<!-- ===== CELEBRATIONS (family standard) ===== -->
+<div class="goal-panel" id="goal-panel" role="dialog" aria-modal="true">
+  <div class="goal-card">
+    <button class="goal-close" data-close-goal="goal-panel">&#10005;</button>
+    <div class="goal-mark goal-cup" aria-hidden="true"></div>
+    <h2 class="goal-headline">¡Buen sorbo!</h2>
+    <p class="goal-subhead">Alcanzaste la meta del día.</p>
+    <p class="goal-subhead" id="goal-sub"></p>
+    <div class="goal-actions">
+      <button class="btn" id="goal-share" type="button">Compartir</button>
+      <button class="btn ghost" data-close-goal="goal-panel" type="button">Seguir jugando</button>
+    </div>
+  </div>
+</div>
+<div class="goal-panel" id="maestro-panel" role="dialog" aria-modal="true">
+  <div class="goal-card">
+    <button class="goal-close" data-close-goal="maestro-panel">&#10005;</button>
+    <div class="goal-mark goal-cup" aria-hidden="true"></div>
+    <h2 class="goal-headline maestro">¡Maestro/a!</h2>
+    <p class="goal-subhead">El rango más alto — una cascada de puntos digna de Maestro/a.</p>
+    <div class="goal-actions">
+      <button class="btn" id="maestro-share" type="button">Compartir</button>
+      <button class="btn ghost" data-close-goal="maestro-panel" type="button">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 (function(){
@@ -798,6 +836,7 @@
     best=+(lsGet('cascada-best-'+ISO)||0);
     buildSVG(); rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard(); assignRoles(); layer=newLayer(); renderInto(layer);
     refreshAt=Date.now()+REFRESH_MS;
+    { const rb=$('refresh-bar'); if(rb){ rb.style.transform='scaleX(1)'; rb.classList.remove('warn'); } }   // fill on Empezar (full countdown), then the loop drains it
     $('score').textContent='0'; { const cl=$('cleared'); if(cl) cl.textContent='0'; } { const bd=$('boards-done'); if(bd) bd.textContent='0'; } $('nextin').textContent=Math.round(REFRESH_MS/1000); $('timer').textContent=fmt(GAME_SECS); $('timer').classList.remove('low');
     renderLives(); updateShieldHUD(); updateFrenesi(); running=true; renderRank(); renderCombo(false);
     $('gate').classList.add('hidden'); updateFreeze(); rafId=requestAnimationFrame(loop); }
@@ -901,9 +940,10 @@
   document.addEventListener('click', e=>{ if(!e.target.closest('.nav-more-wrap')) toggleMenu(false); });
   $('m-theme').addEventListener('click', ()=>{ applyTheme(document.body.getAttribute('data-theme')==='black'?'light':'black'); toggleMenu(false); });
   $('m-tut').addEventListener('click', ()=>{ toggleMenu(false); if(window.openTutorial) window.openTutorial(); });
-  $('m-about').addEventListener('click', ()=>{ toggleMenu(false); $('about-ov').classList.add('open'); });
-  $('about-x').addEventListener('click', ()=>$('about-ov').classList.remove('open'));
-  $('about-ov').addEventListener('click', e=>{ if(e.target===$('about-ov')) $('about-ov').classList.remove('open'); });
+  { const _ma=$('m-about'), _ax=$('about-x'), _ao=$('about-ov');
+    if(_ma&&_ao) _ma.addEventListener('click', ()=>{ toggleMenu(false); _ao.classList.add('open'); });
+    if(_ax&&_ao) _ax.addEventListener('click', ()=>_ao.classList.remove('open'));
+    if(_ao) _ao.addEventListener('click', e=>{ if(e.target===_ao) _ao.classList.remove('open'); }); }
 
   // ===== Anteriores — archive calendar (Racimo standard: #YYYY-MM-DD selects the day) =====
   (function(){
@@ -973,43 +1013,6 @@
     shield:()=>shields>0, shields:()=>shields, frenzy:()=>frenzyActive(), freezeChg:()=>freezeCharge, lives:()=>lives, pts:()=>points, combo:()=>combo, blockedId:()=>{ const p=Object.values(pieces).find(p=>p.el&&!laneClear(p)); return p?p.id:-1; } }; }catch(e){}
 })();
 </script>
-
-<div class="modal-ov" id="about-ov"><div class="modal"><button class="x" id="about-x" type="button">✕</button>
-    <h2>Sobre Cascada</h2>
-    <p><strong>Cascada</strong> es el modo arcade de <strong>Flechas</strong>, los acertijos diarios en español de Cortadito News: dos minutos, tableros que caen y todos los puntos que logres sumar.</p>
-    <h3 style="margin:14px 0 6px;font-size:15px;">Cómo se genera</h3>
-    <p>Cada día se genera la cascada de forma <strong>determinista</strong> a partir de la fecha: todos los jugadores reciben los mismos tableros el mismo día, sin servidor. Cada tablero se genera <strong>resoluble</strong>, con jugadas de apertura garantizadas.</p>
-    <h3 style="margin:14px 0 6px;font-size:15px;">Privacidad</h3>
-    <p>Todo se ejecuta en tu navegador. Tu progreso y estadísticas se guardan <strong>solo en este navegador</strong>. No recolectamos datos ni usamos cookies de seguimiento.</p>
-    <p style="margin-top:14px;color:var(--ink-soft);font-size:13px;">Editado y servido con cariño por <b>Cortadito News</b>.</p>
-  </div></div>
-
-<!-- ===== CELEBRATIONS (family standard) ===== -->
-<div class="goal-panel" id="goal-panel" role="dialog" aria-modal="true">
-  <div class="goal-card">
-    <button class="goal-close" data-close-goal="goal-panel">&#10005;</button>
-    <div class="goal-mark goal-cup" aria-hidden="true"></div>
-    <h2 class="goal-headline">¡Buen sorbo!</h2>
-    <p class="goal-subhead">Alcanzaste la meta del día.</p>
-    <p class="goal-subhead" id="goal-sub"></p>
-    <div class="goal-actions">
-      <button class="btn" id="goal-share" type="button">Compartir</button>
-      <button class="btn ghost" data-close-goal="goal-panel" type="button">Seguir jugando</button>
-    </div>
-  </div>
-</div>
-<div class="goal-panel" id="maestro-panel" role="dialog" aria-modal="true">
-  <div class="goal-card">
-    <button class="goal-close" data-close-goal="maestro-panel">&#10005;</button>
-    <div class="goal-mark goal-cup" aria-hidden="true"></div>
-    <h2 class="goal-headline maestro">¡Maestro/a!</h2>
-    <p class="goal-subhead">El rango más alto — una cascada de puntos digna de Maestro/a.</p>
-    <div class="goal-actions">
-      <button class="btn" id="maestro-share" type="button">Compartir</button>
-      <button class="btn ghost" data-close-goal="maestro-panel" type="button">Cerrar</button>
-    </div>
-  </div>
-</div>
 
 <!-- Rotate-to-portrait lock — only shown on phones held in landscape. -->
 <div id="rotate-lock">

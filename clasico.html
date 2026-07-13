@@ -417,6 +417,44 @@
     <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador, las cookies o el historial del sitio, <b>tus estadísticas se borrarán</b>. Tampoco se sincronizan entre dispositivos: cada navegador tiene su propio registro.</p>
   </div></div>
 
+<div class="modal-ov" id="about-ov"><div class="modal"><button class="x" id="about-x" type="button">✕</button>
+    <h2>Sobre Clásico</h2>
+    <p><strong>Clásico</strong> es el modo puro de <strong>Flechas</strong>, los acertijos diarios en español de Cortadito News: un solo tablero enredado que se desenreda flecha a flecha, contra el reloj.</p>
+    <h3 style="margin:14px 0 6px;font-size:15px;">Cómo se genera</h3>
+    <p>Cada día se genera un tablero nuevo de forma <strong>determinista</strong> a partir de la fecha: todos los jugadores reciben el mismo tablero el mismo día, sin servidor. Cada tablero se comprueba <strong>resoluble</strong> antes de servirse. Tu primer intento es el oficial; después puedes entrenar con tableros nuevos.</p>
+    <h3 style="margin:14px 0 6px;font-size:15px;">Privacidad</h3>
+    <p>Todo se ejecuta en tu navegador. Tu progreso y estadísticas se guardan <strong>solo en este navegador</strong>. No recolectamos datos ni usamos cookies de seguimiento.</p>
+    <p style="margin-top:14px;color:var(--ink-soft);font-size:13px;">Editado y servido con cariño por <b>Cortadito News</b>.</p>
+  </div></div>
+
+<!-- ===== CELEBRATIONS (family standard) ===== -->
+<div class="goal-panel" id="goal-panel" role="dialog" aria-modal="true">
+  <div class="goal-card">
+    <button class="goal-close" data-close-goal="goal-panel">&#10005;</button>
+    <div class="goal-mark goal-cup" aria-hidden="true"></div>
+    <h2 class="goal-headline">¡Buen sorbo!</h2>
+    <p class="goal-subhead">Alcanzaste la meta del día.</p>
+    <p class="goal-subhead" id="goal-sub"></p>
+    <div class="goal-actions">
+      <button class="btn" id="goal-share" type="button">Compartir</button>
+      <button class="btn ghost" data-close-goal="goal-panel" type="button">Seguir jugando</button>
+    </div>
+  </div>
+</div>
+<div class="goal-panel" id="maestro-panel" role="dialog" aria-modal="true">
+  <div class="goal-card">
+    <button class="goal-close" data-close-goal="maestro-panel">&#10005;</button>
+    <div class="goal-mark goal-cup" aria-hidden="true"></div>
+    <h2 class="goal-headline maestro">¡Maestro/a!</h2>
+    <p class="goal-subhead">El rango más alto — desenredaste el tablero en tiempo de Maestro/a.</p>
+    <div class="goal-actions">
+      <button class="btn" id="maestro-share" type="button">Compartir</button>
+      <button class="btn ghost" data-close-goal="maestro-panel" type="button">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
 <script>
 (function(){
   "use strict";
@@ -1052,9 +1090,10 @@
   document.addEventListener('click', e=>{ if(!e.target.closest('.nav-more-wrap')) toggleMenu(false); });
   $('m-theme').addEventListener('click', ()=>{ applyTheme(document.body.getAttribute('data-theme')==='black'?'light':'black'); toggleMenu(false); });
   $('m-tut').addEventListener('click', ()=>{ toggleMenu(false); if(window.openTutorial) window.openTutorial(); });
-  $('m-about').addEventListener('click', ()=>{ toggleMenu(false); $('about-ov').classList.add('open'); });
-  $('about-x').addEventListener('click', ()=>$('about-ov').classList.remove('open'));
-  $('about-ov').addEventListener('click', e=>{ if(e.target===$('about-ov')) $('about-ov').classList.remove('open'); });
+  { const _ma=$('m-about'), _ax=$('about-x'), _ao=$('about-ov');
+    if(_ma&&_ao) _ma.addEventListener('click', ()=>{ toggleMenu(false); _ao.classList.add('open'); });
+    if(_ax&&_ao) _ax.addEventListener('click', ()=>_ao.classList.remove('open'));
+    if(_ao) _ao.addEventListener('click', e=>{ if(e.target===_ao) _ao.classList.remove('open'); }); }
 
   // ===== Anteriores — archive calendar (Racimo standard: #YYYY-MM-DD selects the day) =====
   (function(){
@@ -1120,43 +1159,6 @@
     tap:(id)=>tapSnake(id), start:(t)=>startGame(!!t), reto:()=>retoTarget() }; }catch(e){}
 })();
 </script>
-
-<div class="modal-ov" id="about-ov"><div class="modal"><button class="x" id="about-x" type="button">✕</button>
-    <h2>Sobre Clásico</h2>
-    <p><strong>Clásico</strong> es el modo puro de <strong>Flechas</strong>, los acertijos diarios en español de Cortadito News: un solo tablero enredado que se desenreda flecha a flecha, contra el reloj.</p>
-    <h3 style="margin:14px 0 6px;font-size:15px;">Cómo se genera</h3>
-    <p>Cada día se genera un tablero nuevo de forma <strong>determinista</strong> a partir de la fecha: todos los jugadores reciben el mismo tablero el mismo día, sin servidor. Cada tablero se comprueba <strong>resoluble</strong> antes de servirse. Tu primer intento es el oficial; después puedes entrenar con tableros nuevos.</p>
-    <h3 style="margin:14px 0 6px;font-size:15px;">Privacidad</h3>
-    <p>Todo se ejecuta en tu navegador. Tu progreso y estadísticas se guardan <strong>solo en este navegador</strong>. No recolectamos datos ni usamos cookies de seguimiento.</p>
-    <p style="margin-top:14px;color:var(--ink-soft);font-size:13px;">Editado y servido con cariño por <b>Cortadito News</b>.</p>
-  </div></div>
-
-<!-- ===== CELEBRATIONS (family standard) ===== -->
-<div class="goal-panel" id="goal-panel" role="dialog" aria-modal="true">
-  <div class="goal-card">
-    <button class="goal-close" data-close-goal="goal-panel">&#10005;</button>
-    <div class="goal-mark goal-cup" aria-hidden="true"></div>
-    <h2 class="goal-headline">¡Buen sorbo!</h2>
-    <p class="goal-subhead">Alcanzaste la meta del día.</p>
-    <p class="goal-subhead" id="goal-sub"></p>
-    <div class="goal-actions">
-      <button class="btn" id="goal-share" type="button">Compartir</button>
-      <button class="btn ghost" data-close-goal="goal-panel" type="button">Seguir jugando</button>
-    </div>
-  </div>
-</div>
-<div class="goal-panel" id="maestro-panel" role="dialog" aria-modal="true">
-  <div class="goal-card">
-    <button class="goal-close" data-close-goal="maestro-panel">&#10005;</button>
-    <div class="goal-mark goal-cup" aria-hidden="true"></div>
-    <h2 class="goal-headline maestro">¡Maestro/a!</h2>
-    <p class="goal-subhead">El rango más alto — desenredaste el tablero en tiempo de Maestro/a.</p>
-    <div class="goal-actions">
-      <button class="btn" id="maestro-share" type="button">Compartir</button>
-      <button class="btn ghost" data-close-goal="maestro-panel" type="button">Cerrar</button>
-    </div>
-  </div>
-</div>
 
 <!-- Rotate-to-portrait lock — only shown on phones held in landscape. -->
 <div id="rotate-lock">
