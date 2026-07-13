@@ -515,7 +515,6 @@
       </button>
       <a class="nav-rules" data-modal="reglas-modal" role="button">Reglas ▾</a>
       <a data-modal="stats-modal" role="button">Estadísticas ▾</a>
-      <a data-modal="rangos-modal" role="button">Rangos ▾</a>
       <span class="nav-more-wrap">
         <button class="more" id="menu-btn" type="button" aria-label="Más opciones">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
@@ -525,6 +524,7 @@
           <a class="more-item" id="m-arch" role="button"><span>Arquitectura</span><span class="more-theme-name" id="m-arch-name">Clásico</span></a>
           <a class="more-item" id="m-tut" role="button"><span>Ver tutorial</span></a>
           <a class="more-item" id="m-share" role="button"><span>Compartir resultado</span></a>
+          <a class="more-item" id="m-about" role="button"><span>Sobre el juego</span></a>
           <a class="more-item more-item-cta" id="m-sub" role="button"><span>Suscribirse al boletín</span></a>
         </div>
       </span>
@@ -643,6 +643,19 @@
       <p class="stats-note">Cuenta solo el rango con el que terminaste cada día.</p>
       <div id="dist-box"></div>
       <p class="stats-footer">Tus estadísticas se guardan <strong>solo en este navegador</strong>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador, las cookies o el historial del sitio, <strong>tus estadísticas se borrarán</strong>. Tampoco se sincronizan entre dispositivos: cada navegador tiene su propio registro.</p>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="about-modal">
+    <div class="modal">
+      <button class="modal-close" data-close>✕</button>
+      <h2>Sobre Borde</h2>
+      <p><strong>Borde</strong> es la carrera diaria de <strong>Flechas</strong>, los acertijos en español de Cortadito News: cinco tableros seguidos, un borde que recorre la orilla y el reloj que nunca se detiene.</p>
+      <h3>Cómo se genera</h3>
+      <p>Cada día se genera la carrera de forma <strong>determinista</strong> a partir de la fecha: todos los jugadores reciben los mismos cinco tableros el mismo día, sin servidor. Cada tablero se comprueba <strong>resoluble</strong>. Tu primer intento es el oficial; después queda el entrenamiento.</p>
+      <h3>Privacidad</h3>
+      <p>Todo se ejecuta en tu navegador. Tu progreso y estadísticas se guardan <strong>solo en este navegador</strong>. No recolectamos datos ni usamos cookies de seguimiento.</p>
+      <p style="color:var(--ink-soft);font-size:13px;">Editado y servido con cariño por <b>Cortadito News</b>.</p>
     </div>
   </div>
 
@@ -2245,6 +2258,7 @@ function boot(){
     document.getElementById('m-theme').addEventListener('click',()=>{ toggleTheme(); toggleMenu(false); });
     document.getElementById('m-tut').addEventListener('click',()=>{ toggleMenu(false); if(window.openTutorial) window.openTutorial(); });
     document.getElementById('m-share').addEventListener('click',()=>{ toggleMenu(false); doShare(); });
+    document.getElementById('m-about').addEventListener('click',()=>{ toggleMenu(false); openModal('about-modal'); });
     document.getElementById('m-sub').addEventListener('click',()=>{ toggleMenu(false); window.open(NEWSLETTER_URL,'_blank'); });
     document.getElementById('land-sub').addEventListener('click',()=>window.open(NEWSLETTER_URL,'_blank'));
 

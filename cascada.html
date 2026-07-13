@@ -318,13 +318,13 @@
       <a class="header-home" href="./index.html?modo=cascada#landing" aria-label="Inicio" onclick="event.preventDefault();location.replace(this.getAttribute('href'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></a>
       <a class="nav-rules" id="rules-link" role="button">Reglas ▾</a>
       <a id="stats-link" role="button">Estadísticas ▾</a>
-      <a id="ranks-link" role="button">Rangos ▾</a>
       <span class="nav-more-wrap">
         <button class="more" id="menu-btn" type="button" aria-label="Más opciones"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
         <div class="more-menu" id="menu-pop">
           <a class="more-item" id="m-theme" role="button"><span>Tema</span><span class="more-theme-name" id="m-theme-name">Claro</span></a>
           <a class="more-item" id="m-tut" role="button"><span>Ver tutorial</span></a>
           <a class="more-item" id="m-share" role="button"><span>Compartir resultado</span></a>
+          <a class="more-item" id="m-about" role="button"><span>Sobre el juego</span></a>
           <a class="more-item more-item-cta" id="m-sub" role="button"><span>Suscribirse al boletín</span></a>
         </div>
       </span>
@@ -400,8 +400,14 @@
 
   <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button">✕</button>
     <h2>Estadísticas</h2>
+    <h3 style="margin:14px 0 6px;font-size:15px;">Hoy</h3>
+    <div class="cstat-grid" id="stats-today"></div>
+    <h3 style="margin:18px 0 6px;font-size:15px;">Récord general</h3>
     <div class="cstat-grid" id="casc-stats"></div>
+    <h3 style="margin:18px 0 6px;font-size:15px;">Rachas</h3>
+    <div class="cstat-grid" id="stats-streaks"></div>
     <h3 style="margin:18px 0 6px;font-size:15px;">Distribución de rangos</h3>
+    <p style="margin:0 0 6px;font-size:12px;color:var(--ink-soft);">Cuenta solo el rango con el que terminaste cada día.</p>
     <div id="casc-dist"></div>
     <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador, las cookies o el historial del sitio, <b>tus estadísticas se borrarán</b>. Tampoco se sincronizan entre dispositivos: cada navegador tiene su propio registro.</p>
   </div></div>
@@ -812,11 +818,19 @@
   function cGetStats(){ const d={played:0,best:0,ranks:[0,0,0,0,0,0,0,0,0,0],last:null,cur:0,max:0}; try{ return Object.assign(d, JSON.parse(lsGet('cascada-stats'))||{}); }catch(e){ return d; } }
   function recordStats(){ const s=cGetStats(); s.played++; if(points>s.best) s.best=points; s.ranks[rankNow()]=(s.ranks[rankNow()]||0)+1;
     if(s.last!==ISO){ s.cur=(s.last===cPrevISO(ISO))?s.cur+1:1; s.last=ISO; if(s.cur>s.max) s.max=s.cur; }
+    const hit=points>=retoTarget();
+    if(hit && s.lastReto!==ISO){ s.retos=(s.retos||0)+1; s.curReto=(s.lastReto===cPrevISO(ISO))?(s.curReto||0)+1:1; s.lastReto=ISO; if(s.curReto>(s.maxReto||0)) s.maxReto=s.curReto; }
     lsSet('cascada-stats', JSON.stringify(s)); }
   function openStats(o){ if(o) renderStats(); $('stats-ov').classList.toggle('open', o); }
   function renderStats(){ const s=cGetStats();
     const cell=(v,l)=>'<div class="cstat"><div class="cv">'+v+'</div><div class="cl">'+l+'</div></div>';
-    $('casc-stats').innerHTML = cell(s.played,'Jugadas')+cell(s.best||'—','Récord')+cell(s.cur,'Racha')+cell(s.max,'Racha máx.');
+    const pb2=+(lsGet('cascada-best-'+ISO)||0), reto=retoTarget();
+    let ri=0; for(let k=0;k<RANK_CUT.length;k++) if(pb2>=RANK_CUT[k]) ri=k;
+    const st=$('stats-today'); if(st) st.innerHTML = pb2>0
+      ? cell(RANK_NAMES[ri],'Rango de hoy')+cell(pb2,'Puntos')+cell(pb2>=reto?'✅':'—','Reto del día')
+      : cell('—','Rango de hoy')+cell('—','Puntos')+cell('—','Reto del día');
+    $('casc-stats').innerHTML = cell(s.played,'Jugadas')+cell(s.best||'—','Récord')+cell(s.retos||0,'Retos logrados')+cell(s.max,'Mejor racha');
+    const ss=$('stats-streaks'); if(ss) ss.innerHTML = cell(s.cur,'Racha de juego')+cell(s.curReto||0,'Racha de reto')+cell(s.max,'Mejor de juego')+cell(s.maxReto||0,'Mejor de reto');
     const tot=s.ranks.reduce((a,b)=>a+b,0)||1, cur=rankNow(); let h='';
     for(let i=RANK_NAMES.length-1;i>=0;i--){ const pct=Math.round(s.ranks[i]/tot*100);
       h+='<div class="cdist-row'+(i===cur&&over?' cur':'')+'"><span class="cdn">'+RANK_NAMES[i]+'</span><span class="cdbar"><span class="cdfill" style="width:'+pct+'%"></span></span><span class="cdc">'+s.ranks[i]+'</span></div>'; }
@@ -827,7 +841,6 @@
   $('rules-x').addEventListener('click', ()=>openRules(false));
   $('rules-ov').addEventListener('click', e=>{ if(e.target===$('rules-ov')) openRules(false); });
   $('rank-bar').addEventListener('click', ()=>openRanks(true));
-  $('ranks-link').addEventListener('click', ()=>openRanks(true));
   $('ranks-x').addEventListener('click', ()=>openRanks(false));
   $('ranks-ov').addEventListener('click', e=>{ if(e.target===$('ranks-ov')) openRanks(false); });
   $('stats-link').addEventListener('click', ()=>openStats(true));
@@ -837,6 +850,9 @@
   document.addEventListener('click', e=>{ if(!e.target.closest('.nav-more-wrap')) toggleMenu(false); });
   $('m-theme').addEventListener('click', ()=>{ applyTheme(document.body.getAttribute('data-theme')==='black'?'light':'black'); toggleMenu(false); });
   $('m-tut').addEventListener('click', ()=>{ toggleMenu(false); if(window.openTutorial) window.openTutorial(); });
+  $('m-about').addEventListener('click', ()=>{ toggleMenu(false); $('about-ov').classList.add('open'); });
+  $('about-x').addEventListener('click', ()=>$('about-ov').classList.remove('open'));
+  $('about-ov').addEventListener('click', e=>{ if(e.target===$('about-ov')) $('about-ov').classList.remove('open'); });
   document.querySelectorAll('[data-close-goal]').forEach(b=>b.addEventListener('click', ()=>{ const p=$(b.getAttribute('data-close-goal')); if(p) p.classList.remove('open'); }));
   const _gs=$('goal-share'); if(_gs) _gs.addEventListener('click', doShare);
   const _ms=$('maestro-share'); if(_ms) _ms.addEventListener('click', doShare);
@@ -861,6 +877,16 @@
     shield:()=>shields>0, shields:()=>shields, frenzy:()=>frenzyActive(), freezeChg:()=>freezeCharge, lives:()=>lives, pts:()=>points, combo:()=>combo, blockedId:()=>{ const p=Object.values(pieces).find(p=>p.el&&!laneClear(p)); return p?p.id:-1; } }; }catch(e){}
 })();
 </script>
+
+<div class="modal-ov" id="about-ov"><div class="modal"><button class="x" id="about-x" type="button">✕</button>
+    <h2>Sobre Cascada</h2>
+    <p><strong>Cascada</strong> es el modo arcade de <strong>Flechas</strong>, los acertijos diarios en español de Cortadito News: dos minutos, tableros que caen y todos los puntos que logres sumar.</p>
+    <h3 style="margin:14px 0 6px;font-size:15px;">Cómo se genera</h3>
+    <p>Cada día se genera la cascada de forma <strong>determinista</strong> a partir de la fecha: todos los jugadores reciben los mismos tableros el mismo día, sin servidor. Cada tablero se genera <strong>resoluble</strong>, con jugadas de apertura garantizadas.</p>
+    <h3 style="margin:14px 0 6px;font-size:15px;">Privacidad</h3>
+    <p>Todo se ejecuta en tu navegador. Tu progreso y estadísticas se guardan <strong>solo en este navegador</strong>. No recolectamos datos ni usamos cookies de seguimiento.</p>
+    <p style="margin-top:14px;color:var(--ink-soft);font-size:13px;">Editado y servido con cariño por <b>Cortadito News</b>.</p>
+  </div></div>
 
 <!-- ===== CELEBRATIONS (family standard) ===== -->
 <div class="goal-panel" id="goal-panel" role="dialog" aria-modal="true">
