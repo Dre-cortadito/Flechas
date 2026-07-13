@@ -253,7 +253,7 @@
   .tv line,.tv polyline{ stroke-width:11; stroke-linecap:round; stroke-linejoin:round; fill:none; }
   @keyframes tvLaunch{ 0%{transform:translateX(0);color:var(--ink);opacity:1} 28%{color:#157145} 64%{transform:translateX(116px);color:#157145;opacity:1} 82%,100%{transform:translateX(152px);opacity:0} }
   .tv-launch{ animation:tvLaunch 2.6s ease-in-out infinite; }
-  @keyframes tvBump{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(46px);color:var(--ink)} 44%{color:#EA3546} 58%{transform:translateX(46px);color:#EA3546} 80%,100%{transform:translateX(0);color:var(--ink)} }
+  @keyframes tvBump{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(38px);color:var(--ink)} 38%{transform:translateX(38px);color:var(--error)} 64%{transform:translateX(0);color:var(--error)} 74%,100%{transform:translateX(0);color:var(--ink)} }
   .tv-bump{ animation:tvBump 2.6s ease-in-out infinite; }
   @keyframes tvBlk{ 0%,40%{color:var(--ink)} 48%,58%{color:#EA3546} 80%,100%{color:var(--ink)} }
   .tv-blk{ animation:tvBlk 2.6s ease-in-out infinite; }
@@ -819,7 +819,7 @@
         <p>Despeja <b>r&aacute;pido y seguido</b> para subir el combo (&times;2, &times;3&hellip;). M&aacute;s combo = <b style="color:var(--accent)">m&aacute;s puntos</b> por flecha.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g class="tv-blk"><line x1="150" y1="22" x2="150" y2="90" stroke="currentColor"/><polyline points="134,40 150,20 166,40" stroke="currentColor"/></g><g class="tv-bump"><line x1="34" y1="74" x2="108" y2="74" stroke="currentColor"/><polyline points="94,58 118,74 94,90" stroke="currentColor"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="22" x2="150" y2="90" stroke="var(--arrow)"/><polyline points="134,40 150,20 166,40" stroke="var(--arrow)"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><polyline points="82,58 106,74 82,90" stroke="currentColor"/></g></svg></div>
         <h3>Choque</h3>
         <p>Tocar una flecha <b>tapada</b> choca contra la que la tapa: rebota, <b>corta el combo</b> y cuesta <b style="color:#EA3546">&frac12; coraz&oacute;n</b>.</p>
       </section>
