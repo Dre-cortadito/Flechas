@@ -276,6 +276,9 @@
   @keyframes tvBumpSafe{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(38.5px);color:var(--ink)} 34.5%{transform:translateX(38.5px);color:#a600ae} 62%{transform:translateX(0);color:#a600ae} 72%,100%{transform:translateX(0);color:var(--ink)} }
   .tv-bump-safe{ animation:tvBumpSafe 2.6s linear infinite; }
 
+  /* finish celebration — confetti burst (family standard, canvas, no libs) */
+  .confetti-box { position:fixed; inset:0; pointer-events:none; z-index:120; }
+
   /* ===== Cascade "waterfall" wash — only during a board refresh ===== */
   .casc-wf { position:absolute; inset:0; z-index:18; pointer-events:none; opacity:0; overflow:hidden; border-radius:18px; }
   .casc-wf svg { position:absolute; inset:0; width:100%; height:100%; display:block; }
@@ -725,6 +728,31 @@
     $('score').textContent='0'; { const cl=$('cleared'); if(cl) cl.textContent='0'; } { const bd=$('boards-done'); if(bd) bd.textContent='0'; } $('nextin').textContent=Math.round(REFRESH_MS/1000); $('timer').textContent=fmt(GAME_SECS); $('timer').classList.remove('low');
     renderLives(); updateShieldHUD(); updateFrenesi(); running=true; renderRank(); renderCombo(false);
     $('gate').classList.add('hidden'); updateFreeze(); rafId=requestAnimationFrame(loop); }
+  function launchConfetti(n){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    n=n||90;
+    const colors=['#0062E3','#084BB0','#9CCCEC','#F9C80E','#EA3546'];
+    const cv=document.createElement('canvas'); cv.className='confetti-box';
+    const W=window.innerWidth, Hh=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
+    cv.width=W*dpr; cv.height=Hh*dpr; cv.style.width=W+'px'; cv.style.height=Hh+'px';
+    document.body.appendChild(cv);
+    const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+    const P=[];
+    for(let i=0;i<n;i++) P.push({ x:Math.random()*W, y:-20-Math.random()*Hh*0.3,
+      w:5+Math.random()*5, h:8+Math.random()*8, vx:(Math.random()-0.5)*1.6,
+      vy:2.2+Math.random()*3, rot:Math.random()*6.28, vr:(Math.random()-0.5)*0.32,
+      c:colors[(Math.random()*colors.length)|0] });
+    const t0=performance.now(); let raf;
+    (function frame(t){
+      const dt=t-t0; ctx.clearRect(0,0,W,Hh); let alive=false;
+      const a= dt>2200 ? Math.max(0,1-(dt-2200)/700) : 1;
+      for(const p of P){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.045; p.rot+=p.vr;
+        if(p.y<Hh+24) alive=true;
+        ctx.save(); ctx.globalAlpha=a; ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+        ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); }
+      if(alive && dt<3200) raf=requestAnimationFrame(frame); else cv.remove();
+    })(t0);
+  }
   function endGame(reason){ if(over) return; over=true; running=false; if(rafId) cancelAnimationFrame(rafId); board.classList.remove('expiring','hot');
     const isBest=points>best; if(isBest){ best=points; lsSet('cascada-best-'+ISO,String(points)); }
     recordStats();
@@ -733,7 +761,8 @@
     g.innerHTML='<h2>'+(spill?'¡Sin corazones!':'¡Se acabó el tiempo!')+'</h2><div class="v">'+points+'</div><div class="vlbl">puntos · '+RANK_NAMES[idx]+'</div>'
       +'<p>'+cleared+' flechas despejadas'+(boardsClear>0?' · '+boardsClear+' tablero'+(boardsClear===1?'':'s')+' limpio'+(boardsClear===1?'':'s'):'')+'.<br>'+(isBest?'¡Nuevo récord de hoy! 🎉':'Récord de hoy: <b>'+best+'</b>')+'</p>'
       +'<div class="go-row"><button class="btn" id="again-btn" type="button">Jugar de nuevo</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
-    $('again-btn').addEventListener('click', startGame); $('share-btn').addEventListener('click', doShare); }
+    $('again-btn').addEventListener('click', startGame); $('share-btn').addEventListener('click', doShare);
+    if(idx===RANK_NAMES.length-1 || (isBest&&points>0)){ setTimeout(()=>launchConfetti(idx===RANK_NAMES.length-1?110:75), 480); } }   // celebrate Maestro or a new daily record
   function doShare(){ const txt='🌊 Cascada · Flechas\n'+points+' puntos · '+RANK_NAMES[rankNow()]+(points>=best&&best>0?' · récord':'')+'\nhttps://cortadito.news';
     if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); } else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>{ const b=$('share-btn'); if(b) b.textContent='Copiado'; }).catch(()=>{}); } }
 
@@ -815,12 +844,12 @@
     <button class="tut-x" id="tut-x" aria-label="Cerrar">&#10005;</button>
     <div class="tut-track" id="tut-track">
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g class="tv-launch"><line x1="22" y1="55" x2="118" y2="55" stroke="currentColor"/><polyline points="102,38 126,55 102,72" stroke="currentColor"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g class="tv-launch"><line x1="22" y1="55" x2="118" y2="55" stroke="currentColor"/><path d="M102 38 L126 55 L102 72 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>Lanza una flecha</h3>
         <p>Toca una flecha con el <b style="color:var(--accent)">carril libre</b> y sale por su punta — destella en <b style="color:#157145">verde</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="22" x2="150" y2="90" stroke="var(--arrow)"/><polyline points="134,40 150,20 166,40" stroke="var(--arrow)"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><polyline points="82,58 106,74 82,90" stroke="currentColor"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="22" x2="150" y2="90" stroke="var(--arrow)"/><path d="M134 40 L150 20 L166 40 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><path d="M82 58 L106 74 L82 90 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>Choque</h3>
         <p>Tocar una flecha <b>tapada</b> choca contra la que la tapa: rebota, <b>corta el combo</b> y cuesta <b style="color:#EA3546">&frac12; coraz&oacute;n</b>.</p>
       </section>
@@ -830,17 +859,17 @@
         <p>Despeja <b>r&aacute;pido y seguido</b> para subir el combo (&times;2, &times;3&hellip;). M&aacute;s combo = <b style="color:var(--accent)">m&aacute;s puntos</b> por flecha.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="20" x2="64" y2="20" stroke="#a600ae" style="stroke-width:9"/><polyline points="55,11 73,20 55,29" stroke="#a600ae" style="stroke-width:9"/></g><text x="90" y="25" font-size="14" font-weight="700" fill="#a600ae">Escudo &middot; hasta &times;3</text><g><line x1="150" y1="56" x2="150" y2="102" stroke="var(--arrow)"/><polyline points="134,72 150,52 166,72" stroke="var(--arrow)"/></g><g class="tv-bump-safe"><line x1="22" y1="88" x2="96" y2="88" stroke="currentColor"/><polyline points="82,72 106,88 82,104" stroke="currentColor"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="20" x2="64" y2="20" stroke="#a600ae" style="stroke-width:9"/><path d="M55 11 L73 20 L55 29 Z" fill="#a600ae" stroke="#a600ae" stroke-width="2.5" stroke-linejoin="round"/></g><text x="90" y="25" font-size="14" font-weight="700" fill="#a600ae">Escudo &middot; hasta &times;3</text><g><line x1="150" y1="56" x2="150" y2="102" stroke="var(--arrow)"/><path d="M134 72 L150 52 L166 72 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-bump-safe"><line x1="22" y1="88" x2="96" y2="88" stroke="currentColor"/><path d="M82 72 L106 88 L82 104 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>Escudo</h3>
         <p>La flecha <b style="color:#a600ae">cian</b> guarda un escudo: tu <b>pr&oacute;ximo choque cuesta 0 corazones</b> y <b>no corta el combo</b>. Se acumulan hasta <b>&times;3</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="55" x2="74" y2="55" stroke="#F2711C"/><polyline points="60,39 84,55 60,71" stroke="#F2711C"/></g><text class="tv-combo" x="150" y="66" text-anchor="middle" font-family="var(--font-display)" font-weight="800" font-size="40" fill="#F2711C">&times;2</text><text x="150" y="94" text-anchor="middle" font-size="14" font-weight="700" fill="#F2711C">5 s</text></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="20" y1="55" x2="74" y2="55" stroke="#F2711C"/><path d="M60 39 L84 55 L60 71 Z" fill="#F2711C" stroke="#F2711C" stroke-width="2.5" stroke-linejoin="round"/></g><text class="tv-combo" x="150" y="66" text-anchor="middle" font-family="var(--font-display)" font-weight="800" font-size="40" fill="#F2711C">&times;2</text><text x="150" y="94" text-anchor="middle" font-size="14" font-weight="700" fill="#F2711C">5 s</text></svg></div>
         <h3>Frenes&iacute;</h3>
         <p>La flecha <b style="color:#F2711C">naranja</b> abre <b>5 s a doble puntos</b> — despeja todo lo que puedas mientras dura.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110"><g opacity=".35"><rect x="56" y="60" width="120" height="44" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="2.5"/><line x1="74" y1="82" x2="102" y2="82" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><polyline points="96,74 110,82 96,90" fill="none" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><line x1="146" y1="92" x2="146" y2="76" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><polyline points="138,80 146,70 154,80" fill="none" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g><g class="tv-drop"><rect x="56" y="8" width="120" height="44" rx="7" fill="var(--board-bg)" stroke="var(--accent)" stroke-width="2.5"/><line x1="74" y1="30" x2="102" y2="30" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><polyline points="96,22 110,30 96,38" fill="none" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><line x1="146" y1="40" x2="146" y2="24" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><polyline points="138,28 146,18 154,28" fill="none" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110"><g opacity=".35"><rect x="56" y="60" width="120" height="44" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="2.5"/><line x1="74" y1="82" x2="102" y2="82" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><path d="M96 74 L110 82 L96 90 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/><line x1="146" y1="92" x2="146" y2="76" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><path d="M138 80 L146 70 L154 80 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-drop"><rect x="56" y="8" width="120" height="44" rx="7" fill="var(--board-bg)" stroke="var(--accent)" stroke-width="2.5"/><line x1="74" y1="30" x2="102" y2="30" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><path d="M96 22 L110 30 L96 38 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/><line x1="146" y1="40" x2="146" y2="24" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><path d="M138 28 L146 18 L154 28 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>Cae un tablero nuevo</h3>
         <p>Cada <b>30 s</b> un tablero nuevo cae desde arriba y empuja al viejo. Lo que no despejes, <b>se va</b>.</p>
       </section>

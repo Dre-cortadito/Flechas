@@ -108,7 +108,7 @@
      is clear for 3 s. Auto-charges (~20 s), one charge, green like the game. */
   .freeze { width:var(--gw); margin:12px auto 0; }
   .freeze-btn { width:100%; height:60px; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:0 12px; border-radius:14px; cursor:pointer; color:var(--accent); background:rgba(255,90,10,.09); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }   /* FIXED height — the eye can grow without changing the bar */
-  .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--accent-soft); transform-origin:left; transform:scaleX(0); z-index:0; }
+  .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:rgba(255,90,10,.26); transform-origin:left; transform:scaleX(0); z-index:0; }   /* translucent accent — accent-soft was the page cream, invisible on the pale button */
   .freeze-btn.active .fill { background:#ffd9c2; }   /* while it drains over the 5s window → light orange */
   .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:52px; }
   .freeze-btn .ficon svg { width:52px; height:52px; display:block; }
@@ -145,7 +145,7 @@
   /* ===== Status box under the board ===== */
   /* Shared thin progress bar (Borde/Cascada/Clásico standard): board completion, green */
   .prog-box { width:var(--gw); margin:10px auto 0; padding:5px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; }
-  .prog-box .prog-track { height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
+  .prog-box .prog-track { display:block; height:9px; background:var(--ink-line); border-radius:5px; overflow:hidden; }
   .prog-box .prog-bar { display:block; height:100%; width:100%; background:var(--accent); border-radius:5px; transform-origin:left; transform:scaleX(0); transition:transform .35s ease; }
   .statusbox { width:var(--gw); margin:12px auto 0; display:grid; grid-template-columns:repeat(3,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
   .stile { position:relative; padding:8px 6px 9px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
@@ -212,6 +212,9 @@
   @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
     #rotate-lock { display:flex; position:fixed; inset:0; z-index:2147483647; background:var(--bg); align-items:center; justify-content:center; padding:18px 22px; text-align:center; }
   }
+
+  /* finish celebration — confetti burst (family standard, canvas, no libs) */
+  .confetti-box { position:fixed; inset:0; pointer-events:none; z-index:120; }
 
   /* ===== Tutorial scaffold (kept, hidden — carried over from the family, disabled) ===== */
   .tut-ov{ position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(20,18,14,.62); }
@@ -865,6 +868,31 @@
     zoomHintMaybe();   // v9.2: first-ever game only — subtle breathing zoom, cancelled by any touch
     if(rafId) cancelAnimationFrame(rafId);   // v9.5: clock starts when the breathe settles (or on first touch if cancelled) — see startClock()
   }
+  function launchConfetti(n){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    n=n||90;
+    const colors=['#FF5A0A','#f2894e','#0b6130','#F9C80E','#EA3546'];
+    const cv=document.createElement('canvas'); cv.className='confetti-box';
+    const W=window.innerWidth, Hh=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
+    cv.width=W*dpr; cv.height=Hh*dpr; cv.style.width=W+'px'; cv.style.height=Hh+'px';
+    document.body.appendChild(cv);
+    const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+    const P=[];
+    for(let i=0;i<n;i++) P.push({ x:Math.random()*W, y:-20-Math.random()*Hh*0.3,
+      w:5+Math.random()*5, h:8+Math.random()*8, vx:(Math.random()-0.5)*1.6,
+      vy:2.2+Math.random()*3, rot:Math.random()*6.28, vr:(Math.random()-0.5)*0.32,
+      c:colors[(Math.random()*colors.length)|0] });
+    const t0=performance.now(); let raf;
+    (function frame(t){
+      const dt=t-t0; ctx.clearRect(0,0,W,Hh); let alive=false;
+      const a= dt>2200 ? Math.max(0,1-(dt-2200)/700) : 1;
+      for(const p of P){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.045; p.rot+=p.vr;
+        if(p.y<Hh+24) alive=true;
+        ctx.save(); ctx.globalAlpha=a; ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+        ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); }
+      if(alive && dt<3200) raf=requestAnimationFrame(frame); else cv.remove();
+    })(t0);
+  }
   function winGame(){ if(over) return; finished=true; over=true; running=false; if(rafId) cancelAnimationFrame(rafId);
     const secs=Math.round(totalMs/1000); const idx=rankFromTime(secs); const reto=retoTarget();
     if(!training){ const prev=+(lsGet('clasico-best-'+ISO)||0); if(prev===0||secs<prev){ bestSecs=secs; lsSet('clasico-best-'+ISO,String(secs)); } else bestSecs=prev;
@@ -880,6 +908,7 @@
       +(underReto?'<b style="color:var(--accent)">¡Buen sorbo!</b> ':'')
       +(training?'':'<br>'+(isBest?'¡Tu mejor tiempo de hoy! 🎉':'Mejor de hoy: <b>'+fmt(bestSecs*1000)+'</b>'))+'</p>'
       +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+    if(!training){ setTimeout(()=>launchConfetti(idx===TOP?110:(underReto?85:55)), 480); }   // real payoff for untangling the daily board
     $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare); }
   function endGame(reason){ if(over) return; over=true; finished=false; running=false; if(rafId) cancelAnimationFrame(rafId);
     if(!training){ lsSet('clasico-done-'+ISO,'1'); recordStats(0,false); }
@@ -967,22 +996,22 @@
     <button class="tut-x" id="tut-x" aria-label="Cerrar">&#10005;</button>
     <div class="tut-track" id="tut-track">
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g class="tv-launch"><line x1="22" y1="55" x2="118" y2="55" stroke="currentColor"/><polyline points="102,38 126,55 102,72" stroke="currentColor"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g class="tv-launch"><line x1="22" y1="55" x2="118" y2="55" stroke="currentColor"/><path d="M102 38 L126 55 L102 72 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>Despeja una flecha</h3>
         <p>Toca una flecha con el <b style="color:var(--accent)">carril libre</b> hasta el borde — desaparece con un destello <b style="color:var(--clear)">verde</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="22" x2="150" y2="90" stroke="var(--arrow)"/><polyline points="134,40 150,20 166,40" stroke="var(--arrow)"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><polyline points="82,58 106,74 82,90" stroke="currentColor"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="22" x2="150" y2="90" stroke="var(--arrow)"/><path d="M134 40 L150 20 L166 40 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><path d="M82 58 L106 74 L82 90 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>Choque</h3>
         <p>Tocar una flecha <b>tapada</b> choca contra la que la tapa: destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">&frac12; coraz&oacute;n</b>. 3 corazones = 6 choques.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110"><defs><clipPath id="tut-zoom-clip"><rect x="38" y="10" width="156" height="90" rx="8"/></clipPath></defs><rect x="36" y="8" width="160" height="94" rx="9" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="2.5"/><g clip-path="url(#tut-zoom-clip)"><g class="tv-zoom"><line x1="76" y1="40" x2="102" y2="40" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><polyline points="96,32 110,40 96,48" fill="none" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><line x1="144" y1="74" x2="144" y2="56" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><polyline points="136,62 144,50 152,62" fill="none" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><line x1="118" y1="84" x2="94" y2="84" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><polyline points="100,76 86,84 100,92" fill="none" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></g><g class="tv-zoom-btn" transform="translate(164 14)"><circle cx="11" cy="11" r="11" fill="var(--paper)" stroke="var(--arrow)" stroke-width="1.5"/><g transform="translate(3.5 3.5) scale(0.625)" fill="none" stroke="var(--arrow)" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></g></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110"><defs><clipPath id="tut-zoom-clip"><rect x="38" y="10" width="156" height="90" rx="8"/></clipPath></defs><rect x="36" y="8" width="160" height="94" rx="9" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="2.5"/><g clip-path="url(#tut-zoom-clip)"><g class="tv-zoom"><line x1="76" y1="40" x2="102" y2="40" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><path d="M96 32 L110 40 L96 48 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/><line x1="144" y1="74" x2="144" y2="56" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><path d="M136 62 L144 50 L152 62 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/><line x1="118" y1="84" x2="94" y2="84" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><path d="M100 76 L86 84 L100 92 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g></g><g class="tv-zoom-btn" transform="translate(164 14)"><circle cx="11" cy="11" r="11" fill="var(--paper)" stroke="var(--arrow)" stroke-width="1.5"/><g transform="translate(3.5 3.5) scale(0.625)" fill="none" stroke="var(--arrow)" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></g></g></svg></div>
         <h3>Explora el tablero</h3>
         <p>El tablero es un lienzo grande: <b>pellizca</b> para acercar, <b>arrastra</b> para moverte y toca el bot&oacute;n de <b>centrar</b> (o doble toque) para verlo entero.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim col"><svg viewBox="0 0 232 52" style="width:232px;height:52px;overflow:visible;"><g><line x1="26" y1="26" x2="96" y2="26" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round"/><polyline points="82,10 104,26 82,42" fill="none" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></g><g style="color:var(--accent);animation:enfpulse 1s ease infinite"><line x1="138" y1="26" x2="192" y2="26" stroke="currentColor" stroke-width="11" stroke-linecap="round"/><polyline points="178,10 200,26 178,42" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></g></svg><span class="freeze-btn tut-btn-demo" aria-hidden="true"><span class="fill" style="animation:tvFill 3s ease-in-out infinite"></span><span class="ficon"><svg viewBox="-3 -3 30 30" aria-hidden="true"><defs><mask id="tut-eye-m"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12.5" r="4.9" fill="currentColor" mask="url(#tut-eye-m)"/></svg></span></span></div>
+        <div class="tut-anim col"><svg viewBox="0 0 232 52" style="width:232px;height:52px;overflow:visible;"><g><line x1="26" y1="26" x2="96" y2="26" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round"/><path d="M82 10 L104 26 L82 42 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g style="color:var(--accent);animation:enfpulse 1s ease infinite"><line x1="138" y1="26" x2="192" y2="26" stroke="currentColor" stroke-width="11" stroke-linecap="round"/><path d="M178 10 L200 26 L178 42 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg><span class="freeze-btn tut-btn-demo" aria-hidden="true"><span class="fill" style="animation:tvFill 3s ease-in-out infinite"></span><span class="ficon"><svg viewBox="-3 -3 30 30" aria-hidden="true"><defs><mask id="tut-eye-m"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12.5" r="4.9" fill="currentColor" mask="url(#tut-eye-m)"/></svg></span></span></div>
         <h3>Enfoque</h3>
         <p>El bot&oacute;n <b style="color:var(--accent)">Enfoque</b> se llena solo (~20 s). &Uacute;salo para resaltar <b>3 s</b> las flechas que <b>ya pueden salir</b>.</p>
       </section>
