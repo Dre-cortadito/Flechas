@@ -428,10 +428,14 @@
   .tv-beam-bar{ animation:tvBeamBreath 2.4s ease-in-out infinite; }
   @keyframes tvBeamBump{ 0%{transform:translateY(0);color:var(--ink)} 34%{transform:translateY(-24px);color:var(--ink)} 44%{color:#662E9B} 58%{transform:translateY(-24px);color:#662E9B} 80%,100%{transform:translateY(0);color:var(--ink)} }
   .tv-beam-bump{ animation:tvBeamBump 2.6s ease-in-out infinite; }
-  @keyframes tvDvA{ 0%,42%{opacity:1} 52%,100%{opacity:0} }
-  @keyframes tvDvB{ 0%,42%{opacity:0} 52%,100%{opacity:1} }
-  .tv-dv-a{ animation:tvDvA 3s ease-in-out infinite; }
-  .tv-dv-b{ animation:tvDvB 3s ease-in-out infinite; }
+  /* Desviar slide — ONE shared 3.5s clock: charge fills (0–46%), "click" at ~52% (fill spends,
+     wall jumps to the opposite side in the same instant), then idle until the loop restarts. */
+  @keyframes tvDvFill{ 0%{transform:scaleX(0)} 46%,52%{transform:scaleX(1)} 58%,100%{transform:scaleX(0)} }
+  .tv-dv-fill{ animation:tvDvFill 3.5s linear infinite; }
+  @keyframes tvDvA{ 0%,52%{opacity:1} 54%,100%{opacity:0} }
+  @keyframes tvDvB{ 0%,52%{opacity:0} 54%,100%{opacity:1} }
+  .tv-dv-a{ animation:tvDvA 3.5s linear infinite; }
+  .tv-dv-b{ animation:tvDvB 3.5s linear infinite; }
   /* Run slide: the five boards FILL UP one after another (cleared = full), then the run restarts. */
   .tv-bf{ transform-box:fill-box; transform-origin:bottom; transform:scaleY(0); }
   @keyframes tvBF1{ 0%,4%{transform:scaleY(0)} 14%,92%{transform:scaleY(1)} 98%,100%{transform:scaleY(0)} }
@@ -445,8 +449,8 @@
   .tv line,.tv polyline{ stroke-width:11; stroke-linecap:round; stroke-linejoin:round; fill:none; }
   @keyframes tvLaunch{ 0%{transform:translateX(0);color:var(--ink);opacity:1} 28%{color:#157145} 64%{transform:translateX(116px);color:#157145;opacity:1} 82%,100%{transform:translateX(152px);opacity:0} }
   .tv-launch{ animation:tvLaunch 2.6s ease-in-out infinite; }
-  @keyframes tvBump{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(38px);color:var(--ink)} 38%{transform:translateX(38px);color:var(--error)} 64%{transform:translateX(0);color:var(--error)} 74%,100%{transform:translateX(0);color:var(--ink)} }
-  .tv-bump{ animation:tvBump 2.6s ease-in-out infinite; }
+  @keyframes tvBump{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(38.5px);color:var(--ink)} 34.5%{transform:translateX(38.5px);color:var(--error)} 62%{transform:translateX(0);color:var(--error)} 72%,100%{transform:translateX(0);color:var(--ink)} }
+  .tv-bump{ animation:tvBump 2.6s linear infinite; }
   @keyframes tvBlk{ 0%,40%{color:var(--ink)} 48%,58%{color:#EA3546} 80%,100%{color:var(--ink)} }
   .tv-blk{ animation:tvBlk 2.6s ease-in-out infinite; }
   @keyframes tvBeam{ 0%,10%{transform:translateX(0)} 90%,100%{transform:translateX(118px)} }
@@ -2280,7 +2284,7 @@ boot();
         <p>Las especiales <b>mueven el borde</b>: la <b style="color:#E76210">naranja (Giro)</b> lo hace saltar YA, la <b style="color:#9D4EDD">violeta (Candado)</b> lo fija 6&nbsp;s. La <b style="color:#C99700">amarilla (Racha)</b> da corazones por jugar limpio. T&uacute; eliges cu&aacute;ndo.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim col"><svg viewBox="0 0 232 54" style="width:232px;height:54px;"><rect x="46" y="4" width="140" height="46" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="2.5"/><path class="tv-dv-a" d="M57 9 H175" stroke="#662E9B" stroke-width="7" stroke-linecap="round" fill="none"/><path class="tv-dv-b" d="M57 45 H175" stroke="#662E9B" stroke-width="7" stroke-linecap="round" fill="none"/></svg><span class="act-btn dv tut-btn-demo" aria-hidden="true"><span class="act-fill" style="animation:tvFill 3s ease-in-out infinite"></span><span class="act-ico"><img id="tut-dv-ico" alt=""></span></span></div>
+        <div class="tut-anim col"><svg viewBox="0 0 232 54" style="width:232px;height:54px;"><rect x="46" y="4" width="140" height="46" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="2.5"/><path class="tv-dv-a" d="M57 9 H175" stroke="#662E9B" stroke-width="7" stroke-linecap="round" fill="none"/><path class="tv-dv-b" d="M57 45 H175" stroke="#662E9B" stroke-width="7" stroke-linecap="round" fill="none"/></svg><span class="act-btn dv tut-btn-demo" aria-hidden="true"><span class="act-fill tv-dv-fill"></span><span class="act-ico"><img id="tut-dv-ico" alt=""></span></span></div>
         <h3>Desviar</h3>
         <p>El bot&oacute;n <b style="color:#662E9B">Desviar</b> se llena solo (~20 s). &Uacute;salo para <b>saltar el borde al lado opuesto</b> — el reloj sigue corriendo.</p>
       </section>

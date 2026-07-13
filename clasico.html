@@ -238,8 +238,8 @@
   .tv line,.tv polyline{ stroke-width:11; stroke-linecap:round; stroke-linejoin:round; fill:none; }
   @keyframes tvLaunch{ 0%{transform:translateX(0);color:var(--ink);opacity:1} 28%{color:var(--clear)} 64%{transform:translateX(116px);color:var(--clear);opacity:1} 82%,100%{transform:translateX(152px);opacity:0} }
   .tv-launch{ animation:tvLaunch 2.6s ease-in-out infinite; }
-  @keyframes tvBump{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(38px);color:var(--ink)} 38%{transform:translateX(38px);color:var(--error)} 64%{transform:translateX(0);color:var(--error)} 74%,100%{transform:translateX(0);color:var(--ink)} }
-  .tv-bump{ animation:tvBump 2.6s ease-in-out infinite; }
+  @keyframes tvBump{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(38.5px);color:var(--ink)} 34.5%{transform:translateX(38.5px);color:var(--error)} 62%{transform:translateX(0);color:var(--error)} 72%,100%{transform:translateX(0);color:var(--ink)} }
+  .tv-bump{ animation:tvBump 2.6s linear infinite; }
   @keyframes tvBlk{ 0%,40%{color:var(--ink)} 48%,58%{color:#EA3546} 80%,100%{color:var(--ink)} }
   .tv-blk{ animation:tvBlk 2.6s ease-in-out infinite; }
   @keyframes tvEnf{ 0%,30%{color:var(--ink)} 48%,72%{color:var(--accent)} 92%,100%{color:var(--ink)} }
