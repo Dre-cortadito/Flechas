@@ -232,6 +232,9 @@
   .tut-open-btn{ display:inline-flex; align-items:center; gap:7px; margin:2px 0 12px; padding:9px 16px; border-radius:999px; border:2px solid var(--accent); background:transparent; color:var(--accent); font:700 14px var(--font-ui); cursor:pointer; }
   .tut-again{ display:flex; align-items:center; justify-content:center; gap:8px; margin:12px 0 0; font:500 13px var(--font-ui); color:var(--ink-soft); cursor:pointer; user-select:none; -webkit-user-select:none; }
   .tut-again input{ width:16px; height:16px; margin:0; accent-color:var(--accent); cursor:pointer; }
+  .tut-anim.col{ flex-direction:column; gap:12px; }
+  .tut-btn-demo{ flex:none; width:210px; height:52px; pointer-events:none; }
+  .tut-btn-demo .ficon, .tut-btn-demo .ficon svg{ width:44px; height:44px; }
   .tv line,.tv polyline{ stroke-width:11; stroke-linecap:round; stroke-linejoin:round; fill:none; }
   @keyframes tvLaunch{ 0%{transform:translateX(0);color:var(--ink);opacity:1} 28%{color:#157145} 64%{transform:translateX(116px);color:#157145;opacity:1} 82%,100%{transform:translateX(152px);opacity:0} }
   .tv-launch{ animation:tvLaunch 2.6s ease-in-out infinite; }
@@ -964,17 +967,17 @@
         <p>Toca una flecha con el <b style="color:var(--accent)">carril libre</b> hasta el borde — desaparece con un destello <b style="color:var(--clear)">verde</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g class="tv-blk"><line x1="150" y1="22" x2="150" y2="90" stroke="currentColor"/><polyline points="134,40 150,20 166,40" stroke="currentColor"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><polyline points="82,58 106,74 82,90" stroke="currentColor"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g class="tv-blk"><line x1="150" y1="22" x2="150" y2="90" stroke="currentColor"/><polyline points="134,40 150,20 166,40" stroke="currentColor"/></g><g class="tv-bump"><line x1="34" y1="74" x2="108" y2="74" stroke="currentColor"/><polyline points="94,58 118,74 94,90" stroke="currentColor"/></g></svg></div>
         <h3>Choque</h3>
-        <p>Tocar una flecha <b>tapada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">&frac12; coraz&oacute;n</b>. 3 corazones = 6 choques.</p>
+        <p>Tocar una flecha <b>tapada</b> choca contra la que la tapa: destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">&frac12; coraz&oacute;n</b>. 3 corazones = 6 choques.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g class="tv-enf"><line x1="22" y1="30" x2="98" y2="30" stroke="currentColor"/><polyline points="84,14 106,30 84,46" stroke="currentColor"/></g><g opacity=".3"><line x1="140" y1="30" x2="192" y2="30" stroke="var(--arrow)"/><polyline points="180,16 200,30 180,44" stroke="var(--arrow)"/></g><rect x="46" y="76" width="140" height="24" rx="12" fill="none" stroke="var(--accent)" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="78" width="136" height="20" rx="10" fill="var(--accent)" opacity=".28"/></svg></div>
+        <div class="tut-anim col"><svg viewBox="0 0 232 52" style="width:232px;height:52px;overflow:visible;"><g style="color:var(--accent);animation:enfpulse 1s ease infinite"><line x1="26" y1="26" x2="96" y2="26" stroke="currentColor" stroke-width="11" stroke-linecap="round"/><polyline points="82,10 104,26 82,42" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></g><g><line x1="138" y1="26" x2="192" y2="26" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round"/><polyline points="178,10 200,26 178,42" fill="none" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></g></svg><span class="freeze-btn tut-btn-demo" aria-hidden="true"><span class="fill" style="animation:tvFill 3s ease-in-out infinite"></span><span class="ficon"><svg viewBox="-3 -3 30 30" aria-hidden="true"><defs><mask id="tut-eye-m"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12.5" r="4.9" fill="currentColor" mask="url(#tut-eye-m)"/></svg></span></span></div>
         <h3>Enfoque</h3>
-        <p>El bot&oacute;n <b style="color:var(--accent)">&#128065; Enfoque</b> se llena solo (~20 s). &Uacute;salo para resaltar <b>3 s</b> las flechas que <b>ya pueden salir</b>.</p>
+        <p>El bot&oacute;n <b style="color:var(--accent)">Enfoque</b> se llena solo (~20 s). &Uacute;salo para resaltar <b>3 s</b> las flechas que <b>ya pueden salir</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><text x="116" y="72" text-anchor="middle" font-size="60">🏁</text></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" transform="translate(116 55) scale(3.6) translate(-12 -12)"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></g></svg></div>
         <h3>Vac&iacute;a el tablero</h3>
         <p>Despeja <b>todas</b> las flechas. Tu <b>rango es el tiempo</b> — el reloj arranca en cuanto el tablero <b>se asienta</b>, justo tras <b>Empezar</b>.</p>
       </section>
