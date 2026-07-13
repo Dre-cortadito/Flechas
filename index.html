@@ -524,7 +524,7 @@
           <a class="more-item" id="m-theme" role="button"><span>Tema</span><span class="more-theme-name" id="m-theme-name">Claro</span></a>
           <a class="more-item" id="m-arch" role="button"><span>Arquitectura</span><span class="more-theme-name" id="m-arch-name">Clásico</span></a>
           <a class="more-item" id="m-tut" role="button"><span>Ver tutorial</span></a>
-          <a class="more-item" id="m-share" role="button"><span>Compartir</span></a>
+          <a class="more-item" id="m-share" role="button"><span>Compartir resultado</span></a>
           <a class="more-item more-item-cta" id="m-sub" role="button"><span>Suscribirse al boletín</span></a>
         </div>
       </span>
@@ -642,7 +642,7 @@
       <h3>Distribución de rangos</h3>
       <p class="stats-note">Cuenta solo el rango con el que terminaste cada día.</p>
       <div id="dist-box"></div>
-      <p class="stats-footer">Tus estadísticas se guardan <strong>solo en este navegador</strong>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador se borrarán, y no se sincronizan entre dispositivos.</p>
+      <p class="stats-footer">Tus estadísticas se guardan <strong>solo en este navegador</strong>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador, las cookies o el historial del sitio, <strong>tus estadísticas se borrarán</strong>. Tampoco se sincronizan entre dispositivos: cada navegador tiene su propio registro.</p>
     </div>
   </div>
 
@@ -2084,16 +2084,17 @@ function renderStats(){
 
 /* ============================ SHARE ============================ */
 function buildShareText(){
-  const n=dayNumber(ISO), L=[];
-  L.push('Flechas #'+n); L.push(GRID_C+'×'+GRID_R);
-  if(!finished){ L.push(''); L.push('⏳ Sin terminar todavía'); L.push(''); L.push(NEWSLETTER_URL); return L.join('\n'); }
+  let fullDate=ISO; try{ const d=new Date(ISO+'T12:00:00'); const cap=s=>s.charAt(0).toUpperCase()+s.slice(1); fullDate=cap(d.toLocaleDateString('es-ES',{weekday:'long'}))+', '+d.getDate()+' de '+d.toLocaleDateString('es-ES',{month:'long'})+' de '+d.getFullYear(); }catch(e){}
+  const n=dayNumber(ISO), SHARE_URL='https://flechas.dre-c8f.workers.dev/', L=[fullDate,''];
+  L.push('🧩 Flechas · Borde #'+n+' · '+GRID_C+'×'+GRID_R);
+  if(!finished){ L.push('⏳ Sin terminar todavía'); L.push(''); L.push(SHARE_URL); return L.join('\n'); }
   const idx=rankNow();
   L.push('');
   L.push('⏱️ '+fmtTime(elapsed)+' · '+RANK_NAMES[idx]);
   L.push((effTime()<=META?'✅':'➖')+' Meta '+fmtTime(META));
   if(mistakes>0) L.push('💥 '+mistakes+' choque'+(mistakes===1?'':'s')); else L.push('✨ Sin choques');
   const s=getStats(); if(s.curReto>1) L.push('🔥 Racha '+s.curReto);
-  L.push(''); L.push(NEWSLETTER_URL); return L.join('\n');
+  L.push(''); L.push(SHARE_URL); return L.join('\n');
 }
 async function doShare(){ const text=buildShareText();
   if(navigator.share){ try{ await navigator.share({text}); }catch(e){} return; }
@@ -2185,7 +2186,7 @@ function setLandMode(m){ const d=LAND_MODES[m]; if(!d) return; landMode=m;
   document.querySelectorAll('.land-tab').forEach(t=>{ const on=t.getAttribute('data-mode')===m; t.classList.toggle('active', on); t.setAttribute('aria-selected', on?'true':'false'); });
   const lbl=document.querySelector('#land-reto-row .lbl'), val=document.getElementById('land-reto'), play=document.getElementById('play-btn');
   if(d.ready){ play.textContent='Jugar'; play.classList.remove('is-soon'); play.disabled=false;
-    if(m==='cascada'){ lbl.textContent='Reto del día'; val.textContent='2:00'; }
+    if(m==='cascada'){ lbl.textContent='Reto del día'; const _s='cascada-reto-'+ISO; let _h=2166136261>>>0; for(let _i=0;_i<_s.length;_i++){_h^=_s.charCodeAt(_i);_h=Math.imul(_h,16777619)>>>0;} let _t=(_h>>>0)/4294967296; _t=(function(a){a|=0;a=a+0x6D2B79F5|0;let t2=Math.imul(a^a>>>15,1|a);t2=t2+Math.imul(t2^t2>>>7,61|t2)^t2;return((t2^t2>>>14)>>>0)/4294967296;})(_h); val.textContent=(490+Math.round(_t*28)*10)+' pts'; }
     else if(m==='flujo'){ lbl.textContent='Reto del día'; val.textContent='≤ 1:18'; }
     else if(m==='desvio'){ lbl.textContent='Reto del día'; const _s='rumbo-reto-'+ISO; let _h=2166136261>>>0; for(let _i=0;_i<_s.length;_i++){_h^=_s.charCodeAt(_i);_h=Math.imul(_h,16777619)>>>0;} const _rt=55+((_h>>>0)%9)*5; val.textContent='≤ '+Math.floor(_rt/60)+':'+String(_rt%60).padStart(2,'0'); }
     else { lbl.textContent='Reto del día'; val.textContent='≤ '+fmtTime(META); } }
@@ -2272,12 +2273,12 @@ boot();
         <p>Toca una flecha con el <b>carril libre</b> y sale volando por su punta — destella en <b style="color:#157145">verde</b> al salir.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="22" x2="150" y2="90" stroke="var(--arrow)"/><path d="M134 40 L150 20 L166 40 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><path d="M82 58 L106 74 L82 90 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="30" x2="150" y2="90" stroke="var(--arrow)"/><path d="M134 44 L150 20 L166 44 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><path d="M82 58 L106 74 L82 90 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>Choque</h3>
         <p>Si otra flecha bloquea el carril, choca contra ella y <b>rebota</b> — parpadea en <b style="color:#EA3546">rojo</b>. Te cuesta <b>&frac12; coraz&oacute;n</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110"><rect x="30" y="10" width="172" height="92" rx="9" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="2.5"/><path class="tv-beam-bar" d="M41 15.5 H191" stroke="#662E9B" stroke-width="9" stroke-linecap="round" fill="none"/><g class="tv-beam-bump"><line x1="116" y1="88" x2="116" y2="58" stroke="currentColor" stroke-width="10" stroke-linecap="round"/><path d="M103 64 L116 48 L129 64 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110"><rect x="30" y="10" width="172" height="92" rx="9" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="2.5"/><path class="tv-beam-bar" d="M41 15.5 H191" stroke="#662E9B" stroke-width="9" stroke-linecap="round" fill="none"/><g class="tv-beam-bump"><line x1="116" y1="88" x2="116" y2="64" stroke="currentColor" stroke-width="10" stroke-linecap="round"/><path d="M104 70 L116 48 L128 70 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>El borde</h3>
         <p>Una barra <b style="color:#662E9B">morada</b> recorre la orilla como un tren. <b>Se acelera cada tablero</b> y al final ocupa <b>dos lados</b>. No puedes salir por donde est&aacute; — <b>espera o desv&iacute;ala</b>.</p>
       </section>

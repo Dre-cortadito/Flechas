@@ -55,7 +55,7 @@
   .more-menu { position:absolute; top:100%; right:0; margin-top:8px; z-index:1000; background:var(--paper); border:1.5px solid var(--ink-line); border-radius:12px; padding:6px; min-width:230px; display:none; flex-direction:column; box-shadow:0 14px 44px rgba(0,0,0,.2); }
   .more-menu.open { display:flex; }
   .more-item { padding:10px 14px; color:var(--ink); border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
-  .more-item.cta { color:var(--accent); font-weight:700; border-top:1px solid var(--ink-line); border-radius:0 0 8px 8px; margin-top:4px; padding-top:12px; }
+  .more-item.more-item-cta { color:var(--accent); font-weight:700; border-top:1px solid var(--ink-line); border-radius:0 0 8px 8px; margin-top:4px; padding-top:12px; }
   .more-theme-name { color:var(--ink-soft); font-size:12px; font-weight:400; }
   @media (max-width:620px){ .wordmark{ display:none; } .header-nav{ gap:18px; } }
   @media (max-width:400px){ .header-nav{ gap:13px; } .header-nav a{ font-size:13px; } }
@@ -288,8 +288,8 @@
         <div class="more-menu" id="menu-pop">
           <a class="more-item" id="m-theme" role="button"><span>Tema</span><span class="more-theme-name" id="m-theme-name">Claro</span></a>
           <a class="more-item" id="m-tut" role="button"><span>Ver tutorial</span></a>
-          <a class="more-item" id="m-share" role="button"><span>Compartir</span></a>
-          <a class="more-item cta" id="m-sub" role="button"><span>Suscribirse al boletín</span></a>
+          <a class="more-item" id="m-share" role="button"><span>Compartir resultado</span></a>
+          <a class="more-item more-item-cta" id="m-sub" role="button"><span>Suscribirse al boletín</span></a>
         </div>
       </span>
     </nav>
@@ -345,8 +345,8 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path class="lh" style="fill:var(--arrow);stroke:var(--arrow)" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt">Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta). El tablero es un lienzo grande: <b>pellizca</b> para acercar y <b>arrastra</b> para moverte.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--clear)" d="M14 20 L92 20"/><path class="lh" style="fill:var(--clear);stroke:var(--clear)" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt">Al despejarla <b style="color:var(--clear)">destella en verde</b> y desaparece — deja hueco para otras.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#EA3546" d="M14 20 L92 20"/><path class="lh" style="fill:#EA3546;stroke:#EA3546" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt"><b>Choque:</b> tocar una flecha <b>tapada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">½ corazón</b>. 3 corazones = 6 choques.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40" aria-hidden="true"><defs><mask id="enf-eye-lg"><rect width="120" height="40" fill="#fff"/><circle cx="56.5" cy="17.5" r="3.4" fill="#000"/></mask></defs><path d="M60 6.5c-8.8 0-15.5 6.3-18.4 12.8C44.5 25.8 51.2 32 60 32s15.5-6.2 18.4-12.7C75.5 12.8 68.8 6.5 60 6.5Z" fill="none" stroke="var(--accent)" stroke-width="4.2"/><circle cx="60" cy="20.3" r="8.8" fill="var(--accent)" mask="url(#enf-eye-lg)"/></svg></div><div class="txt"><b>👁 Enfoque:</b> el botón bajo el tablero se <b>llena solo</b> (~20 s). Úsalo para resaltar <b>3 s</b> las flechas que <b>ya pueden salir</b>. Una carga — el reloj no se detiene.</div></div>
-    <div class="legend-row"><div class="legend-cell" style="font-size:22px;">🏁</div><div class="txt"><b>Meta:</b> vacía el tablero entero. Tu <b>rango es el tiempo</b> — el reloj arranca en cuanto el tablero <b>se asienta</b>, justo tras <b>Empezar</b>. <b>Más rápido, mejor rango.</b></div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40" aria-hidden="true"><g transform="translate(60 20) scale(1.45) translate(-12 -12)"><defs><mask id="enf-eye-lg"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" fill="none" stroke="var(--accent)" stroke-width="2.2"/><circle cx="12" cy="12.5" r="4.9" fill="var(--accent)" mask="url(#enf-eye-lg)"/></g></svg></div><div class="txt"><b>Enfoque:</b> el botón bajo el tablero se <b>llena solo</b> (~20 s). Úsalo para resaltar <b>3 s</b> las flechas que <b>ya pueden salir</b>. Una carga — el reloj no se detiene.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40" aria-hidden="true"><g stroke="var(--accent)" fill="none" stroke-linecap="round"><circle cx="57" cy="21" r="13" stroke-width="3"/><circle cx="57" cy="21" r="6.5" stroke-width="2.6"/></g><circle cx="57" cy="21" r="2.6" fill="var(--accent)"/><g transform="translate(57 21) rotate(-45)"><line x1="0" y1="0" x2="19" y2="0" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/><path d="M16 0 L25 -4.5 L22.7 0 L25 4.5 Z" fill="var(--accent)"/></g></svg></div><div class="txt"><b>Meta:</b> vacía el tablero entero. Tu <b>rango es el tiempo</b> — el reloj arranca en cuanto el tablero <b>se asienta</b>, justo tras <b>Empezar</b>. <b>Más rápido, mejor rango.</b></div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Despejar solo <b>quita</b> flechas, nunca traba el tablero. Tu <b>primer intento</b> cuenta como el reto de hoy; después puedes <b>entrenar</b> con tableros nuevos.</p>
   </div></div>
 
@@ -362,7 +362,7 @@
     <div class="cstat-grid" id="casc-stats"></div>
     <h3 style="margin:18px 0 6px;font-size:15px;">Distribución de rangos</h3>
     <div id="casc-dist"></div>
-    <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a ningún servidor.</p>
+    <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador, las cookies o el historial del sitio, <b>tus estadísticas se borrarán</b>. Tampoco se sincronizan entre dispositivos: cada navegador tiene su propio registro.</p>
   </div></div>
 
 <script>
@@ -937,8 +937,20 @@
       +'<p>Se derramó el cortadito. Vuelve a intentarlo'+(training?'':' entrenando')+'.</p>'
       +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
     $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare); }
-  function doShare(){ const secs=Math.round(totalMs/1000); const ok=finished;
-    const txt='🧩 Clásico · Flechas\n'+(ok?(fmt(totalMs)+' · '+RANK_NAMES[rankFromTime(secs)]+(choques===0?' · limpio':'')):(remaining+' flechas sin despejar'))+'\nhttps://cortadito.news';
+  function buildShareText(){
+    let fullDate=ISO; try{ const d=new Date(ISO+'T12:00:00'); const cap=s=>s.charAt(0).toUpperCase()+s.slice(1); fullDate=cap(d.toLocaleDateString('es-ES',{weekday:'long'}))+', '+d.getDate()+' de '+d.toLocaleDateString('es-ES',{month:'long'})+' de '+d.getFullYear(); }catch(e){}
+    const secs=Math.round(totalMs/1000), idx=rankFromTime(secs), reto=retoTarget(), L=[fullDate,''];
+    L.push('🧩 Flechas · Clásico');
+    if(!finished){ L.push('⏳ Sin terminar todavía'); }
+    else {
+      if(idx===TOP) L.push('👑 ¡Maestro/a del tablero!'); else L.push('🏆 Rango: '+RANK_NAMES[idx]);
+      L.push((secs<=reto?'✅ ¡Reto del día logrado!':'📌 Reto del día')+' (⏱ '+fmt(totalMs)+' / ≤ '+fmtSec(reto)+')');
+      L.push(choques===0?'✨ Sin choques':'💥 '+choques+' choque'+(choques===1?'':'s'));
+    }
+    L.push(''); L.push('https://flechas.dre-c8f.workers.dev/clasico.html');
+    return L.join('\n');
+  }
+  function doShare(){ const txt=buildShareText();
     if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); } else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>{ const b=$('share-btn'); if(b) b.textContent='Copiado'; }).catch(()=>{}); } }
 
   // ================= theme + menu + stats =================
@@ -1050,7 +1062,7 @@
         <p>Toca una flecha con el <b style="color:var(--accent)">carril libre</b> hasta el borde — desaparece con un destello <b style="color:var(--clear)">verde</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="22" x2="150" y2="90" stroke="var(--arrow)"/><path d="M134 40 L150 20 L166 40 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><path d="M82 58 L106 74 L82 90 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="30" x2="150" y2="90" stroke="var(--arrow)"/><path d="M134 44 L150 20 L166 44 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><path d="M82 58 L106 74 L82 90 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>Choque</h3>
         <p>Tocar una flecha <b>tapada</b> choca contra la que la tapa: destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">&frac12; coraz&oacute;n</b>. 3 corazones = 6 choques.</p>
       </section>
