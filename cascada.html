@@ -278,6 +278,48 @@
   @keyframes tvBumpSafe{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(38.5px);color:var(--ink)} 34.5%{transform:translateX(38.5px);color:#a600ae} 62%{transform:translateX(0);color:#a600ae} 72%,100%{transform:translateX(0);color:var(--ink)} }
   .tv-bump-safe{ animation:tvBumpSafe 2.6s linear infinite; }
 
+  /* ===== Anteriores — archive calendar (Racimo standard) ===== */
+  .nav-archive-wrap { position:relative; display:inline-block; z-index:600; }
+  .archive-menu { position:absolute; top:100%; right:0; margin-top:8px; background:var(--paper); border:1.5px solid var(--ink-line); border-radius:12px; padding:6px; display:none; flex-direction:column; min-width:272px; z-index:1000; box-shadow:0 14px 44px rgba(0,0,0,.20), 0 4px 12px rgba(0,0,0,.08); font-family:var(--font-ui); }
+  .archive-menu.open { display:flex; }
+  .cal-head { display:flex; align-items:center; gap:8px; padding:4px 4px 10px; }
+  .cal-title { font-family:var(--font-display); font-weight:700; font-size:15px; color:var(--ink); text-transform:capitalize; flex:1; text-align:center; }
+  .cal-nav { width:30px; height:30px; flex:none; border-radius:50%; border:1px solid var(--ink-line); background:var(--bg); color:var(--ink); font-size:16px; cursor:pointer; }
+  .cal-nav[disabled] { opacity:.3; cursor:default; }
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; padding:0 2px 4px; }
+  .cal-dow { text-align:center; font-size:10px; font-weight:700; letter-spacing:.4px; color:var(--ink-soft); padding-bottom:2px; }
+  .cal-day { height:34px; display:flex; align-items:center; justify-content:center; font-size:13px; border-radius:8px; color:var(--ink); cursor:pointer; }
+  .cal-day.blank { visibility:hidden; }
+  .cal-day.disabled { color:var(--ink-soft); opacity:.3; cursor:default; }
+  .cal-day.today { font-weight:800; box-shadow:inset 0 0 0 1.5px var(--ink-line); }
+  .cal-day.current { background:var(--accent); color:#fff; font-weight:700; }
+  @media (hover:hover){ .cal-day:not(.disabled):not(.current):hover { background:var(--accent-soft); } }
+  .arch-note { display:none; width:var(--gw); margin:0 auto 8px; text-align:center; font:700 11px var(--font-ui); letter-spacing:1.5px; text-transform:uppercase; color:var(--ink-soft); }
+  .arch-note a { color:var(--accent); cursor:pointer; text-decoration:underline; }
+
+  /* ===== Estadísticas — Racimo visual standard ===== */
+  .stats-sec { margin:28px 0 14px; padding-top:22px; border-top:1px solid var(--ink-line); font-size:11px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:2px; display:flex; align-items:center; gap:10px; }
+  .stats-sec::before { content:""; width:6px; height:6px; background:var(--accent); border-radius:50%; flex-shrink:0; }
+  .stats-sec.first { margin-top:14px; padding-top:0; border-top:none; }
+  .stats-sec.first::before { display:none; }
+  .stats-row { display:flex; gap:32px; flex-wrap:wrap; align-items:baseline; }
+  .stat-block { min-width:0; }
+  .stat-value { font-family:var(--font-display); font-size:28px; font-weight:800; letter-spacing:-.5px; color:var(--ink); line-height:1; }
+  .stat-value.acc { color:var(--accent); }
+  .stat-label { font-size:11px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-soft); margin-top:6px; }
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:18px 32px; }
+  .stats-note { margin:-2px 0 12px; font-size:12px; color:var(--ink-soft); font-style:italic; }
+  .stats-ranks { display:flex; flex-direction:column; gap:6px; }
+  .stats-rank-row { display:flex; align-items:center; gap:12px; font-size:13px; margin-bottom:4px; }
+  .stats-rank-row .name { width:100px; color:var(--ink); flex-shrink:0; }
+  .stats-rank-row .bar { flex:1; height:22px; background:var(--ink-line); border-radius:6px; overflow:hidden; position:relative; }
+  .stats-rank-row .bar-fill { display:block; height:100%; background:var(--accent); border-radius:6px; transition:width .4s ease; }
+  .stats-rank-row.empty .name, .stats-rank-row.empty .count { opacity:.5; }
+  .stats-rank-row.best .name { color:var(--accent); font-weight:700; }
+  .stats-rank-row .count { width:82px; text-align:right; color:var(--ink); font-feature-settings:"tnum"; flex-shrink:0; font-size:12px; }
+  .stats-rank-row .count .pct { color:var(--ink-soft); margin-left:2px; }
+  .stats-empty { font-size:13px; font-style:italic; color:var(--ink-soft); }
+
   /* ===== ¡Buen sorbo! / Maestro celebration (family standard: cup mark, light card, once per day) ===== */
   .goal-panel { position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(20,18,14,.5); }
   .goal-panel.open { display:flex; }
@@ -318,6 +360,9 @@
       <a class="header-home" href="./index.html?modo=cascada#landing" aria-label="Inicio" onclick="event.preventDefault();location.replace(this.getAttribute('href'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></a>
       <a class="nav-rules" id="rules-link" role="button">Reglas ▾</a>
       <a id="stats-link" role="button">Estadísticas ▾</a>
+      <span class="nav-archive-wrap"><a id="nav-archive" role="button">Anteriores ▾</a>
+        <div class="archive-menu" id="archive-menu"><div id="archive-cal"></div></div>
+      </span>
       <span class="nav-more-wrap">
         <button class="more" id="menu-btn" type="button" aria-label="Más opciones"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
         <div class="more-menu" id="menu-pop">
@@ -332,8 +377,9 @@
   </header>
 
   <div class="stage">
+    <div class="arch-note" id="arch-note"></div>
     <div class="rank-bar" id="rank-bar" role="button" tabindex="0" aria-label="Ver rangos">
-      <span class="rank-label" id="rank-label">Listo</span>
+      <span class="rank-label" id="rank-label">Debutante</span>
       <div class="rank-track" id="rank-track"><div class="rank-track-line"></div></div>
       <span class="rank-chev">▾</span>
     </div>
@@ -400,15 +446,15 @@
 
   <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button">✕</button>
     <h2>Estadísticas</h2>
-    <h3 style="margin:14px 0 6px;font-size:15px;">Hoy</h3>
-    <div class="cstat-grid" id="stats-today"></div>
-    <h3 style="margin:18px 0 6px;font-size:15px;">Récord general</h3>
-    <div class="cstat-grid" id="casc-stats"></div>
-    <h3 style="margin:18px 0 6px;font-size:15px;">Rachas</h3>
-    <div class="cstat-grid" id="stats-streaks"></div>
-    <h3 style="margin:18px 0 6px;font-size:15px;">Distribución de rangos</h3>
-    <p style="margin:0 0 6px;font-size:12px;color:var(--ink-soft);">Cuenta solo el rango con el que terminaste cada día.</p>
-    <div id="casc-dist"></div>
+    <h3 class="stats-sec first">Hoy</h3>
+    <div class="stats-row" id="stats-today"></div>
+    <h3 class="stats-sec">Récord general</h3>
+    <div class="stats-grid" id="stats-overall"></div>
+    <h3 class="stats-sec">Rachas</h3>
+    <div class="stats-grid" id="stats-streaks"></div>
+    <h3 class="stats-sec">Distribución de rangos</h3>
+    <p class="stats-note">Cuenta solo el rango con el que terminaste cada día.</p>
+    <div class="stats-ranks" id="stats-ranks"></div>
     <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador, las cookies o el historial del sitio, <b>tus estadísticas se borrarán</b>. Tampoco se sincronizan entre dispositivos: cada navegador tiene su propio registro.</p>
   </div></div>
 
@@ -417,7 +463,9 @@
   "use strict";
   function fnv(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-  const ISO=new Date().toISOString().slice(0,10);
+  const TODAY_ISO=(function(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();   // LOCAL date (Racimo standard — no UTC midnight flip)
+  const ISO=(function(){ const h=location.hash.slice(1); return (/^\d{4}-\d{2}-\d{2}$/.test(h) && h>='2026-01-01' && h<TODAY_ISO) ? h : TODAY_ISO; })();   // Anteriores: #YYYY-MM-DD loads that day
+  const IS_ARCHIVE=ISO!==TODAY_ISO;
   const LS=(function(){ try{ return window.localStorage; }catch(e){ return null; } })();
   function lsGet(k){ try{ return LS&&LS.getItem(k); }catch(e){ return null; } }
   function lsSet(k,v){ try{ if(LS) LS.setItem(k,v); }catch(e){} }
@@ -817,24 +865,27 @@
   function cPrevISO(iso){ const p=iso.split('-'); const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])-86400000); return d.toISOString().slice(0,10); }
   function cGetStats(){ const d={played:0,best:0,ranks:[0,0,0,0,0,0,0,0,0,0],last:null,cur:0,max:0}; try{ return Object.assign(d, JSON.parse(lsGet('cascada-stats'))||{}); }catch(e){ return d; } }
   function recordStats(){ const s=cGetStats(); s.played++; if(points>s.best) s.best=points; s.ranks[rankNow()]=(s.ranks[rankNow()]||0)+1;
-    if(s.last!==ISO){ s.cur=(s.last===cPrevISO(ISO))?s.cur+1:1; s.last=ISO; if(s.cur>s.max) s.max=s.cur; }
+    if(!IS_ARCHIVE && s.last!==ISO){ s.cur=(s.last===cPrevISO(ISO))?s.cur+1:1; s.last=ISO; if(s.cur>s.max) s.max=s.cur; }
     const hit=points>=retoTarget();
-    if(hit && s.lastReto!==ISO){ s.retos=(s.retos||0)+1; s.curReto=(s.lastReto===cPrevISO(ISO))?(s.curReto||0)+1:1; s.lastReto=ISO; if(s.curReto>(s.maxReto||0)) s.maxReto=s.curReto; }
+    if(!IS_ARCHIVE && hit && s.lastReto!==ISO){ s.retos=(s.retos||0)+1; s.curReto=(s.lastReto===cPrevISO(ISO))?(s.curReto||0)+1:1; s.lastReto=ISO; if(s.curReto>(s.maxReto||0)) s.maxReto=s.curReto; }
     lsSet('cascada-stats', JSON.stringify(s)); }
   function openStats(o){ if(o) renderStats(); $('stats-ov').classList.toggle('open', o); }
   function renderStats(){ const s=cGetStats();
-    const cell=(v,l)=>'<div class="cstat"><div class="cv">'+v+'</div><div class="cl">'+l+'</div></div>';
+    const SBk=(v,l,a)=>'<div class="stat-block"><div class="stat-value'+(a?' acc':'')+'">'+v+'</div><div class="stat-label">'+l+'</div></div>';
     const pb2=+(lsGet('cascada-best-'+ISO)||0), reto=retoTarget();
     let ri=0; for(let k=0;k<RANK_CUT.length;k++) if(pb2>=RANK_CUT[k]) ri=k;
-    const st=$('stats-today'); if(st) st.innerHTML = pb2>0
-      ? cell(RANK_NAMES[ri],'Rango de hoy')+cell(pb2,'Puntos')+cell(pb2>=reto?'✅':'—','Reto del día')
-      : cell('—','Rango de hoy')+cell('—','Puntos')+cell('—','Reto del día');
-    $('casc-stats').innerHTML = cell(s.played,'Jugadas')+cell(s.best||'—','Récord')+cell(s.retos||0,'Retos logrados')+cell(s.max,'Mejor racha');
-    const ss=$('stats-streaks'); if(ss) ss.innerHTML = cell(s.cur,'Racha de juego')+cell(s.curReto||0,'Racha de reto')+cell(s.max,'Mejor de juego')+cell(s.maxReto||0,'Mejor de reto');
-    const tot=s.ranks.reduce((a,b)=>a+b,0)||1, cur=rankNow(); let h='';
-    for(let i=RANK_NAMES.length-1;i>=0;i--){ const pct=Math.round(s.ranks[i]/tot*100);
-      h+='<div class="cdist-row'+(i===cur&&over?' cur':'')+'"><span class="cdn">'+RANK_NAMES[i]+'</span><span class="cdbar"><span class="cdfill" style="width:'+pct+'%"></span></span><span class="cdc">'+s.ranks[i]+'</span></div>'; }
-    $('casc-dist').innerHTML=h; }
+    $('stats-today').innerHTML = pb2>0
+      ? SBk(RANK_NAMES[ri],'Rango de hoy',true)+SBk(pb2,'Puntos')+SBk(pb2>=reto?'✅':'—','Reto del día')
+      : '<div class="stats-empty">Aún no has jugado la cascada de hoy.</div>';
+    $('stats-overall').innerHTML = SBk(s.played,'Jugadas')+SBk(s.best||'—','Récord',true)+SBk(s.retos||0,'Retos logrados')+SBk(s.max,'Mejor racha');
+    $('stats-streaks').innerHTML = SBk(s.cur,'Racha de juego',true)+SBk(s.curReto||0,'Racha de reto',true)+SBk(s.max,'Mejor de juego')+SBk(s.maxReto||0,'Mejor de reto');
+    const ranks=s.ranks||[], total=ranks.reduce((a,b)=>a+b,0), mx=Math.max(1,...ranks);
+    let bestIdx=-1; for(let i=RANK_NAMES.length-1;i>=0;i--) if((ranks[i]||0)>0){ bestIdx=i; break; }
+    let h='';
+    for(let i=RANK_NAMES.length-1;i>=0;i--){ const c=ranks[i]||0, tp=total?c/total*100:0;
+      const pl=tp>=10?Math.round(tp)+'%':(tp>0?tp.toFixed(1)+'%':'—');
+      h+='<div class="stats-rank-row'+(i===bestIdx&&c?' best':'')+(c?'':' empty')+'"><span class="name">'+RANK_NAMES[i]+'</span><span class="bar"><span class="bar-fill" style="width:'+(c/mx*100).toFixed(1)+'%"></span></span><span class="count">'+c+' <span class="pct">('+pl+')</span></span></div>'; }
+    $('stats-ranks').innerHTML=h; }
   $('start-btn').addEventListener('click', startGame);
   $('freeze-btn').addEventListener('click', useFreeze);
   $('rules-link').addEventListener('click', ()=>openRules(true));
@@ -853,6 +904,51 @@
   $('m-about').addEventListener('click', ()=>{ toggleMenu(false); $('about-ov').classList.add('open'); });
   $('about-x').addEventListener('click', ()=>$('about-ov').classList.remove('open'));
   $('about-ov').addEventListener('click', e=>{ if(e.target===$('about-ov')) $('about-ov').classList.remove('open'); });
+
+  // ===== Anteriores — archive calendar (Racimo standard: #YYYY-MM-DD selects the day) =====
+  (function(){
+    var na=document.getElementById('nav-archive'), am=document.getElementById('archive-menu'); if(!na||!am) return;
+    var START='2026-01-01', ym=null;
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function isoOf(y,m,d){ return y+'-'+pad2(m+1)+'-'+pad2(d); }
+    function capz(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+    function build(){ var t=new Date(); t.setHours(12,0,0,0);
+      var cur=new Date(ISO+'T12:00:00'); if(isNaN(cur)) cur=t;
+      ym={y:cur.getFullYear(), m:cur.getMonth()}; render(t); }
+    function render(t){ var cal=document.getElementById('archive-cal'); if(!cal) return; cal.innerHTML='';
+      var y=ym.y, m=ym.m, todayIso=isoOf(t.getFullYear(),t.getMonth(),t.getDate());
+      var canPrev=(y>2026)||(y===2026&&m>0);
+      var canNext=(y<t.getFullYear())||(y===t.getFullYear()&&m<t.getMonth());
+      var head=document.createElement('div'); head.className='cal-head';
+      var prev=document.createElement('button'); prev.type='button'; prev.className='cal-nav'; prev.textContent='\u2039'; prev.disabled=!canPrev;
+      var next=document.createElement('button'); next.type='button'; next.className='cal-nav'; next.textContent='\u203a'; next.disabled=!canNext;
+      var title=document.createElement('div'); title.className='cal-title';
+      title.textContent=capz(new Date(y,m,1).toLocaleDateString('es-ES',{month:'long'}))+' '+y;
+      prev.addEventListener('click',function(e){ e.stopPropagation(); if(!canPrev) return; if(--ym.m<0){ ym.m=11; ym.y--; } render(t); });
+      next.addEventListener('click',function(e){ e.stopPropagation(); if(!canNext) return; if(++ym.m>11){ ym.m=0; ym.y++; } render(t); });
+      head.appendChild(prev); head.appendChild(title); head.appendChild(next); cal.appendChild(head);
+      var grid=document.createElement('div'); grid.className='cal-grid';
+      ['L','M','X','J','V','S','D'].forEach(function(w){ var c=document.createElement('div'); c.className='cal-dow'; c.textContent=w; grid.appendChild(c); });
+      var lead=(new Date(y,m,1).getDay()+6)%7, dim=new Date(y,m+1,0).getDate();
+      for(var i=0;i<lead;i++){ var b=document.createElement('div'); b.className='cal-day blank'; grid.appendChild(b); }
+      for(var d=1;d<=dim;d++){ (function(d){
+        var cell=document.createElement('div'); cell.className='cal-day'; cell.textContent=d;
+        var di=isoOf(y,m,d);
+        if(di<START || di>todayIso){ cell.classList.add('disabled'); }
+        else{ if(di===todayIso) cell.classList.add('today'); if(di===ISO) cell.classList.add('current');
+          cell.addEventListener('click',function(){ location.hash=(di===todayIso)?'':di; location.reload(); }); }
+        grid.appendChild(cell); })(d); }
+      for(var i2=lead+dim;i2<42;i2++){ var b2=document.createElement('div'); b2.className='cal-day blank'; grid.appendChild(b2); }
+      cal.appendChild(grid); }
+    na.addEventListener('click',function(e){ e.stopPropagation(); var open=am.classList.contains('open');
+      document.querySelectorAll('.archive-menu.open,.more-menu.open').forEach(function(x){ x.classList.remove('open'); });
+      if(!open){ build(); am.classList.add('open'); } });
+    document.addEventListener('click',function(e){ if(!e.target.closest('.nav-archive-wrap')) am.classList.remove('open'); });
+    if(IS_ARCHIVE){ var an=document.getElementById('arch-note'); if(an){ var d2=new Date(ISO+'T12:00:00');
+      an.innerHTML='Anteriores · '+capz(d2.toLocaleDateString('es-ES',{weekday:'long'}))+' '+d2.getDate()+' de '+d2.toLocaleDateString('es-ES',{month:'long'})+' · <a role="button" id="arch-back">Volver a hoy</a>';
+      an.style.display='block'; var ab=document.getElementById('arch-back'); if(ab) ab.addEventListener('click',function(){ location.hash=''; location.reload(); }); } }
+  })();
+
   document.querySelectorAll('[data-close-goal]').forEach(b=>b.addEventListener('click', ()=>{ const p=$(b.getAttribute('data-close-goal')); if(p) p.classList.remove('open'); }));
   const _gs=$('goal-share'); if(_gs) _gs.addEventListener('click', doShare);
   const _ms=$('maestro-share'); if(_ms) _ms.addEventListener('click', doShare);
