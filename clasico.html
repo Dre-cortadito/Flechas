@@ -296,8 +296,26 @@
   .tut-btn-demo{ flex:none; width:210px; height:52px; pointer-events:none; }
   .tut-btn-demo .ficon, .tut-btn-demo .ficon svg{ width:44px; height:44px; }
   /* Zoom slide: pinch in on the canvas, then the recenter button appears and the view snaps back. */
+  /* Vacía el tablero: arrows fire out one by one (green, through the edge) until the board is empty, then it flashes. */
+  @keyframes tvEmpty1{ 0%,8%{transform:translate(0,0);color:var(--ink);opacity:1} 12%{color:var(--clear)} 26%{transform:translateX(120px);color:var(--clear);opacity:0} 100%{transform:translateX(120px);opacity:0} }
+  .tv-empty1{ animation:tvEmpty1 5s ease-in infinite; }
+  @keyframes tvEmpty2{ 0%,24%{transform:translate(0,0);color:var(--ink);opacity:1} 28%{color:var(--clear)} 42%{transform:translateY(-100px);color:var(--clear);opacity:0} 100%{transform:translateY(-100px);opacity:0} }
+  .tv-empty2{ animation:tvEmpty2 5s ease-in infinite; }
+  @keyframes tvEmpty3{ 0%,40%{transform:translate(0,0);color:var(--ink);opacity:1} 44%{color:var(--clear)} 58%{transform:translateX(-120px);color:var(--clear);opacity:0} 100%{transform:translateX(-120px);opacity:0} }
+  .tv-empty3{ animation:tvEmpty3 5s ease-in infinite; }
+  @keyframes tvEmptyFlash{ 0%,60%{stroke:var(--ink-line)} 68%,82%{stroke:var(--clear)} 92%,100%{stroke:var(--ink-line)} }
+  .tv-empty-board{ animation:tvEmptyFlash 5s ease infinite; }
   @keyframes tvZoom{ 0%,8%{transform:scale(1) translate(0,0)} 32%,60%{transform:scale(1.5) translate(-10px,-6px)} 84%,100%{transform:scale(1) translate(0,0)} }
   .tv-zoom{ transform-box:fill-box; transform-origin:center; animation:tvZoom 4.5s ease-in-out infinite; }
+  /* Vacía el tablero: arrows fire out one by one (green, through the edge) until the board is empty, then it flashes. */
+  @keyframes tvEmpty1{ 0%,8%{transform:translate(0,0);color:var(--ink);opacity:1} 12%{color:var(--clear)} 26%{transform:translateX(120px);color:var(--clear);opacity:0} 100%{transform:translateX(120px);opacity:0} }
+  .tv-empty1{ animation:tvEmpty1 5s ease-in infinite; }
+  @keyframes tvEmpty2{ 0%,24%{transform:translate(0,0);color:var(--ink);opacity:1} 28%{color:var(--clear)} 42%{transform:translateY(-100px);color:var(--clear);opacity:0} 100%{transform:translateY(-100px);opacity:0} }
+  .tv-empty2{ animation:tvEmpty2 5s ease-in infinite; }
+  @keyframes tvEmpty3{ 0%,40%{transform:translate(0,0);color:var(--ink);opacity:1} 44%{color:var(--clear)} 58%{transform:translateX(-120px);color:var(--clear);opacity:0} 100%{transform:translateX(-120px);opacity:0} }
+  .tv-empty3{ animation:tvEmpty3 5s ease-in infinite; }
+  @keyframes tvEmptyFlash{ 0%,60%{stroke:var(--ink-line)} 68%,82%{stroke:var(--clear)} 92%,100%{stroke:var(--ink-line)} }
+  .tv-empty-board{ animation:tvEmptyFlash 5s ease infinite; }
   @keyframes tvZoomBtn{ 0%,12%{opacity:0} 32%,68%{opacity:1} 88%,100%{opacity:0} }
   .tv-zoom-btn{ animation:tvZoomBtn 4.5s ease-in-out infinite; }
   .tv line,.tv polyline{ stroke-width:11; stroke-linecap:round; stroke-linejoin:round; fill:none; }
@@ -1202,7 +1220,7 @@
         <p>El bot&oacute;n <b style="color:var(--accent)">Enfoque</b> se llena solo (~20 s). &Uacute;salo para resaltar <b>3 s</b> las flechas que <b>ya pueden salir</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110"><g stroke="var(--accent)" fill="none" stroke-linecap="round"><circle cx="108" cy="62" r="38" stroke-width="8"/><circle cx="108" cy="62" r="20" stroke-width="7"/></g><circle cx="108" cy="62" r="7.5" fill="var(--accent)"/><g transform="translate(108 62) rotate(-45)"><line x1="0" y1="0" x2="58" y2="0" stroke="var(--accent)" stroke-width="6.5" stroke-linecap="round"/><path d="M48 0 L76 -14 L69 0 L76 14 Z" fill="var(--accent)"/></g></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110"><rect class="tv-empty-board" x="56" y="8" width="120" height="94" rx="8" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="2.5"/><g class="tv-empty1"><line x1="74" y1="34" x2="104" y2="34" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><path d="M98 24 L114 34 L98 44 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-empty2"><line x1="146" y1="86" x2="146" y2="58" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><path d="M136 62 L146 46 L156 62 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-empty3"><line x1="118" y1="82" x2="94" y2="82" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><path d="M100 72 L84 82 L100 92 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>Vac&iacute;a el tablero</h3>
         <p>Despeja <b>todas</b> las flechas. Tu <b>rango es el tiempo</b> — el reloj arranca en cuanto el tablero <b>se asienta</b>, justo tras <b>Empezar</b>.</p>
       </section>
