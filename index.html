@@ -2292,12 +2292,14 @@ function boot(){
     ['diff-pills','land-mode','land-arch','m-arch'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
     const rd=document.getElementById('rules-diff'); if(rd) rd.innerHTML='Borde es una carrera de <b>5 tableros</b> diarios, iguales para todo el mundo. Despeja un tablero y cae el siguiente — <b>los corazones, el reloj, el borde y el desviador siguen</b> de uno a otro. Lanza las flechas por su punta, <b>rápido y sin chocar</b>: tu rango es el <b>tiempo total</b> de los cinco, y si te quedas sin corazones se acaba la partida.';
     document.getElementById('play-btn').addEventListener('click',()=>{ const d=LAND_MODES[landMode]; if(!d||!d.ready) return;
-      if(d.href){ location.replace(d.href); return; }   /* replace: keep El Recreo one Back away */
+      if(d.href){ location.href=d.href; return; }   /* normal navigation: Back from the game page returns HERE (the landing) */
       document.body.classList.add('game-active'); applyGateState();
+      try{ history.pushState({v:'game'},'',location.pathname+location.search); }catch(e){}   // so Back returns to the landing
       if(window.maybeOpenTutorial) setTimeout(window.maybeOpenTutorial,260); });   // first visit: tutorial opens inside the game, not on the landing
     document.getElementById('start-btn').addEventListener('click',beginPuzzle);
     document.getElementById('flx-desviar').addEventListener('click',useDesviar);
-    document.getElementById('home-btn').addEventListener('click',()=>{ closeModals(); toggleMenu(false); document.body.classList.remove('game-active'); });
+    document.getElementById('home-btn').addEventListener('click',()=>{ location.href='https://recreo.dre-c8f.workers.dev/'; });   // Home = back to El Recreo (same tab)
+    window.addEventListener('popstate',()=>{ if(document.body.classList.contains('game-active')){ closeModals(); toggleMenu(false); document.body.classList.remove('game-active'); } });   // Back inside the game = landing
     document.getElementById('rank-bar').addEventListener('click',()=>{ renderRangos(); openModal('rangos-modal'); });
     document.querySelectorAll('[data-modal]').forEach(a=>a.addEventListener('click',()=>{ toggleMenu(false); const id=a.getAttribute('data-modal'); if(id==='stats-modal')renderStats(); if(id==='rangos-modal')renderRangos(); openModal(id); }));
     document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeModals));
