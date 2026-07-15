@@ -296,6 +296,11 @@
   .tut-btn-demo{ flex:none; width:210px; height:52px; pointer-events:none; }
   .tut-btn-demo .ficon, .tut-btn-demo .ficon svg{ width:44px; height:44px; }
   /* Zoom slide: pinch in on the canvas, then the recenter button appears and the view snaps back. */
+  /* Enfoque slide — ONE shared 4.5s clock: the button charges, gets "pressed" at ~60%,
+     and the clear-lane arrow blinks in the accent exactly while the fill drains (in-game behavior). */
+  @keyframes tvEnfFill{ 0%{transform:scaleX(0)} 55%,60%{transform:scaleX(1)} 85%,100%{transform:scaleX(0)} }
+  @keyframes tvEnfArrow{ 0%,59%{color:var(--ink);opacity:1} 62%{color:var(--accent);opacity:1} 66%{color:var(--accent);opacity:.45} 70%{color:var(--accent);opacity:1} 74%{color:var(--accent);opacity:.45} 78%,82%{color:var(--accent);opacity:1} 88%,100%{color:var(--ink);opacity:1} }
+  .tv-enf-arrow{ animation:tvEnfArrow 4.5s linear infinite; }
   /* Vacía el tablero: arrows fire out one by one (green, through the edge) until the board is empty, then it flashes. */
   @keyframes tvEmpty1{ 0%,8%{transform:translate(0,0);color:var(--ink);opacity:1} 12%{color:var(--clear)} 26%{transform:translateX(120px);color:var(--clear);opacity:0} 100%{transform:translateX(120px);opacity:0} }
   .tv-empty1{ animation:tvEmpty1 5s ease-in infinite; }
@@ -307,6 +312,11 @@
   .tv-empty-board{ animation:tvEmptyFlash 5s ease infinite; }
   @keyframes tvZoom{ 0%,8%{transform:scale(1) translate(0,0)} 32%,60%{transform:scale(1.5) translate(-10px,-6px)} 84%,100%{transform:scale(1) translate(0,0)} }
   .tv-zoom{ transform-box:fill-box; transform-origin:center; animation:tvZoom 4.5s ease-in-out infinite; }
+  /* Enfoque slide — ONE shared 4.5s clock: the button charges, gets "pressed" at ~60%,
+     and the clear-lane arrow blinks in the accent exactly while the fill drains (in-game behavior). */
+  @keyframes tvEnfFill{ 0%{transform:scaleX(0)} 55%,60%{transform:scaleX(1)} 85%,100%{transform:scaleX(0)} }
+  @keyframes tvEnfArrow{ 0%,59%{color:var(--ink);opacity:1} 62%{color:var(--accent);opacity:1} 66%{color:var(--accent);opacity:.45} 70%{color:var(--accent);opacity:1} 74%{color:var(--accent);opacity:.45} 78%,82%{color:var(--accent);opacity:1} 88%,100%{color:var(--ink);opacity:1} }
+  .tv-enf-arrow{ animation:tvEnfArrow 4.5s linear infinite; }
   /* Vacía el tablero: arrows fire out one by one (green, through the edge) until the board is empty, then it flashes. */
   @keyframes tvEmpty1{ 0%,8%{transform:translate(0,0);color:var(--ink);opacity:1} 12%{color:var(--clear)} 26%{transform:translateX(120px);color:var(--clear);opacity:0} 100%{transform:translateX(120px);opacity:0} }
   .tv-empty1{ animation:tvEmpty1 5s ease-in infinite; }
@@ -1215,7 +1225,7 @@
         <p>El tablero es un lienzo grande: <b>pellizca</b> para acercar, <b>arrastra</b> para moverte y toca el bot&oacute;n de <b>centrar</b> (o doble toque) para verlo entero.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim col"><svg viewBox="0 0 232 52" style="width:232px;height:52px;overflow:visible;"><g><line x1="26" y1="26" x2="96" y2="26" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round"/><path d="M82 10 L104 26 L82 42 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g style="color:var(--accent);animation:enfpulse 1s ease infinite"><line x1="138" y1="26" x2="192" y2="26" stroke="currentColor" stroke-width="11" stroke-linecap="round"/><path d="M178 10 L200 26 L178 42 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg><span class="freeze-btn tut-btn-demo" aria-hidden="true"><span class="fill" style="animation:tvFill 3s ease-in-out infinite"></span><span class="ficon"><svg viewBox="-3 -3 30 30" aria-hidden="true"><defs><mask id="tut-eye-m"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12.5" r="4.9" fill="currentColor" mask="url(#tut-eye-m)"/></svg></span></span></div>
+        <div class="tut-anim col"><svg viewBox="0 0 232 52" style="width:232px;height:52px;overflow:visible;"><g><line x1="26" y1="26" x2="96" y2="26" stroke="var(--arrow)" stroke-width="11" stroke-linecap="round"/><path d="M82 10 L104 26 L82 42 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-enf-arrow"><line x1="138" y1="26" x2="192" y2="26" stroke="currentColor" stroke-width="11" stroke-linecap="round"/><path d="M178 10 L200 26 L178 42 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg><span class="freeze-btn tut-btn-demo" aria-hidden="true"><span class="fill" style="animation:tvEnfFill 4.5s linear infinite"></span><span class="ficon"><svg viewBox="-3 -3 30 30" aria-hidden="true"><defs><mask id="tut-eye-m"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12.5" r="4.9" fill="currentColor" mask="url(#tut-eye-m)"/></svg></span></span></div>
         <h3>Enfoque</h3>
         <p>El bot&oacute;n <b style="color:var(--accent)">Enfoque</b> se llena solo (~20 s). &Uacute;salo para resaltar <b>3 s</b> las flechas que <b>ya pueden salir</b>.</p>
       </section>
