@@ -57,8 +57,9 @@
   .more-theme-name { color:var(--ink-soft); font-size:12px; font-weight:400; }
   /* On phones the wordmark fights the full nav (Reglas/Estadísticas/Rangos/☰) and they overlap.
      Hide the wordmark (logo stays) so the nav has room — matches the other Cortadito games. */
-  @media (max-width:620px){ .wordmark{ display:none; } .header-nav{ gap:18px; } }
-  @media (max-width:400px){ .header-nav{ gap:13px; } .header-nav a{ font-size:13px; } }
+  @media (max-width:620px){ .wordmark{ display:none; } .header-nav{ gap:16px; } .header-nav a{ font-size:13px; } }
+  @media (max-width:420px){ .header-nav{ gap:10px; } .header-nav a{ font-size:12px; } .header-home{ width:30px; height:30px; } }
+  @media (max-width:340px){ .header-nav{ gap:7px; } .header-nav a{ font-size:11.5px; } .header-home{ width:28px; height:28px; } }
 
   .stage { width:100%; min-height:100dvh; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px);   /* rank bar top at 66px — EXACT Racimo geometry */ padding-bottom:max(8px, env(safe-area-inset-bottom)); box-sizing:border-box; }   /* 100dvh + scroll → button clears the URL bar (Borde parity) */
   /* Shared lower-column width: normally min(94vw,400px), but on short screens it shrinks
