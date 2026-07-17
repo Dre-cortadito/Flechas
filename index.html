@@ -552,7 +552,7 @@
           <a class="more-item" id="m-theme" role="button"><span>Tema</span><span class="more-theme-name" id="m-theme-name">Claro</span></a>
           <a class="more-item" id="m-arch" role="button"><span>Arquitectura</span><span class="more-theme-name" id="m-arch-name">Clásico</span></a>
           <a class="more-item" id="m-sound" role="button"><span>Sonido</span><span class="more-theme-name" id="m-sound-name">Sí</span></a>
-          <a class="more-item" id="m-tut" role="button"><span>Ver tutorial</span></a>
+          
           <a class="more-item" id="m-share" role="button"><span>Compartir resultado</span></a>
           <a class="more-item" id="m-about" role="button"><span>Sobre el juego</span></a>
           <a class="more-item more-item-cta" id="m-sub" role="button"><span>Suscribirse al boletín</span></a>
@@ -609,7 +609,7 @@
     <div class="modal">
       <button class="modal-close" data-close>✕</button>
       <h2>Cómo jugar</h2>
-      <button class="tut-open-btn" onclick="openTutorial()">▶ Ver tutorial animado</button>
+      <button class="tut-open-btn" onclick="openTutorial()">Ver tutorial animado</button>
       <p><b>Borde</b> es una <b>carrera diaria de 5 tableros</b>, igual para todo el mundo. Despeja un tablero y <b>cae el siguiente</b> — el <b>reloj, los corazones, el borde y el desviador no se reinician</b>: siguen de un tablero al otro. El contador a la derecha del reloj marca <b>Tablero N/5</b>.</p>
       <p>Cada <b>flecha</b> es una forma de varias casillas (recta, en L, en zigzag) que termina en una <b>punta</b>. Tócala para <b>lanzarla</b>: la forma entera sale volando hacia donde apunta la punta y desaparece. Despeja <b>todas</b> las flechas de cada tablero para avanzar.</p>
       <p class="muted">La flecha sale <b>como un tren</b>: la punta primero, y el cuerpo la sigue por su propio camino. Solo importa lo que esté <b>delante de la punta</b> — si otra flecha está en ese carril, <b>choca</b> y rebota, y la flecha que estorba <b>parpadea en rojo</b>. Despeja el tablero lanzándolas en el orden correcto.</p>
@@ -2333,7 +2333,6 @@ function boot(){
     document.getElementById('m-theme').addEventListener('click',()=>{ toggleTheme(); toggleMenu(false); });
     { const _sn=document.getElementById('m-sound-name'); if(_sn) _sn.textContent=sndEnabled?'Sí':'No';
       const _ms2=document.getElementById('m-sound'); if(_ms2) _ms2.addEventListener('click', ()=>{ const v=sndToggle(); if(_sn) _sn.textContent=v?'Sí':'No'; if(v) sndLaunch(); }); }
-    document.getElementById('m-tut').addEventListener('click',()=>{ toggleMenu(false); if(window.openTutorial) window.openTutorial(); });
     document.getElementById('m-share').addEventListener('click',()=>{ toggleMenu(false); doShare(); });
     document.getElementById('m-about').addEventListener('click',()=>{ toggleMenu(false); openModal('about-modal'); });
 

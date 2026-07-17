@@ -125,7 +125,7 @@
   .pgdot.cur { background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
 
   /* ===== Status box under the board (mirrors the meta row up top) ===== */
-  .statusbox { width:min(94vw,400px); margin:8px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
+  .statusbox { width:min(94vw,400px); margin:8px auto 0; flex:0 0 auto; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
   .stile { position:relative; padding:8px 6px 9px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
   .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }   /* short divider, inset from the edges (Borde-style) */
   .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
@@ -315,7 +315,7 @@
 
   <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
     <h2>Desvío</h2>
-    <button class="tut-open-btn" style="display:none" onclick="openTutorial()">▶ Ver tutorial animado</button>
+    <button class="tut-open-btn" style="display:none" onclick="openTutorial()">Ver tutorial animado</button>
     <p>Un atasco de flechas. <b>5 tableros</b> seguidos — tu rango es el <b>tiempo total</b> en resolverlos.</p>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="16" y1="20" x2="84" y2="20" style="stroke:var(--arrow);stroke-width:11;stroke-linecap:round"/><polyline points="76,9 100,20 76,31" style="fill:none;stroke:var(--arrow);stroke-width:11;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt"><b>Desliza</b> una flecha a lo largo de su carril. Las flechas <b>no salen</b> del tablero: solo se deslizan y se estorban.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="14" y1="20" x2="86" y2="20" style="stroke:var(--target);stroke-width:14;stroke-linecap:round"/><polyline points="78,9 102,20 78,31" style="fill:none;stroke:var(--target);stroke-width:7;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt">La flecha <b style="color:var(--target)">morada</b> es tu objetivo: deslízala hasta la <b>salida</b> en el borde derecho.</div></div>

@@ -166,7 +166,7 @@
   .refresh-box .refresh-bar { display:block; height:100%; width:0; background:var(--water); border-radius:5px; transition:width .12s linear, background .2s linear; }
   .refresh-box .refresh-bar.warn { background:var(--error); }
 
-  .statusbox { width:min(94vw,400px); margin:8px auto 0; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
+  .statusbox { width:min(94vw,400px); margin:8px auto 0; flex:0 0 auto; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
   .stile { position:relative; padding:8px 6px 9px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
   .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }
   .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); min-height:20px; display:flex; align-items:center; }
