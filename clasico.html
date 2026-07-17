@@ -361,6 +361,7 @@
         <button class="more" id="menu-btn" type="button" aria-label="Más opciones"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
         <div class="more-menu" id="menu-pop">
           <a class="more-item" id="m-theme" role="button"><span>Tema</span><span class="more-theme-name" id="m-theme-name">Claro</span></a>
+          <a class="more-item" id="m-sound" role="button"><span>Sonido</span><span class="more-theme-name" id="m-sound-name">Sí</span></a>
           <a class="more-item" id="m-tut" role="button"><span>Ver tutorial</span></a>
           <a class="more-item" id="m-share" role="button"><span>Compartir resultado</span></a>
           <a class="more-item" id="m-about" role="button"><span>Sobre el juego</span></a>
@@ -498,6 +499,24 @@
   function lsGet(k){ try{ return LS&&LS.getItem(k); }catch(e){ return null; } }
   function lsSet(k,v){ try{ if(LS) LS.setItem(k,v); }catch(e){} }
   const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
+  // ===== Sonido de la familia: tick al lanzar, golpe al chocar. Interruptor en el menú.
+  // WebAudio sintetizado (sin archivos); en Android además vibra (iOS Safari no lo expone).
+  const SND_KEY='clasico-sound';
+  let sndEnabled=true; try{ sndEnabled = localStorage.getItem(SND_KEY)!=='off'; }catch(e){}
+  let _actx=null;
+  function _ac(){ if(!_actx){ try{ _actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+    if(_actx&&_actx.state==='suspended'){ try{ _actx.resume(); }catch(e){} } return _actx; }
+  function _blip(freq,dur,type,vol,slide){ if(!sndEnabled) return; const c=_ac(); if(!c) return;
+    try{ const t=c.currentTime, o=c.createOscillator(), g2=c.createGain();
+      o.type=type; o.frequency.setValueAtTime(freq,t);
+      if(slide) o.frequency.exponentialRampToValueAtTime(slide,t+dur);
+      g2.gain.setValueAtTime(0.0001,t); g2.gain.exponentialRampToValueAtTime(vol,t+0.008);
+      g2.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g2); g2.connect(c.destination); o.start(t); o.stop(t+dur+0.02); }catch(e){} }
+  function sndLaunch(){ _blip(660,0.09,'sine',0.15,990); if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(8); }catch(e){} } }
+  function sndBump(){ _blip(170,0.13,'triangle',0.2,110); if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(16); }catch(e){} } }
+  function sndToggle(){ sndEnabled=!sndEnabled; try{ localStorage.setItem(SND_KEY, sndEnabled?'on':'off'); }catch(e){} return sndEnabled; }
+
 
   // ================= constants (tunable) =================
   const U=100, W=33, H=41;                              // 33×41 board (v9: 3× explorable canvas); U = SVG units per cell
@@ -915,14 +934,14 @@
       // CLEAR — tip-first discharge: green, dash window slides the body out
       // along its own shape, head leads (parity with Cascada/Rumbo).
       for(const cl of s.cells) occ[cl.r*W+cl.c]=-1; delete snakes[id];
-      const g=s.el; g.classList.add('firing');
+      const g=s.el; g.classList.add('firing'); sndLaunch();
       const T=fireVisual(g, s._F, s._move, s._v);
       setTimeout(()=>{ try{ g.remove(); }catch(e){} }, T);
       remaining--; renderCounts();
       if(remaining<=0) winGame();
     } else {
       // CHOQUE — red, bumps out to the blocker and springs back, ½ heart.
-      const g=s.el; g.classList.add('blocked');
+      const g=s.el; g.classList.add('blocked'); sndBump();
       const T=bounceVisual(g, s._v, gapToBlocker(s));
       setTimeout(()=>{ try{ g.classList.remove('blocked'); }catch(e){} }, 2*T+140);
       choques++; renderCounts(); loseHeart();
@@ -1119,6 +1138,8 @@
   $('menu-btn').addEventListener('click', e=>{ e.stopPropagation(); toggleMenu(); });
   document.addEventListener('click', e=>{ if(!e.target.closest('.nav-more-wrap')) toggleMenu(false); });
   $('m-theme').addEventListener('click', ()=>{ applyTheme(document.body.getAttribute('data-theme')==='black'?'light':'black'); toggleMenu(false); });
+  { const _sn=$('m-sound-name'); if(_sn) _sn.textContent=sndEnabled?'Sí':'No';
+    const _ms2=$('m-sound'); if(_ms2) _ms2.addEventListener('click', ()=>{ const v=sndToggle(); if(_sn) _sn.textContent=v?'Sí':'No'; if(v) sndLaunch(); }); }
   $('m-tut').addEventListener('click', ()=>{ toggleMenu(false); if(window.openTutorial) window.openTutorial(); });
   { const _ma=$('m-about'), _ax=$('about-x'), _ao=$('about-ov');
     if(_ma&&_ao) _ma.addEventListener('click', ()=>{ toggleMenu(false); _ao.classList.add('open'); });

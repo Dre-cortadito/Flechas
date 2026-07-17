@@ -380,6 +380,7 @@
         <button class="more" id="menu-btn" type="button" aria-label="Más opciones"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
         <div class="more-menu" id="menu-pop">
           <a class="more-item" id="m-theme" role="button"><span>Tema</span><span class="more-theme-name" id="m-theme-name">Claro</span></a>
+          <a class="more-item" id="m-sound" role="button"><span>Sonido</span><span class="more-theme-name" id="m-sound-name">Sí</span></a>
           <a class="more-item" id="m-tut" role="button"><span>Ver tutorial</span></a>
           <a class="more-item" id="m-share" role="button"><span>Compartir resultado</span></a>
           <a class="more-item" id="m-about" role="button"><span>Sobre el juego</span></a>
@@ -521,6 +522,24 @@
   function lsGet(k){ try{ return LS&&LS.getItem(k); }catch(e){ return null; } }
   function lsSet(k,v){ try{ if(LS) LS.setItem(k,v); }catch(e){} }
   const $=id=>document.getElementById(id), SVGNS='http://www.w3.org/2000/svg';
+  // ===== Sonido de la familia: tick al lanzar, golpe al chocar. Interruptor en el menú.
+  // WebAudio sintetizado (sin archivos); en Android además vibra (iOS Safari no lo expone).
+  const SND_KEY='cascada-sound';
+  let sndEnabled=true; try{ sndEnabled = localStorage.getItem(SND_KEY)!=='off'; }catch(e){}
+  let _actx=null;
+  function _ac(){ if(!_actx){ try{ _actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+    if(_actx&&_actx.state==='suspended'){ try{ _actx.resume(); }catch(e){} } return _actx; }
+  function _blip(freq,dur,type,vol,slide){ if(!sndEnabled) return; const c=_ac(); if(!c) return;
+    try{ const t=c.currentTime, o=c.createOscillator(), g2=c.createGain();
+      o.type=type; o.frequency.setValueAtTime(freq,t);
+      if(slide) o.frequency.exponentialRampToValueAtTime(slide,t+dur);
+      g2.gain.setValueAtTime(0.0001,t); g2.gain.exponentialRampToValueAtTime(vol,t+0.008);
+      g2.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g2); g2.connect(c.destination); o.start(t); o.stop(t+dur+0.02); }catch(e){} }
+  function sndLaunch(){ _blip(660,0.09,'sine',0.15,990); if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(8); }catch(e){} } }
+  function sndBump(){ _blip(170,0.13,'triangle',0.2,110); if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(16); }catch(e){} } }
+  function sndToggle(){ sndEnabled=!sndEnabled; try{ localStorage.setItem(SND_KEY, sndEnabled?'on':'off'); }catch(e){} return sndEnabled; }
+
 
   const U=100, COLS=14, ROWS=16, GAME_SECS=120;   /* 14×16 — shorter board so the stack fits the phone */
   const REFRESH_MS=30000, WARN_MS=5000, FALL_MS=480, SLIDE_MS=2000, CASCADE_MS=2000;   // WARN_MS=5000 → countdown turns pink for the last 5 s   // board slides the full cascade, in sync with the waterfall (linear); CASCADE_MS = effect length + clock pause   // 2400 = exactly 3 expire pulses (0.8s each) before the board falls
@@ -730,7 +749,7 @@
       const m=multNow(); points+=m*(frenzyActive()?2:1); cleared++; $('score').textContent=points; renderRank(); renderCombo(true); renderStatus();
       applySpecial(role);
       const line=g.querySelector('.pline'), hd=g.querySelector('.phead'); const T=Math.max(200, Math.round(110+F*0.20));
-      g.classList.add('firing');                                   // green as it leaves
+      g.classList.add('firing'); sndLaunch();                                   // green as it leaves
       try{ line.animate([{strokeDashoffset:'0'},{strokeDashoffset:(-F)+'px'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){}
       try{ const Th=Math.max(1,Math.round(T*mv/F)); hd.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(mv*v[0])+'px,'+(mv*v[1])+'px)'}],{duration:Th,easing:'linear',fill:'forwards'}); }catch(e){}
       setTimeout(()=>{ try{g.remove();}catch(e){} },T);
@@ -744,7 +763,7 @@
       const g=p.el, v=p._v; let steps=0, r=p.head.r+DYn[p.dir], c=p.head.c+DXn[p.dir];
       while(r>=0&&r<ROWS&&c>=0&&c<COLS){ const o=ownerMap.get(key(r,c)); if(o!==undefined && o!==p.id) break; steps++; r+=DYn[p.dir]; c+=DXn[p.dir]; }   // walk past own body to the real blocker
       const dist=Math.max(38, (steps+1)*U-46);   // charge ALL the way to the real blocker (no artificial cap), stopping with a clean gap before it, then bounce
-      g.classList.add('blocked'); bounceBlocked(g,v,dist);
+      g.classList.add('blocked'); sndBump(); bounceBlocked(g,v,dist);
       const T=Math.max(130, Math.round(110+dist*0.2));
       if(shields>0){ shields--; updateShieldHUD(); g.classList.add('blocked-safe'); setTimeout(()=>{ try{g.classList.remove('blocked','blocked-safe');}catch(e){} }, 2*T+120); }   // a shield eats the bump: 0 hearts, combo intact (the cyan flash is the feedback)
       else { setTimeout(()=>{ try{g.classList.remove('blocked');}catch(e){} }, 2*T+120); combo=0; renderCombo(false); loseHeart(); } } }
@@ -952,6 +971,8 @@
   $('menu-btn').addEventListener('click', e=>{ e.stopPropagation(); toggleMenu(); });
   document.addEventListener('click', e=>{ if(!e.target.closest('.nav-more-wrap')) toggleMenu(false); });
   $('m-theme').addEventListener('click', ()=>{ applyTheme(document.body.getAttribute('data-theme')==='black'?'light':'black'); toggleMenu(false); });
+  { const _sn=$('m-sound-name'); if(_sn) _sn.textContent=sndEnabled?'Sí':'No';
+    const _ms2=$('m-sound'); if(_ms2) _ms2.addEventListener('click', ()=>{ const v=sndToggle(); if(_sn) _sn.textContent=v?'Sí':'No'; if(v) sndLaunch(); }); }
   $('m-tut').addEventListener('click', ()=>{ toggleMenu(false); if(window.openTutorial) window.openTutorial(); });
   { const _ma=$('m-about'), _ax=$('about-x'), _ao=$('about-ov');
     if(_ma&&_ao) _ma.addEventListener('click', ()=>{ toggleMenu(false); _ao.classList.add('open'); });
