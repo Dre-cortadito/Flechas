@@ -1842,7 +1842,7 @@ function renderFreeze(){ const fz=document.getElementById('flx-desviar'); if(!fz
   const fillTo=(freezeCharges>=FREEZE_MAX)?1:freezeFill, tv='scaleX('+fillTo.toFixed(3)+')';
   const f=fz._fill||(fz._fill=fz.querySelector('.act-fill')); if(f && f._tr!==tv){ f._tr=tv; f.style.transform=tv; } }
 // Sonidos por color (Borde): cada especial suena a lo suyo al salir
-function sndRacha(){ _blip(300,0.12,'sine',0.13,900);
+function sndRacha(){ _blip(659,0.16,'sine',0.11,659); setTimeout(()=>_blip(1047,0.2,'sine',0.11,1047),90);
   if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([10,20]); }catch(e){} } }
 function sndGiro(){ _blip(1046,0.09,'sine',0.10,1046); setTimeout(()=>_blip(1319,0.09,'sine',0.10,1319),60); setTimeout(()=>_blip(1568,0.12,'sine',0.11,1568),120);
   if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([8,15,8,15,8]); }catch(e){} } }
@@ -1850,9 +1850,12 @@ function sndCandado(){ _blip(660,0.06,'triangle',0.14,650); setTimeout(()=>_blip
   if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([12,30,18]); }catch(e){} } }
 function sndBeamBounce(){ if(!sndEnabled) return; const c=_ac(); if(c){ try{ const t=c.currentTime;
     const o=c.createOscillator(), g2=c.createGain();
-    o.type='triangle'; o.frequency.setValueAtTime(240,t); o.frequency.exponentialRampToValueAtTime(160,t+0.07); o.frequency.exponentialRampToValueAtTime(230,t+0.17);
-    g2.gain.setValueAtTime(0.0001,t); g2.gain.exponentialRampToValueAtTime(0.12,t+0.012); g2.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
-    o.connect(g2); g2.connect(c.destination); o.start(t); o.stop(t+0.22);
+    o.type='sine'; o.frequency.setValueAtTime(340,t); o.frequency.exponentialRampToValueAtTime(560,t+0.05);   // el impacto lo lanza hacia arriba…
+    const lfo=c.createOscillator(), lg=c.createGain();                                                        // …y la cuerda queda vibrando (wobble)
+    lfo.type='sine'; lfo.frequency.setValueAtTime(26,t); lg.gain.setValueAtTime(70,t); lg.gain.exponentialRampToValueAtTime(6,t+0.28);
+    lfo.connect(lg); lg.connect(o.frequency);
+    g2.gain.setValueAtTime(0.0001,t); g2.gain.exponentialRampToValueAtTime(0.11,t+0.012); g2.gain.exponentialRampToValueAtTime(0.0001,t+0.3);
+    o.connect(g2); g2.connect(c.destination); o.start(t); o.stop(t+0.32); lfo.start(t); lfo.stop(t+0.32);
   }catch(e){} }
   if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(10); }catch(e){} } }
 function sndBeamMove(){ _blip(170,0.1,'sine',0.045,230); }   // el borde se desliza — susurro corto, sin vibración
