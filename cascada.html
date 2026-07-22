@@ -840,7 +840,7 @@
 
   // ================= refresh (a new board falls from the top and pushes the old one out) =================
   function newLayer(){ const g=document.createElementNS(SVGNS,'g'); g.setAttribute('class','lyr'); svg.appendChild(g); return g; }
-  function fallRefresh(){ if(transitioning) return; transitioning=true; board.classList.remove('expiring');
+  function fallRefresh(){ if(transitioning) return; transitioning=true; board.classList.remove('expiring'); sndCascade();
     board.classList.remove('cascading'); void board.offsetWidth; board.classList.add('cascading'); setTimeout(function(){ try{ board.classList.remove('cascading'); }catch(e){} }, CASCADE_MS+120);
     const old=layer; fallOld=old;
     rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard(); assignRoles();
@@ -853,12 +853,33 @@
 
   // ================= freeze =================
   // Sonidos por color: cada especial suena a lo suyo al salir
-  function sndEscudo(){ _blip(392,0.10,'triangle',0.12,523); setTimeout(()=>_blip(784,0.12,'sine',0.05,1046),40);
+  function sndEscudo(){ if(!sndEnabled) return; const c=_ac(); if(c){ try{ const t=c.currentTime;
+      [[220,330],[223,334]].forEach(a=>{ const o=c.createOscillator(), g2=c.createGain();
+        o.type='triangle'; o.frequency.setValueAtTime(a[0],t); o.frequency.exponentialRampToValueAtTime(a[1],t+0.22);
+        g2.gain.setValueAtTime(0.0001,t); g2.gain.exponentialRampToValueAtTime(0.09,t+0.05); g2.gain.exponentialRampToValueAtTime(0.0001,t+0.3);
+        o.connect(g2); g2.connect(c.destination); o.start(t); o.stop(t+0.32); });
+      const o2=c.createOscillator(), g3=c.createGain();
+      o2.type='sine'; o2.frequency.setValueAtTime(440,t+0.06); o2.frequency.exponentialRampToValueAtTime(495,t+0.26);
+      g3.gain.setValueAtTime(0.0001,t+0.06); g3.gain.exponentialRampToValueAtTime(0.04,t+0.1); g3.gain.exponentialRampToValueAtTime(0.0001,t+0.3);
+      o2.connect(g3); g3.connect(c.destination); o2.start(t+0.06); o2.stop(t+0.32);
+    }catch(e){} }
     if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([10,25]); }catch(e){} } }
-  function sndFrenesi(){ _blip(500,0.09,'square',0.06,1000); setTimeout(()=>_blip(600,0.09,'square',0.06,1200),85);
+  function sndFrenesi(){ _blip(250,0.09,'square',0.06,500); setTimeout(()=>_blip(300,0.09,'square',0.06,600),85);
     if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([8,20,8]); }catch(e){} } }
-  function sndIce(){ _blip(1175,0.12,'sine',0.08,880); }
+  function sndIce(){ _blip(1046,0.2,'sine',0.09,1046); }   // una nota del arpegio de Congelar
   function sndLaunchRole(role){ if(role==='shield') sndEscudo(); else if(role==='frenzy') sndFrenesi(); else if(role==='freeze') sndIce(); else sndLaunch(); }
+  // La cascada: agua cayendo mientras el tablero nuevo empuja al viejo (dura lo que dura el cambio)
+  function sndCascade(){ if(!sndEnabled) return; const c=_ac(); if(!c) return;
+    try{ const dur=SLIDE_MS/1000, t=c.currentTime;
+      const N=Math.floor(c.sampleRate*dur), buf=c.createBuffer(1,N,c.sampleRate), d=buf.getChannelData(0);
+      for(let i=0;i<N;i++) d[i]=Math.random()*2-1;
+      const src=c.createBufferSource(); src.buffer=buf;
+      const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.1;
+      bp.frequency.setValueAtTime(1500,t); bp.frequency.exponentialRampToValueAtTime(240,t+dur);
+      const g2=c.createGain(); g2.gain.setValueAtTime(0.0001,t); g2.gain.exponentialRampToValueAtTime(0.085,t+0.12);
+      g2.gain.setValueAtTime(0.085,t+dur*0.6); g2.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      src.connect(bp); bp.connect(g2); g2.connect(c.destination); src.start(t); src.stop(t+dur+0.05);
+    }catch(e){} }
   function useFreeze(){ if(!freezeReady||!running||over) return; sndPower(); frozenUntil=Date.now()+FREEZE_DUR; freezeCharge=0; freezeReady=false; freezeVisual=0; updateFreeze(); }
   function lerpHex(a,b,t){ a=a.trim();b=b.trim(); const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16); const r=Math.round((pa>>16)+(( pb>>16)-(pa>>16))*t),g=Math.round(((pa>>8)&255)+((( pb>>8)&255)-((pa>>8)&255))*t),bl=Math.round((pa&255)+((pb&255)-(pa&255))*t); return 'rgb('+r+','+g+','+bl+')'; }
   function updateFreeze(){ const btn=$('freeze-btn'), num=$('freeze-num'), fill=$('freeze-fill'), tm=$('timer'); const fz=Date.now()<frozenUntil;
