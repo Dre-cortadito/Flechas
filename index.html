@@ -1789,6 +1789,7 @@ function pulseLoop(){ try{ const bp=document.getElementById('board-panel'); cons
       else { const frac=Math.max(0,Math.min(0.999,(now-startedAt)/1000-elapsed));
         const bx=elapsed+frac-beamBaseTime-HOT_GRACE; const kf=Math.floor(bx/PERIOD), into=bx-kf*PERIOD; const k=beamBaseIndex+kf;
         const eK=((HOT_START+HOT_DIR*k)%4+4)%4, eN=((HOT_START+HOT_DIR*(k+1))%4+4)%4; const io=intro.toFixed(3);
+        { const _sl=into>=HOT_DWELL; if(_sl && !window._beamSlidePrev && started && !finished) sndBeamMove(); window._beamSlidePrev=_sl; }
         if(twoSided()){   // boards 4–5: TWO live walls. Dwell: eK+eN sit. Slide: eK trains OFF, eN holds, eNN trains IN.
           const eNN=((HOT_START+HOT_DIR*(k+2))%4+4)%4;
           setWallBg(w0,wallGrad(eK)); setWallBg(w1,wallGrad(eN)); setWallBg(w2,wallGrad(eNN));
@@ -1841,12 +1842,20 @@ function renderFreeze(){ const fz=document.getElementById('flx-desviar'); if(!fz
   const fillTo=(freezeCharges>=FREEZE_MAX)?1:freezeFill, tv='scaleX('+fillTo.toFixed(3)+')';
   const f=fz._fill||(fz._fill=fz.querySelector('.act-fill')); if(f && f._tr!==tv){ f._tr=tv; f.style.transform=tv; } }
 // Sonidos por color (Borde): cada especial suena a lo suyo al salir
-function sndRacha(){ _blip(1046,0.09,'sine',0.10,1046); setTimeout(()=>_blip(1319,0.09,'sine',0.10,1319),60); setTimeout(()=>_blip(1568,0.12,'sine',0.11,1568),120);
-  if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([8,15,8,15,8]); }catch(e){} } }
-function sndGiro(){ _blip(300,0.12,'sine',0.13,900);
+function sndRacha(){ _blip(300,0.12,'sine',0.13,900);
   if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([10,20]); }catch(e){} } }
+function sndGiro(){ _blip(1046,0.09,'sine',0.10,1046); setTimeout(()=>_blip(1319,0.09,'sine',0.10,1319),60); setTimeout(()=>_blip(1568,0.12,'sine',0.11,1568),120);
+  if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([8,15,8,15,8]); }catch(e){} } }
 function sndCandado(){ _blip(660,0.06,'triangle',0.14,650); setTimeout(()=>_blip(440,0.11,'triangle',0.15,430),70);
   if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([12,30,18]); }catch(e){} } }
+function sndBeamBounce(){ if(!sndEnabled) return; const c=_ac(); if(c){ try{ const t=c.currentTime;
+    const o=c.createOscillator(), g2=c.createGain();
+    o.type='triangle'; o.frequency.setValueAtTime(240,t); o.frequency.exponentialRampToValueAtTime(160,t+0.07); o.frequency.exponentialRampToValueAtTime(230,t+0.17);
+    g2.gain.setValueAtTime(0.0001,t); g2.gain.exponentialRampToValueAtTime(0.12,t+0.012); g2.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
+    o.connect(g2); g2.connect(c.destination); o.start(t); o.stop(t+0.22);
+  }catch(e){} }
+  if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(10); }catch(e){} } }
+function sndBeamMove(){ _blip(170,0.1,'sine',0.045,230); }   // el borde se desliza — susurro corto, sin vibración
 function sndLaunchRole(pid){ const r=(typeof ROLE!=='undefined'&&ROLE)?ROLE[pid]:null;
   if(r===R_RACHA) sndRacha(); else if(r===R_GIRO) sndGiro(); else if(r===R_CANDADO) sndCandado(); else sndLaunch(); }
 function useDesviar(){ if(freezeCharges<=0 || finished || !started) return;
@@ -2056,7 +2065,7 @@ function tapPiece(pid){
     const mv=Math.max(20, p._move-WALL_UNITS);   // stop at the bar's INNER FACE (~the 11px bar), not the board edge
     // SAME snappy out-and-back as an arrow-vs-arrow bump: one ease-in-out keyframe (out at .45, back to 0).
     const T=Math.max(300, Math.round(mv*1.5));
-    g.classList.add('beam-blocked');
+    g.classList.add('beam-blocked'); sndBeamBounce();
     if(line) line.animate([{strokeDashoffset:'0px'},{strokeDashoffset:(-mv)+'px',offset:.45},{strokeDashoffset:'0px'}],{duration:T,easing:'ease-in-out'});
     if(hd)   hd.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(mv*p._vx)+'px,'+(mv*p._vy)+'px)',offset:.45},{transform:'translate(0px,0px)'}],{duration:T,easing:'ease-in-out'});
     setTimeout(()=>{ try{g.classList.remove('beam-blocked');}catch(e){} }, T+40);

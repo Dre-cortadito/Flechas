@@ -864,8 +864,8 @@
       o2.connect(g3); g3.connect(c.destination); o2.start(t+0.06); o2.stop(t+0.32);
     }catch(e){} }
     if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([10,25]); }catch(e){} } }
-  function sndFrenesi(){ _blip(250,0.09,'square',0.06,500); setTimeout(()=>_blip(300,0.09,'square',0.06,600),85);
-    if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([8,20,8]); }catch(e){} } }
+  function sndFrenesi(){ _blip(1046,0.09,'sine',0.10,1046); setTimeout(()=>_blip(1319,0.09,'sine',0.10,1319),60); setTimeout(()=>_blip(1568,0.12,'sine',0.11,1568),120);
+    if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([8,15,8,15,8]); }catch(e){} } }
   function sndIce(){ _blip(1046,0.2,'sine',0.09,1046); }   // una nota del arpegio de Congelar
   function sndLaunchRole(role){ if(role==='shield') sndEscudo(); else if(role==='frenzy') sndFrenesi(); else if(role==='freeze') sndIce(); else sndLaunch(); }
   // La cascada: agua cayendo mientras el tablero nuevo empuja al viejo (dura lo que dura el cambio)
