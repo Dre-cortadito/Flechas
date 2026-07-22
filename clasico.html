@@ -289,7 +289,7 @@
   .tut-dots{ display:flex; gap:7px; justify-content:center; margin:4px 0 12px; }
   .tut-dot{ width:8px; height:8px; border-radius:50%; border:none; background:var(--ink-line); padding:0; cursor:pointer; }
   .tut-dot.on{ background:var(--accent); }
-  .tut-next{ display:block; margin:0 auto; padding:11px 32px; border-radius:999px; border:none; background:var(--accent); color:var(--on-accent); font:700 15px var(--font-ui); cursor:pointer; }
+  .tut-next{ display:block; box-sizing:border-box; min-width:150px; margin:0 auto; padding:11px 32px; border-radius:999px; border:none; background:var(--accent); color:var(--on-accent); font:700 15px var(--font-ui); cursor:pointer; }
   .tut-open-btn{ display:inline-flex; align-items:center; gap:7px; margin:2px 0 12px; padding:9px 16px; border-radius:999px; border:2px solid var(--accent); background:transparent; color:var(--accent); font:700 14px var(--font-ui); cursor:pointer; }
   .tut-again{ display:flex; align-items:center; justify-content:center; gap:8px; margin:12px 0 0; font:500 13px var(--font-ui); color:var(--ink-soft); cursor:pointer; user-select:none; -webkit-user-select:none; }
   .tut-again input{ width:16px; height:16px; margin:0; accent-color:var(--accent); cursor:pointer; }
@@ -516,6 +516,16 @@
   function sndLaunch(){ _blip(660,0.09,'sine',0.15,990); if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(8); }catch(e){} } }
   function sndBump(){ _blip(170,0.13,'triangle',0.2,110); if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(16); }catch(e){} } }
   function sndToggle(){ sndEnabled=!sndEnabled; try{ localStorage.setItem(SND_KEY, sndEnabled?'on':'off'); }catch(e){} return sndEnabled; }
+  // Enfoque: doble chirp ascendente — "abrir el ojo" (claridad)
+  function sndPower(){ if(!sndEnabled) return; const c=_ac(); if(!c) return;
+    try{ const t=c.currentTime;
+      [[520,1040,0.14,0],[780,1560,0.16,0.09]].forEach(a=>{ const f0=a[0],f1=a[1],d=a[2],dl=a[3];
+        const o=c.createOscillator(), g2=c.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(f0,t+dl); o.frequency.exponentialRampToValueAtTime(f1,t+dl+d);
+        g2.gain.setValueAtTime(0.0001,t+dl); g2.gain.exponentialRampToValueAtTime(0.12,t+dl+0.015); g2.gain.exponentialRampToValueAtTime(0.0001,t+dl+d);
+        o.connect(g2); g2.connect(c.destination); o.start(t+dl); o.stop(t+dl+d+0.02); });
+    }catch(e){}
+    if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([12,30,12]); }catch(e){} } }
 
 
   // ================= constants (tunable) =================
@@ -877,7 +887,7 @@
     if(enfReady){ enfVisual=1; fill.style.transform='scaleX(1)'; btn.classList.add('ready'); boardEl.classList.add('enf-ready'); }
     else { enfVisual += (enfCharge-enfVisual)*0.18; if(Math.abs(enfCharge-enfVisual)<0.002) enfVisual=enfCharge;
       fill.style.transform='scaleX('+Math.max(0,enfVisual).toFixed(3)+')'; btn.classList.remove('ready'); boardEl.classList.remove('enf-ready'); } }
-  function doEnfoque(){ if(!enfReady||!running||over) return;
+  function doEnfoque(){ if(!enfReady||!running||over) return; sndPower();
     enfReady=false; enfCharge=0; enfVisual=0; enfUntil=Date.now()+ENFOQUE_DUR;
     boardEl.classList.remove('enf-ready'); boardEl.classList.add('enf-active');   // green → yellow
     updateEnfoque();
