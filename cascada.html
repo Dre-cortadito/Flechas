@@ -539,18 +539,27 @@
   function sndLaunch(){ _blip(660,0.09,'sine',0.15,990); if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(8); }catch(e){} } }
   function sndBump(){ _blip(170,0.13,'triangle',0.2,110); if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(16); }catch(e){} } }
   function sndToggle(){ sndEnabled=!sndEnabled; try{ localStorage.setItem(SND_KEY, sndEnabled?'on':'off'); }catch(e){} return sndEnabled; }
-  // Congelar: barrido descendente + destellos — suena a hielo cayendo
+  // Congelar: campanitas de cristal en cascada — escarcha formándose sobre el tablero
   function sndPower(){ if(!sndEnabled) return; const c=_ac(); if(!c) return;
     try{ const t=c.currentTime;
-      const o=c.createOscillator(), g2=c.createGain();
-      o.type='triangle'; o.frequency.setValueAtTime(1400,t); o.frequency.exponentialRampToValueAtTime(320,t+0.45);
-      g2.gain.setValueAtTime(0.0001,t); g2.gain.exponentialRampToValueAtTime(0.12,t+0.02); g2.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
-      o.connect(g2); g2.connect(c.destination); o.start(t); o.stop(t+0.52);
-      [[1800,1200,0.08,0.05],[1400,900,0.09,0.16],[1100,700,0.1,0.28]].forEach(a=>{ const f0=a[0],f1=a[1],d=a[2],dl=a[3];
-        const o2=c.createOscillator(), g3=c.createGain();
-        o2.type='sine'; o2.frequency.setValueAtTime(f0,t+dl); o2.frequency.exponentialRampToValueAtTime(f1,t+dl+d);
-        g3.gain.setValueAtTime(0.0001,t+dl); g3.gain.exponentialRampToValueAtTime(0.07,t+dl+0.012); g3.gain.exponentialRampToValueAtTime(0.0001,t+dl+d);
-        o2.connect(g3); g3.connect(c.destination); o2.start(t+dl); o2.stop(t+dl+d+0.02); });
+      // arpegio descendente de "vidrio": senos puros con ataque de campana y cola corta
+      [[2637,0.00],[2093,0.07],[1661,0.14],[1319,0.21],[1046,0.29]].forEach(a=>{ const f0=a[0],dl=a[1];
+        const o=c.createOscillator(), g2=c.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(f0,t+dl);
+        g2.gain.setValueAtTime(0.0001,t+dl); g2.gain.exponentialRampToValueAtTime(0.10,t+dl+0.006);
+        g2.gain.exponentialRampToValueAtTime(0.0001,t+dl+0.32);
+        o.connect(g2); g2.connect(c.destination); o.start(t+dl); o.stop(t+dl+0.34);
+        // brillo: armónico una octava arriba, muy suave — el "sparkle" del hielo
+        const o3=c.createOscillator(), g4=c.createGain();
+        o3.type='sine'; o3.frequency.setValueAtTime(f0*2,t+dl);
+        g4.gain.setValueAtTime(0.0001,t+dl); g4.gain.exponentialRampToValueAtTime(0.035,t+dl+0.005);
+        g4.gain.exponentialRampToValueAtTime(0.0001,t+dl+0.18);
+        o3.connect(g4); g4.connect(c.destination); o3.start(t+dl); o3.stop(t+dl+0.2); });
+      // "sellado": nota grave suave al final — el tablero queda congelado
+      const o2=c.createOscillator(), g3=c.createGain();
+      o2.type='triangle'; o2.frequency.setValueAtTime(220,t+0.36);
+      g3.gain.setValueAtTime(0.0001,t+0.36); g3.gain.exponentialRampToValueAtTime(0.06,t+0.39); g3.gain.exponentialRampToValueAtTime(0.0001,t+0.62);
+      o2.connect(g3); g3.connect(c.destination); o2.start(t+0.36); o2.stop(t+0.64);
     }catch(e){}
     if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(45); }catch(e){} } }
 
