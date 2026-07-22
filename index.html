@@ -1840,6 +1840,15 @@ function renderFreeze(){ const fz=document.getElementById('flx-desviar'); if(!fz
   if(fz._rdy!==has){ fz._rdy=has; fz.classList.toggle('ready', has); }
   const fillTo=(freezeCharges>=FREEZE_MAX)?1:freezeFill, tv='scaleX('+fillTo.toFixed(3)+')';
   const f=fz._fill||(fz._fill=fz.querySelector('.act-fill')); if(f && f._tr!==tv){ f._tr=tv; f.style.transform=tv; } }
+// Sonidos por color (Borde): cada especial suena a lo suyo al salir
+function sndRacha(){ _blip(1046,0.09,'sine',0.10,1046); setTimeout(()=>_blip(1319,0.09,'sine',0.10,1319),60); setTimeout(()=>_blip(1568,0.12,'sine',0.11,1568),120);
+  if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([8,15,8,15,8]); }catch(e){} } }
+function sndGiro(){ _blip(300,0.12,'sine',0.13,900);
+  if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([10,20]); }catch(e){} } }
+function sndCandado(){ _blip(660,0.06,'triangle',0.14,650); setTimeout(()=>_blip(440,0.11,'triangle',0.15,430),70);
+  if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([12,30,18]); }catch(e){} } }
+function sndLaunchRole(pid){ const r=(typeof ROLE!=='undefined'&&ROLE)?ROLE[pid]:null;
+  if(r===R_RACHA) sndRacha(); else if(r===R_GIRO) sndGiro(); else if(r===R_CANDADO) sndCandado(); else sndLaunch(); }
 function useDesviar(){ if(freezeCharges<=0 || finished || !started) return;
   if(hotSideNow()<0) return;                               // border not out yet — nothing to deflect
   sndPower();
@@ -2064,7 +2073,7 @@ function tapPiece(pid){
   const freedPids=[]; afterSet.forEach(x=>{ if(!beforeSet.has(x)) freedPids.push(x); });
   /* freed-neighbor pulse removed — no more pink blink */
   saveState(); renderStatus(); renderRank(); renderBeans(); clearHintPulse();
-  const p=PIECES[pid]; g.classList.add('firing'); sndLaunch();
+  const p=PIECES[pid]; g.classList.add('firing'); sndLaunchRole(pid);
   const line=g.querySelector('.pline'), hd=g.querySelector('.phead');
   const T=Math.max(200, Math.round(110+p._F*0.20));
   if(line) line.animate([{strokeDashoffset:'0'},{strokeDashoffset:(-p._F)+'px'}],{duration:T, easing:'linear', fill:'forwards'});

@@ -543,23 +543,23 @@
   function sndPower(){ if(!sndEnabled) return; const c=_ac(); if(!c) return;
     try{ const t=c.currentTime;
       // arpegio descendente de "vidrio": senos puros con ataque de campana y cola corta
-      [[2637,0.00],[2093,0.07],[1661,0.14],[1319,0.21],[1046,0.29]].forEach(a=>{ const f0=a[0],dl=a[1];
+      [[2637,0.00],[2093,0.045],[1661,0.09],[1319,0.135]].forEach(a=>{ const f0=a[0],dl=a[1];
         const o=c.createOscillator(), g2=c.createGain();
         o.type='sine'; o.frequency.setValueAtTime(f0,t+dl);
         g2.gain.setValueAtTime(0.0001,t+dl); g2.gain.exponentialRampToValueAtTime(0.10,t+dl+0.006);
-        g2.gain.exponentialRampToValueAtTime(0.0001,t+dl+0.32);
-        o.connect(g2); g2.connect(c.destination); o.start(t+dl); o.stop(t+dl+0.34);
+        g2.gain.exponentialRampToValueAtTime(0.0001,t+dl+0.20);
+        o.connect(g2); g2.connect(c.destination); o.start(t+dl); o.stop(t+dl+0.22);
         // brillo: armónico una octava arriba, muy suave — el "sparkle" del hielo
         const o3=c.createOscillator(), g4=c.createGain();
         o3.type='sine'; o3.frequency.setValueAtTime(f0*2,t+dl);
         g4.gain.setValueAtTime(0.0001,t+dl); g4.gain.exponentialRampToValueAtTime(0.035,t+dl+0.005);
-        g4.gain.exponentialRampToValueAtTime(0.0001,t+dl+0.18);
-        o3.connect(g4); g4.connect(c.destination); o3.start(t+dl); o3.stop(t+dl+0.2); });
+        g4.gain.exponentialRampToValueAtTime(0.0001,t+dl+0.12);
+        o3.connect(g4); g4.connect(c.destination); o3.start(t+dl); o3.stop(t+dl+0.14); });
       // "sellado": nota grave suave al final — el tablero queda congelado
       const o2=c.createOscillator(), g3=c.createGain();
-      o2.type='triangle'; o2.frequency.setValueAtTime(220,t+0.36);
-      g3.gain.setValueAtTime(0.0001,t+0.36); g3.gain.exponentialRampToValueAtTime(0.06,t+0.39); g3.gain.exponentialRampToValueAtTime(0.0001,t+0.62);
-      o2.connect(g3); g3.connect(c.destination); o2.start(t+0.36); o2.stop(t+0.64);
+      o2.type='triangle'; o2.frequency.setValueAtTime(220,t+0.19);
+      g3.gain.setValueAtTime(0.0001,t+0.19); g3.gain.exponentialRampToValueAtTime(0.06,t+0.215); g3.gain.exponentialRampToValueAtTime(0.0001,t+0.4);
+      o2.connect(g3); g3.connect(c.destination); o2.start(t+0.19); o2.stop(t+0.42);
     }catch(e){}
     if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate(45); }catch(e){} } }
 
@@ -772,7 +772,7 @@
       const m=multNow(); points+=m*(frenzyActive()?2:1); cleared++; $('score').textContent=points; renderRank(); renderCombo(true); renderStatus();
       applySpecial(role);
       const line=g.querySelector('.pline'), hd=g.querySelector('.phead'); const T=Math.max(200, Math.round(110+F*0.20));
-      g.classList.add('firing'); sndLaunch();                                   // green as it leaves
+      g.classList.add('firing'); sndLaunchRole(role);                                   // green as it leaves
       try{ line.animate([{strokeDashoffset:'0'},{strokeDashoffset:(-F)+'px'}],{duration:T,easing:'linear',fill:'forwards'}); }catch(e){}
       try{ const Th=Math.max(1,Math.round(T*mv/F)); hd.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(mv*v[0])+'px,'+(mv*v[1])+'px)'}],{duration:Th,easing:'linear',fill:'forwards'}); }catch(e){}
       setTimeout(()=>{ try{g.remove();}catch(e){} },T);
@@ -786,10 +786,10 @@
       const g=p.el, v=p._v; let steps=0, r=p.head.r+DYn[p.dir], c=p.head.c+DXn[p.dir];
       while(r>=0&&r<ROWS&&c>=0&&c<COLS){ const o=ownerMap.get(key(r,c)); if(o!==undefined && o!==p.id) break; steps++; r+=DYn[p.dir]; c+=DXn[p.dir]; }   // walk past own body to the real blocker
       const dist=Math.max(38, (steps+1)*U-46);   // charge ALL the way to the real blocker (no artificial cap), stopping with a clean gap before it, then bounce
-      g.classList.add('blocked'); sndBump(); bounceBlocked(g,v,dist);
+      g.classList.add('blocked'); bounceBlocked(g,v,dist);
       const T=Math.max(130, Math.round(110+dist*0.2));
-      if(shields>0){ shields--; updateShieldHUD(); g.classList.add('blocked-safe'); setTimeout(()=>{ try{g.classList.remove('blocked','blocked-safe');}catch(e){} }, 2*T+120); }   // a shield eats the bump: 0 hearts, combo intact (the cyan flash is the feedback)
-      else { setTimeout(()=>{ try{g.classList.remove('blocked');}catch(e){} }, 2*T+120); combo=0; renderCombo(false); loseHeart(); } } }
+      if(shields>0){ shields--; sndEscudo(); updateShieldHUD(); g.classList.add('blocked-safe'); setTimeout(()=>{ try{g.classList.remove('blocked','blocked-safe');}catch(e){} }, 2*T+120); }   // a shield eats the bump: 0 hearts, combo intact (the cyan flash is the feedback)
+      else { sndBump(); setTimeout(()=>{ try{g.classList.remove('blocked');}catch(e){} }, 2*T+120); combo=0; renderCombo(false); loseHeart(); } } }
   // Borde's exact bounce: head + body move at the SAME rate (linear), out then back, at Borde's
   // arrow speed (T = 110 + 0.2·distance). Body dash and head both travel `dist`, so they stay locked.
   function bounceBlocked(g,v,dist){ const line=g.querySelector('.pline'), hd=g.querySelector('.phead'); const T=Math.max(130, Math.round(110+dist*0.2));
@@ -852,6 +852,13 @@
   function finishFall(){ if(fallOld){ try{fallOld.remove();}catch(e){} fallOld=null; } if(layer) layer.style.transform=''; transitioning=false; refreshAt=Date.now()+REFRESH_MS; }
 
   // ================= freeze =================
+  // Sonidos por color: cada especial suena a lo suyo al salir
+  function sndEscudo(){ _blip(392,0.10,'triangle',0.12,523); setTimeout(()=>_blip(784,0.12,'sine',0.05,1046),40);
+    if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([10,25]); }catch(e){} } }
+  function sndFrenesi(){ _blip(500,0.09,'square',0.06,1000); setTimeout(()=>_blip(600,0.09,'square',0.06,1200),85);
+    if(sndEnabled&&navigator.vibrate){ try{ navigator.vibrate([8,20,8]); }catch(e){} } }
+  function sndIce(){ _blip(1760,0.12,'sine',0.09,1400); }
+  function sndLaunchRole(role){ if(role==='shield') sndEscudo(); else if(role==='frenzy') sndFrenesi(); else if(role==='freeze') sndIce(); else sndLaunch(); }
   function useFreeze(){ if(!freezeReady||!running||over) return; sndPower(); frozenUntil=Date.now()+FREEZE_DUR; freezeCharge=0; freezeReady=false; freezeVisual=0; updateFreeze(); }
   function lerpHex(a,b,t){ a=a.trim();b=b.trim(); const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16); const r=Math.round((pa>>16)+(( pb>>16)-(pa>>16))*t),g=Math.round(((pa>>8)&255)+((( pb>>8)&255)-((pa>>8)&255))*t),bl=Math.round((pa&255)+((pb&255)-(pa&255))*t); return 'rgb('+r+','+g+','+bl+')'; }
   function updateFreeze(){ const btn=$('freeze-btn'), num=$('freeze-num'), fill=$('freeze-fill'), tm=$('timer'); const fz=Date.now()<frozenUntil;
