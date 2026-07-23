@@ -718,7 +718,7 @@
       <button class="goal-close" data-close-goal="maestro-panel">✕</button>
       <div class="goal-mark goal-cup" aria-hidden="true"></div>
       <h2 class="goal-headline maestro">¡Maestro/a!</h2>
-      <p class="goal-subhead">Despejaste el tablero sin un solo choque.</p>
+      <p class="goal-subhead">Terminaste con el mejor tiempo del tablero.</p>
       <div class="goal-actions">
         <button class="btn accent" id="maestro-share">Compartir</button>
         <button class="btn" data-close-goal="maestro-panel">Cerrar</button>
@@ -746,7 +746,7 @@
         <button class="land-tab active" data-mode="cascada" type="button" role="tab">Cascada</button>
         <button class="land-tab" data-mode="clasico" type="button" role="tab">Clásico</button>
         <button class="land-tab" data-mode="perimetro" type="button" role="tab">Borde</button>
-        <button class="land-tab" data-mode="desvio" type="button" role="tab">Rumbo</button>
+        <button class="land-tab" data-mode="rumbo" type="button" role="tab">Rumbo</button>
         <button class="land-tab" data-mode="flujo" type="button" role="tab">Flujo</button>
       </div>
       <div class="land-head">
@@ -785,7 +785,21 @@ const ARCH=(_arch==='network')?'network':'maze';   // solver assigns heads -> ev
 // easier-to-tap board against the live 26×26. Default (no param) is unchanged. Its
 // save-state is namespaced so the prototype never clobbers the real daily.
 let _gridOv=0; try{ const g=new URLSearchParams(location.search).get('grid'); if(g){ const n=parseInt(g,10); if(n>=12&&n<=32) _gridOv=n; } }catch(e){}   // 0 → use the cuadro shape (14×18, Cascada-sized arrows); ?grid=N forces a square N×N
-const DSCOPE=GAME+'-diario-v2'+(ARCH==='network'?'-net':'')+(_gridOv!==20?('-g'+_gridOv):'');
+const DSCOPE=GAME+'-diario-v2'+(ARCH==='network'?'-net':'')+(_gridOv&&_gridOv!==20?('-g'+_gridOv):'');
+/* One-time migration: a bug used to suffix EVERY default player's keys with "-g0"
+   (_gridOv defaults to 0). Copy any "-g0"-scoped saves to the clean scope so the
+   fix doesn't wipe anyone's progress/stats. Old keys are left in place. */
+(function migrateG0(){
+  try{
+    if(_gridOv!==0 || !window.localStorage) return;                       // only the default board got the bad suffix
+    var OLD=DSCOPE+'-g0';
+    if(window.localStorage.getItem(DSCOPE+'-stats')!==null) return;      // clean scope already has data
+    var old=[]; for(var i=0;i<window.localStorage.length;i++){ var k=window.localStorage.key(i); if(k && k.indexOf(OLD)===0) old.push(k); }
+    if(!old.length) return;                                              // nothing to migrate
+    for(var j=0;j<old.length;j++){ var nk=DSCOPE+old[j].slice(OLD.length);
+      if(window.localStorage.getItem(nk)===null){ try{ window.localStorage.setItem(nk, window.localStorage.getItem(old[j])); }catch(e){} } }
+  }catch(e){}
+})();
 const HINT_MAX=0;                                   // no hints on the daily
 // Rank is awarded by SOLVE TIME (faster = higher). Cutoffs = max seconds.
 // A run is 5 boards; rank = TOTAL time across all five, so the cutoffs are scaled up
@@ -2233,8 +2247,10 @@ function maybeCelebrate(){
     + (mistakes===0?'<div class="gb-clean">Sin choques</div>':'<div class="gb-note">'+mistakes+' choque'+(mistakes===1?'':'s')+'</div>')
     + (training?'<div class="gb-note">Entrenamiento · no cuenta para hoy</div>':'');
   if(head) head.classList.toggle('maestro', idx===9);
-  if(!LS.getItem(key)){ LS.setItem(key,'1'); setTimeout(()=>openGoal('goal-panel'),450); }
-  if(!training){ setTimeout(()=>launchConfetti((idx===9?110:beat?85:55)), 480); }   // a real payoff for finishing the run
+  const mKey=DSCOPE+'-maestro-shown-'+ISO, isMaestro=!training&&idx===TOP;
+  if(isMaestro && !LS.getItem(mKey)){ LS.setItem(mKey,'1'); LS.setItem(key,'1'); setTimeout(()=>openGoal('maestro-panel'),450); }
+  else if(!LS.getItem(key)){ LS.setItem(key,'1'); setTimeout(()=>openGoal('goal-panel'),450); }
+  if(!training){ setTimeout(()=>launchConfetti((idx===9?130:beat?85:55)), 480); }   // a real payoff for finishing the run (Maestro gets the big 130 burst)
 }
 function launchConfetti(n){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -2294,7 +2310,7 @@ const LAND_MODES={
   cascada:{   title:'Cascada',   tag:'Despeja antes de que caiga.', a:'#0062E3', a2:'#EA3546', logo:LAND_LOGO_CASCADA, ready:true, href:'./cascada.html' },
   clasico:{   title:'Clásico',   tag:'Desenreda el tablero.', a:'#FF5A0A', a2:'#f2894e', logo:LAND_LOGO_CLASICO, ready:true, href:'./clasico.html' },
   perimetro:{ title:'Borde', tag:'Evita el borde, despeja el tablero.', a:'#662E9B', a2:'#F9C80E', logo:LAND_LOGO_PERIMETRO, ready:true },
-  desvio:{    title:'Rumbo',    tag:'Gana tiempo, cruza el laberinto.', a:'#F86624', a2:'#1E8E82', logo:LAND_LOGO_RUMBO, ready:true, href:'./rumbo.html' },
+  rumbo:{     title:'Rumbo',    tag:'Gana tiempo, cruza el laberinto.', a:'#F86624', a2:'#1E8E82', logo:LAND_LOGO_RUMBO, ready:true, href:'./rumbo.html' },
   flujo:{     title:'Flujo',    tag:'Conecta el agua antes de que se derrame.', a:'#2E8BC0', a2:'#EA3546', logo:LAND_LOGO_FLUJO, ready:true, href:'./flujo.html' },
 };
 let landMode='cascada';
@@ -2309,7 +2325,7 @@ function setLandMode(m){ const d=LAND_MODES[m]; if(!d) return; landMode=m;
   if(d.ready){ play.textContent='Jugar'; play.classList.remove('is-soon'); play.disabled=false;
     if(m==='cascada'){ lbl.textContent='Reto del día'; const _s='cascada-reto-'+ISO; let _h=2166136261>>>0; for(let _i=0;_i<_s.length;_i++){_h^=_s.charCodeAt(_i);_h=Math.imul(_h,16777619)>>>0;} let _t=(_h>>>0)/4294967296; _t=(function(a){a|=0;a=a+0x6D2B79F5|0;let t2=Math.imul(a^a>>>15,1|a);t2=t2+Math.imul(t2^t2>>>7,61|t2)^t2;return((t2^t2>>>14)>>>0)/4294967296;})(_h); val.textContent=(490+Math.round(_t*28)*10)+' pts'; }
     else if(m==='flujo'){ lbl.textContent='Reto del día'; val.textContent='≤ 1:18'; }
-    else if(m==='desvio'){ lbl.textContent='Reto del día'; const _s='rumbo-reto-'+ISO; let _h=2166136261>>>0; for(let _i=0;_i<_s.length;_i++){_h^=_s.charCodeAt(_i);_h=Math.imul(_h,16777619)>>>0;} const _rt=55+((_h>>>0)%9)*5; val.textContent='≤ '+Math.floor(_rt/60)+':'+String(_rt%60).padStart(2,'0'); }
+    else if(m==='rumbo'){ lbl.textContent='Reto del día'; const _s='rumbo-reto-'+ISO; let _h=2166136261>>>0; for(let _i=0;_i<_s.length;_i++){_h^=_s.charCodeAt(_i);_h=Math.imul(_h,16777619)>>>0;} const _rt=55+((_h>>>0)%9)*5; val.textContent='≤ '+Math.floor(_rt/60)+':'+String(_rt%60).padStart(2,'0'); }
     else { lbl.textContent='Reto del día'; val.textContent='≤ '+fmtTime(META); } }
   else { lbl.textContent='Estado'; val.textContent='Próximamente'; play.textContent='Próximamente'; play.classList.add('is-soon'); play.disabled=true; }
 }
@@ -2335,7 +2351,7 @@ function boot(){
     document.getElementById('land-eyebrow').textContent=GAME_NAME;
     document.getElementById('land-date').textContent=longDate(ISO);
     // El Recreo deep-link: ?modo=cascada|borde selects that mode's landing y oculta las pestañas.
-    var _fm='cascada', _hasModo=false; try{ var _q=new URLSearchParams(location.search).get('modo'); if(_q){ _hasModo=true; _q=_q.toLowerCase(); if(_q==='borde'||_q==='perimetro') _fm='perimetro'; else if(LAND_MODES[_q]&&LAND_MODES[_q].ready) _fm=_q; } }catch(e){}
+    var _fm='cascada', _hasModo=false; try{ var _q=new URLSearchParams(location.search).get('modo'); if(_q){ _hasModo=true; _q=_q.toLowerCase(); if(_q==='desvio') _q='rumbo';   /* legacy alias: the Rumbo mode was keyed 'desvio' — keep old links working */ if(_q==='borde'||_q==='perimetro') _fm='perimetro'; else if(LAND_MODES[_q]&&LAND_MODES[_q].ready) _fm=_q; } }catch(e){}
     setLandMode(_fm);
     if(_hasModo){ var _lt=document.getElementById('land-tabs'); if(_lt) _lt.style.display='none'; }
     document.querySelectorAll('.land-tab').forEach(t=>t.addEventListener('click',()=>setLandMode(t.getAttribute('data-mode'))));

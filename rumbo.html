@@ -267,6 +267,8 @@
   .gate .v { font:800 48px var(--font-display); color:var(--accent); line-height:1; }
   .gate .vlbl { font:700 9px var(--font-ui); letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-soft); margin-top:-6px; }
   .gate .brand { width:54px; height:54px; }
+  .train-badge { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:17; background:var(--accent); color:var(--bg); font:800 10px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; padding:4px 12px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,.16); opacity:0; pointer-events:none; transition:opacity .4s; }
+  .train-badge.show { opacity:1; }
   .btn { font:800 16px var(--font-ui); letter-spacing:.4px; color:#fff; background:var(--accent); border:none; border-radius:999px; padding:13px 38px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.14); }
   .btn.ghost { color:var(--ink); background:var(--paper); border:1.5px solid var(--ink-line); box-shadow:none; padding:13px 32px; font-size:16px; }
   .btn.ghost:active { transform:scale(.97); }
@@ -323,7 +325,7 @@
       <h1 class="wordmark"><span class="full">Rumbo<span class="dot">.</span></span><span class="eb">Flechas</span></h1>
     </div>
     <nav class="header-nav" aria-label="Más">
-      <a class="header-home" href="./index.html?modo=desvio#landing" aria-label="Inicio" onclick="event.preventDefault();location.replace(this.getAttribute('href'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></a>
+      <a class="header-home" href="./index.html?modo=rumbo#landing" aria-label="Inicio" onclick="event.preventDefault();location.replace(this.getAttribute('href'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></a>
       <a class="nav-rules" id="rules-link" role="button">Reglas ▾</a>
       <a id="stats-link" role="button">Estadísticas ▾</a>
       <a id="ranks-link" role="button">Rangos ▾</a>
@@ -356,6 +358,7 @@
           <p>Activa todos los <b>nodos</b> para encender la salida y llega a ella lo más rápido posible. Guardias, cámaras y focos vigilan: si te <b>detectan</b>, pierdes tiempo y vuelves al inicio. Usa <b>Sigilo</b> y <b>Hack</b> para escapar.</p>
           <button class="btn" id="start-btn" type="button">Empezar</button>
         </div>
+        <div class="train-badge" id="train-badge">Entrenamiento</div>
       </div>
     </div>
 
@@ -435,7 +438,11 @@
 
   // archive: date can come from #YYYY-MM-DD
   function isoFromHash(){ const h=(location.hash||'').replace('#',''); return /^\d{4}-\d{2}-\d{2}$/.test(h)?h:null; }
-  const ISO=isoFromHash()||new Date().toISOString().slice(0,10);
+  function todayLocalISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }   // LOCAL date (no UTC midnight flip)
+  const TODAY_ISO=todayLocalISO();
+  const ISO=isoFromHash()||TODAY_ISO;
+  const IS_ARCHIVE=ISO!==TODAY_ISO;
+  let seedTag=ISO;   // generator tag: official runs = the date; practice runs swap in a fresh random tag (new maze/enemies/boards)
 
   const DIR={U:[-1,0],D:[1,0],L:[0,-1],R:[0,1]}, KEYS=['U','D','L','R'];
   const STEP_MS=200;   // hold-to-repeat speed (steady, gentle glide; no clock)
@@ -451,6 +458,7 @@
   let DG=[], MR=0, MC=0, dot={r:0,c:0}, exit={r:0,c:0}, solSteps=0, retoSecs=60;   // DG = doubled wall grid; MR/MC = logical rows/cols
   let grid=[], boardRng=null;
   let moveDir=null, acc=0, lastTs=0, runMs=0, started=false, boards=0, won=false, running=false, elapsedMs=0;
+  let training=false, officialDoors=null;   // practice mode (after the day's single official run) + doors opened in the official win, for sharing
   let phase='move';   // 'move' = roam freely with the d-pad; 'solve' = at a locked door, clear the board to open it
   let lockedDoors=new Set(), doorType={}, totalDoors=0, doorsOpened=0, currentDoor=null;
   let laserWalls=new Map(), laserList=[];   // camera-linked security barriers guarding some Nodo rooms (Idea 2). Keyed "r,c,d" both edge directions → shared wall object.
@@ -481,7 +489,7 @@
 
   // ===== maze generation (deterministic recursive backtracker, thin walls) =====
   const LW=18, LH=19;   // BIGGER, more readable cells: fewer rows/cols inside the SAME-width board → wide corridors, clear enemies/Nodos/doors
-  function genMaze(){ const rnd=mulberry32(fnv('rumbo-maze-'+ISO)); const Vh=2*LH+1, Vw=2*LW+1;
+  function genMaze(){ const rnd=mulberry32(fnv('rumbo-maze-'+seedTag)); const Vh=2*LH+1, Vw=2*LW+1;
     const vis=Array.from({length:LH},()=>Array(LW).fill(0));
     const g=Array.from({length:Vh},()=>Array(Vw).fill('#'));
     // recursive backtracker — long winding corridors that snake back near themselves → real shortcut opportunities
@@ -511,7 +519,7 @@
   }
   let hideSet=new Set(), shadowSet=new Set();
   // shadow zones: a couple of dark patches where cameras are blind (guards still see you)
-  function buildShadows(){ shadowSet=new Set(); const rng=mulberry32(fnv('rumbo-shadow-'+ISO));
+  function buildShadows(){ shadowSet=new Set(); const rng=mulberry32(fnv('rumbo-shadow-'+seedTag));
     const taken=new Set([].concat([...hideSet], keys.map(k=>k.r+','+k.c), enemies.map(e=>e.r+','+e.c)));
     const ok=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>3 && !(r<=1&&c<=1) && !(r===exit.r&&c===exit.c) && !taken.has(r+','+c); };
     for(let z=0; z<2; z++){
@@ -519,7 +527,7 @@
       const q=[seed]; shadowSet.add(seed.r+','+seed.c); let cnt=1; const cap=4+((rng()*3)|0);   // flood a small connected blob
       while(q.length && cnt<cap){ const cur=q.shift(); for(const k of openDirs(cur.r,cur.c)){ const [dr,dc]=DIR[k]; const nr=cur.r+dr,nc=cur.c+dc, id=nr+','+nc; if(!shadowSet.has(id)&&ok(nr,nc)){ shadowSet.add(id); q.push({r:nr,c:nc}); cnt++; if(cnt>=cap) break; } } } } }
   // hiding spots: dead-end alcoves where the player is invisible to cameras/guards (shake a chase, slip past a cone)
-  function buildHides(){ hideSet=new Set(); const rng=mulberry32(fnv('rumbo-hide-'+ISO));
+  function buildHides(){ hideSet=new Set(); const rng=mulberry32(fnv('rumbo-hide-'+seedTag));
     const enemyCells=new Set(enemies.map(e=>e.r+','+e.c)); const nodoCells=new Set(keys.map(k=>k.r+','+k.c)); const placed=[];
     const ok=(r,c)=>{ const ds=distExit[r]&&distExit[r][c]; return ds!==undefined && ds>2 && !(r<=1&&c<=1) && !(r===exit.r&&c===exit.c) && !nodoCells.has(r+','+c) && !enemyCells.has(r+','+c); };
     const isDead=(r,c)=>openDirs(r,c).length===1;   // a true alcove
@@ -529,7 +537,7 @@
     for(let i=0;i<3;i++){ const s=pickH(isDead)||pickH(()=>true); if(s){ hideSet.add(s.r+','+s.c); placed.push(s); } } }
   // NODOS — route objectives spread through the maze; activate them all and the exit powers on.
   function buildNodos(){ keys=[]; keysGot=0;
-    const rng=mulberry32(fnv('rumbo-nodos-'+ISO)); const placed=[];
+    const rng=mulberry32(fnv('rumbo-nodos-'+seedTag)); const placed=[];
     // distance from the HOME tile — Nodos sit deep enough that the puzzle door guarding them isn't at the start
     const dHome=(()=>{ const d=Array.from({length:MR},()=>Array(MC).fill(-1)); d[0][0]=0; const q=[[0,0]]; let h=0;
       const pass=(r,c,k)=>{ const [dr,dc]=DIR[k], nr=r+dr,nc=c+dc; return !(nr<0||nr>=MR||nc<0||nc>=MC) && DG[2*r+1+dr][2*c+1+dc]==='.'; };
@@ -564,12 +572,13 @@
     if(lives<=0) loseGame(); }
   function endPursuitVisuals(){ try{ board.classList.remove('pursuit','spotted'); }catch(e){} _wasPursuing=false; for(const e of enemies){ if(e.type==='guard'&&e.mode==='pursue') e.mode='return'; } setSticky(null); }
   function loseGame(){ if(lost||won) return; lost=true; running=false; lightMeter=0; setAlarm(false,0); endPursuitVisuals(); if(rafId) cancelAnimationFrame(rafId);
+    if(!training){ if(!IS_ARCHIVE) lsSet('rumbo-done-'+ISO,'1'); recordStats(0,null,false); }   // the official attempt locks the day WIN OR LOSE; a loss counts as a played day (no rank/best)
     const brand='<svg class="brand" viewBox="0 0 120 120" aria-hidden="true"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--error)"/><path d="M44 44 L76 76 M76 44 L44 76" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/></svg>';
     const g=$('gate'); g.classList.remove('hidden');
-    g.innerHTML=brand+'<h2>¡Te atraparon!</h2><div class="vlbl">Te quedaste sin vidas</div>'
+    g.innerHTML=brand+'<h2>¡Te atraparon!</h2><div class="vlbl">'+(training?'Entrenamiento':'Te quedaste sin vidas')+'</div>'
       +'<p>Activaste '+keysGot+'/'+keys.length+' nodo'+(keys.length===1?'':'s')+'.<br>Muévete por las sombras y cronometra a los enemigos.</p>'
       +'<div class="go-row"><button class="btn" id="again-btn" type="button">Reintentar</button></div>';
-    $('again-btn').addEventListener('click', startGame); }
+    $('again-btn').addEventListener('click', ()=>startGame(true)); }
   // movement is on LOGICAL cells; a move is allowed only if the wall segment between cells is open (doors don't affect pathing)
   function canMove(r,c,dr,dc){ const nr=r+dr,nc=c+dc; if(nr<0||nr>=MR||nc<0||nc>=MC) return false; return DG[2*r+1+dr][2*c+1+dc]==='.'; }
   function solvePath(){ const seen=new Set(['0,0']); let q=[[0,0,[]]]; while(q.length){ const [r,c,pa]=q.shift(); if(r===exit.r&&c===exit.c) return pa;
@@ -676,7 +685,7 @@
       if(!opts.length) break;
       const k=opts[(rng()*opts.length)|0]; const [dr,dc]=DIR[k]; cur={r:cur.r+dr,c:cur.c+dc}; cells.push({r:cur.r,c:cur.c}); prev=k; } return cells; }
   function buildEnemies(){ enemies=[]; watchedSet=new Set(); seenCount=0; spritesDirty=true;
-    const rng=mulberry32(fnv('rumbo-enemy-'+ISO));
+    const rng=mulberry32(fnv('rumbo-enemy-'+seedTag));
     const placed=[];
     const startD=distExit[0]&&distExit[0][0]||1;
     const nodoSet=new Set(keys.map(k=>k.r+','+k.c));
@@ -1052,7 +1061,7 @@
   function ensureMiniEl(){ if(miniEl) return; miniEl=document.createElement('div'); miniEl.className='mini-ov';
     miniEl.innerHTML='<div class="mini-card"><div class="mini-title" id="mini-title"></div><div class="mini-area" id="mini-area"></div><div class="mini-hint" id="mini-hint"></div></div>'; board.appendChild(miniEl); }
   function openMini(type,onSolve){ ensureMiniEl(); miniOnSolve=onSolve;
-    miniRng=mulberry32(fnv('rumbo-mini-'+ISO+'-'+(currentDoor?currentDoor.r+'-'+currentDoor.c:'x')));
+    miniRng=mulberry32(fnv('rumbo-mini-'+seedTag+'-'+(currentDoor?currentDoor.r+'-'+currentDoor.c:'x')));
     const tt=$('mini-title'), hint=$('mini-hint'), area=$('mini-area'); area.innerHTML='';
     if(type==='flujo'){ tt.textContent='Conecta el flujo'; tt.style.color='#2E8BC0'; hint.textContent='Toca para girar · une el origen con el desagüe'; buildFlujoMini(area); }
     else { tt.textContent='Despeja las flechas'; tt.style.color='#0aa39a'; hint.textContent='Toca una flecha con el carril libre'; buildCascadaMini(area); }
@@ -1219,10 +1228,13 @@
     updateRank(); }
 
   // ===== game flow =====
-  function startGame(){ won=false; lost=false; started=false; running=true; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; phase='move'; lives=LIVES_MAX; blindaje=0; sigiloLeft=0; hackMeter=0;
+  function startGame(isTraining){ training=!!isTraining; won=false; lost=false; started=false; running=true; moveDir=null; acc=0; lastTs=0; boards=0; elapsedMs=0; runMs=0; phase='move'; lives=LIVES_MAX; blindaje=0; sigiloLeft=0; hackMeter=0;
     _wasPursuing=false; _justCaught=false; try{ board.classList.remove('pursuit','spotted'); }catch(e){} setSticky(null);
     $('clock').textContent='0:00'; renderLives();
-    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO));
+    seedTag = training ? ('train-'+Date.now()+'-'+((Math.random()*1e9)|0)) : ISO;   // practice = fresh random maze/enemies/boards every run
+    genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+seedTag));
+    const _tb=$('train-badge'); if(_tb){ clearTimeout(_tb._t); _tb.classList.toggle('show', training);
+      if(training) _tb._t=setTimeout(()=>{ try{ _tb.classList.remove('show'); }catch(e){} }, 2200); }   // brief tag while the maze settles (Clásico pattern)
     document.body.classList.add('game-active'); sizeAll(); buildBigPad(); placeDot(true); showMove(); drawHUD();
     $('gate').classList.add('hidden');
     if(rafId) cancelAnimationFrame(rafId); started=true; rafId=requestAnimationFrame(loop); }
@@ -1253,26 +1265,42 @@
   }
   function winGame(){ if(won||lost) return; won=true; running=false; lightMeter=0; setAlarm(false,0); endPursuitVisuals(); elapsedMs=runMs; if(rafId) cancelAnimationFrame(rafId);
     const secs=Math.floor(elapsedMs/1000); finalRank=rankFromTime(secs); const hit=secs<=retoSecs;
-    recordStats(secs, finalRank, hit);
-    const best=bestToday(); const isBest=(best===null||secs<best); if(isBest) lsSet('rumbo-best-'+ISO, String(secs));
+    let best=bestToday(), isBest=false;
+    if(!training){   // official run: locks the day, records everything, celebrates. Practice skips ALL of it.
+      if(!IS_ARCHIVE) lsSet('rumbo-done-'+ISO,'1');
+      recordStats(secs, finalRank, hit);
+      isBest=(best===null||secs<best); if(isBest){ lsSet('rumbo-best-'+ISO, String(secs)); best=secs; }
+      officialDoors=doorsOpened;
+      setTimeout(()=>launchConfetti(finalRank===TOP?130:hit?95:70), 260);
+    }
     updateRank();
-    setTimeout(()=>launchConfetti(finalRank===TOP?130:hit?95:70), 260);
-    const head = finalRank===TOP ? '<h2 class="accent">¡Maestro/a del laberinto!</h2>'
+    const head = training ? '<h2>Entrenamiento</h2>'
+               : finalRank===TOP ? '<h2 class="accent">¡Maestro/a del laberinto!</h2>'
                : hit ? '<h2>¡Buen sorbo!</h2>' : '<h2>¡Llegaste!</h2>';
     const brand='<svg class="brand" viewBox="0 0 120 120" aria-hidden="true"><rect x="8" y="8" width="104" height="104" rx="28" fill="var(--accent)"/><path d="M34 88 H86" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M78 79 L90 88 L78 97" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const g=$('gate'); g.classList.remove('hidden');
-    g.innerHTML=brand+head+'<div class="v">'+fmt(secs)+'</div><div class="vlbl">'+RANK_NAMES[finalRank]+(hit?' · ✅ reto':'')+'</div>'
-      +'<p>'+doorsOpened+' puerta'+(doorsOpened===1?'':'s')+' abierta'+(doorsOpened===1?'':'s')+'.'+(isBest?'<br>¡Tu mejor tiempo de hoy! 🎉':(best!==null?'<br>Mejor de hoy: <b>'+fmt(best)+'</b>':''))+'</p>'
-      +'<div class="go-row"><button class="btn" id="again-btn" type="button">Jugar de nuevo</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
-    $('again-btn').addEventListener('click', startGame); $('share-btn').addEventListener('click', doShare); }
+    g.innerHTML=brand+head+'<div class="v">'+fmt(secs)+'</div><div class="vlbl">'+(training?'tiempo':RANK_NAMES[finalRank]+(hit?' · ✅ reto':''))+'</div>'
+      +'<p>'+doorsOpened+' puerta'+(doorsOpened===1?'':'s')+' abierta'+(doorsOpened===1?'':'s')+'.'+(training?'':(isBest?'<br>¡Tu mejor tiempo de hoy! 🎉':(best!==null?'<br>Mejor de hoy: <b>'+fmt(best)+'</b>':'')))+'</p>'
+      +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+    $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare); }
 
   // ===== share =====
   function longDate(){ try{ const p=ISO.split('-'); const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])); let s=d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return ISO; } }
-  function doShare(){ const secs=Math.floor(elapsedMs/1000);
-    const lines=[ longDate(), '', '🧩 Rumbo · Flechas', '', '⏱️ '+fmt(secs),
-      (finalRank===TOP?'👑 ¡Maestro/a del laberinto!':'🏆 Rango: '+RANK_NAMES[finalRank]),
-      (secs<=retoSecs?'✅ ¡Reto del día logrado!':'📌 Reto del día'),
-      '🚪 '+doorsOpened+' puerta'+(doorsOpened===1?'':'s'), '', 'https://cortadito.news' ];
+  function doShare(){
+    const dayDone = !!lsGet('rumbo-done-'+ISO) || ((won||lost) && !training);   // official attempt over (flag; archive days rely on this session's official run)
+    const best = bestToday();   // official time exists only if the official run was a WIN
+    const lines=[ longDate(), '', '🧩 Flechas 🚪 Rumbo' ];
+    if(!dayDone){ lines.push('⏳ Todavía sin terminar'); }
+    else if(best!==null){   // official win — always share the OFFICIAL day data, even after practice runs
+      const secs=best, rIdx=rankFromTime(secs);
+      lines.push('⏱️ '+fmt(secs));
+      lines.push(rIdx===TOP?'👑 ¡Maestro/a del laberinto!':'🏆 Rango: '+RANK_NAMES[rIdx]);
+      lines.push(secs<=retoSecs?'✅ ¡Reto del día logrado!':'📌 Reto del día');
+      if(officialDoors!==null) lines.push('🚪 '+officialDoors+' puerta'+(officialDoors===1?'':'s'));
+    } else {   // official run was a loss: day is done but there's no time/rank — keep it minimal
+      lines.push('📌 Reto del día');
+    }
+    lines.push(''); lines.push('https://flechas.dre-c8f.workers.dev/rumbo.html');
     const txt=lines.join('\n');
     if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>{ const b=$('share-btn'); if(b) b.textContent='Copiado'; }).catch(()=>{}); } }
@@ -1289,7 +1317,8 @@
   function prevISO(iso){ const p=iso.split('-'); const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])-86400000); return d.toISOString().slice(0,10); }
   function bestToday(){ const v=lsGet('rumbo-best-'+ISO); return v===null||v===undefined?null:+v; }
   function getStats(){ const d={played:0,best:null,ranks:[0,0,0,0,0,0,0,0,0,0],last:null,cur:0,max:0, lastReto:null,retoCur:0,retoMax:0}; try{ return Object.assign(d, JSON.parse(lsGet('rumbo-stats'))||{}); }catch(e){ return d; } }
-  function recordStats(secs, rIdx, hit){ const s=getStats(); s.played++; if(s.best===null||secs<s.best) s.best=secs; s.ranks[rIdx]=(s.ranks[rIdx]||0)+1;
+  function recordStats(secs, rIdx, hit){ const s=getStats(); s.played++;   // rIdx=null → a lost official run: counts as played (+ play streak) but no rank/best
+    if(rIdx!==null&&rIdx!==undefined){ if(s.best===null||secs<s.best) s.best=secs; s.ranks[rIdx]=(s.ranks[rIdx]||0)+1; }
     if(s.last!==ISO){ s.cur=(s.last===prevISO(ISO))?s.cur+1:1; s.last=ISO; if(s.cur>s.max) s.max=s.cur; }
     if(hit && s.lastReto!==ISO){ s.retoCur=(s.lastReto===prevISO(ISO))?s.retoCur+1:1; s.lastReto=ISO; if(s.retoCur>s.retoMax) s.retoMax=s.retoCur; }
     lsSet('rumbo-stats', JSON.stringify(s)); }
@@ -1309,7 +1338,7 @@
     $('rumbo-dist').innerHTML=h; }
 
   // ===== wire =====
-  $('start-btn').addEventListener('click', startGame);
+  $('start-btn').addEventListener('click', ()=>startGame(!!lsGet('rumbo-done-'+ISO)));
   $('rules-link').addEventListener('click', ()=>openOv('rules-ov',true));
   $('rules-x').addEventListener('click', ()=>openOv('rules-ov',false));
   $('rules-ov').addEventListener('click', e=>{ if(e.target===$('rules-ov')) openOv('rules-ov',false); });
@@ -1335,6 +1364,9 @@
     genMaze(); boardRng=mulberry32(fnv('rumbo-board-'+ISO));   // board is generated when you reach a door
     $('reto').textContent=fmt(retoSecs);
     sizeAll(); buildBigPad(); placeDot(); buildRankTrack(); showMove(); drawHUD();
+    if(!IS_ARCHIVE && lsGet('rumbo-done-'+ISO)){ const bs=bestToday(); const gg=$('gate');   // day already locked → start gate offers practice only
+      if(gg){ gg.innerHTML='<h2>Rumbo</h2><p>Ya completaste el reto de hoy'+(bs!==null?' en <b>'+fmt(bs)+'</b>':'')+'. Puedes <b>entrenar</b> con laberintos nuevos.</p><button class="btn" id="start-btn2" type="button">Entrenar</button>';
+        const b2=$('start-btn2'); if(b2) b2.addEventListener('click', ()=>startGame(true)); } }
     window.__rumbo={ start:startGame, step, tapPiece, solve:()=>solvePath(), phase:()=>phase, pieces:()=>Object.keys(pcs).length, doorsLeft:()=>totalDoors-doorsOpened, totalDoors:()=>totalDoors,
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),
       enemiesDbg:()=>({ enemies:enemies.map(e=>({type:e.type,r:e.r,c:e.c,facing:e.facing,on:e.on,dir:e.dir,mode:e.mode,disabled:e.disabled,zone:(e.zone||[]).slice(),sawYou:e.sawYou})), watched:[...watchedSet], seenCount, runMs }),

@@ -173,6 +173,8 @@
 
   .toast { position:absolute; top:14px; left:50%; transform:translate(-50%,-8px); z-index:18; pointer-events:none; opacity:0; background:var(--accent); color:#fff; font:800 13px var(--font-ui); letter-spacing:.4px; padding:7px 15px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; transition:opacity .2s ease, transform .2s ease; }
   .toast.show { opacity:1; transform:translate(-50%,0); }
+  .train-badge { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:17; background:var(--accent); color:#fff; font:800 10px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; padding:4px 12px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,.16); opacity:0; pointer-events:none; transition:opacity .4s; }
+  .train-badge.show { opacity:1; }
 
   .gate { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; background:var(--board-bg); border-radius:18px; text-align:center; padding:26px; }
   .gate.hidden { display:none; }
@@ -407,6 +409,7 @@
       <div class="board" id="board">
         <div id="board-inner"></div>
         <div class="casc-wf" id="casc-wf" aria-hidden="true"><svg viewBox="0 0 140 200" preserveAspectRatio="none"><g class="cwf-bars"><rect x="4" y="-260" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="4" y="-85" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="4" y="85" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="4" y="275" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="4" y="390" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="13" y="-260" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="13" y="-120" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="13" y="-40" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="13" y="110" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="13" y="300" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="13" y="400" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="22" y="-260" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="22" y="-180" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="22" y="5" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="22" y="135" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="22" y="300" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="22" y="395" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="31" y="-260" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="31" y="-95" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="31" y="95" width="7" height="170" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="31" y="345" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="40" y="-260" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="40" y="-130" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="40" y="40" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="40" y="250" width="7" height="95" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="40" y="400" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="49" y="-260" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="49" y="-95" width="7" height="170" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="49" y="110" width="7" height="110" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="49" y="240" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="58" y="-260" width="7" height="95" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="58" y="-85" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="58" y="65" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="58" y="290" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="67" y="-260" width="7" height="150" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="67" y="-30" width="7" height="95" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="67" y="120" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="67" y="235" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="67" y="335" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="76" y="-260" width="7" height="170" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="76" y="-55" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="76" y="175" width="7" height="110" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="76" y="305" width="7" height="80" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="85" y="-260" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="85" y="-95" width="7" height="170" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="85" y="130" width="7" height="150" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="85" y="335" width="7" height="150" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="94" y="-260" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="94" y="-145" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="94" y="-30" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="94" y="65" width="7" height="95" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="94" y="180" width="7" height="80" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="94" y="315" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="103" y="-260" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="103" y="-160" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="103" y="30" width="7" height="110" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="103" y="220" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="103" y="360" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="112" y="-260" width="7" height="80" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="112" y="-145" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="112" y="-65" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="112" y="30" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="112" y="215" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="112" y="365" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="121" y="-260" width="7" height="80" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="121" y="-125" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="121" y="85" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="121" y="225" width="7" height="110" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="121" y="415" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="130" y="-260" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="130" y="-145" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="130" y="-15" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="130" y="120" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="130" y="220" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="139" y="-260" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="139" y="-55" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="139" y="110" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="139" y="260" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.40)"/></g><g class="cwf-bars b2" transform="translate(4.5 0)" opacity=".7"><rect x="4" y="-260" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="4" y="-85" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="4" y="85" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="4" y="275" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="4" y="390" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="13" y="-260" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="13" y="-120" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="13" y="-40" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="13" y="110" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="13" y="300" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="13" y="400" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="22" y="-260" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="22" y="-180" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="22" y="5" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="22" y="135" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="22" y="300" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="22" y="395" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="31" y="-260" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="31" y="-95" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="31" y="95" width="7" height="170" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="31" y="345" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="40" y="-260" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="40" y="-130" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="40" y="40" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="40" y="250" width="7" height="95" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="40" y="400" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="49" y="-260" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="49" y="-95" width="7" height="170" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="49" y="110" width="7" height="110" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="49" y="240" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="58" y="-260" width="7" height="95" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="58" y="-85" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="58" y="65" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="58" y="290" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="67" y="-260" width="7" height="150" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="67" y="-30" width="7" height="95" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="67" y="120" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="67" y="235" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="67" y="335" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="76" y="-260" width="7" height="170" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="76" y="-55" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="76" y="175" width="7" height="110" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="76" y="305" width="7" height="80" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="85" y="-260" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="85" y="-95" width="7" height="170" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="85" y="130" width="7" height="150" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="85" y="335" width="7" height="150" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="94" y="-260" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="94" y="-145" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="94" y="-30" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="94" y="65" width="7" height="95" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="94" y="180" width="7" height="80" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="94" y="315" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="103" y="-260" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="103" y="-160" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="103" y="30" width="7" height="110" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="103" y="220" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="103" y="360" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="112" y="-260" width="7" height="80" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="112" y="-145" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="112" y="-65" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="112" y="30" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="112" y="215" width="7" height="130" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="112" y="365" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="121" y="-260" width="7" height="80" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="121" y="-125" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="121" y="85" width="7" height="60" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="121" y="225" width="7" height="110" rx="3.5" fill="rgba(0,98,227,0.32)"/><rect x="121" y="415" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="130" y="-260" width="7" height="60" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="130" y="-145" width="7" height="110" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="130" y="-15" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="130" y="120" width="7" height="80" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="130" y="220" width="7" height="170" rx="3.5" fill="rgba(255,255,255,0.85)"/><rect x="139" y="-260" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.65)"/><rect x="139" y="-55" width="7" height="130" rx="3.5" fill="rgba(0,98,227,0.50)"/><rect x="139" y="110" width="7" height="95" rx="3.5" fill="rgba(255,255,255,0.40)"/><rect x="139" y="260" width="7" height="150" rx="3.5" fill="rgba(255,255,255,0.40)"/></g></svg></div>
+        <div class="train-badge" id="train-badge">Entrenamiento</div>
         <div class="toast" id="toast"></div>
         <div class="gate" id="gate">
           <h2>Cascada</h2>
@@ -587,6 +590,7 @@
   let frozenUntil=0, freezeCharge=0, freezeReady=false;
   let refreshAt=0, lastTick=0, rafId=null, lastNow=0, startMs=0, pausedMs=0, freezeVisual=0;
   let transitioning=false, fallOld=null, fallEnd=0;
+  let training=false, trainSalt='', prevBestToday=0;   // daily lock (Clásico model): first finished run is official; later runs are practice
   let svg=null, layer=null; const board=$('board'), inner=$('board-inner');
 
   // ================= board generation =================
@@ -824,7 +828,7 @@
     track.innerHTML='<div class="rank-track-line"></div><div class="rank-track-fill"></div>';
     track.querySelector('.rank-track-fill').style.width=pos+'%';
     for(let i=0;i<=TOP;i++){ const dot=document.createElement('div'); dot.className='rank-dot'+(i<=idx?' passed':''); dot.style.left='clamp(3px, '+((i/TOP)*100)+'%, calc(100% - 3px))'; track.appendChild(dot); }
-    const bub=document.createElement('div'); bub.className='rank-dot current'+(idx===TOP?' at-maestro':''); bub.textContent=points; bub.style.left='clamp(12px, '+pos+'%, calc(100% - 12px))'; bub.style.zIndex='5'; track.appendChild(bub);   // score lives INSIDE the bubble (Racimo standard)
+    const bub=document.createElement('div'); bub.className='rank-dot current'+(idx===TOP?' at-maestro':''); bub.style.left='clamp(12px, '+pos+'%, calc(100% - 12px))'; bub.style.zIndex='5'; track.appendChild(bub);   // bubble is empty — score lives in the meta row (timer-game standard)
     const _rp=retoTarget(); let _ri=0; for(let k=0;k<RANK_CUT.length;k++) if(_rp>=RANK_CUT[k]) _ri=k; let _rf=0; if(_ri<TOP){ const _lo=RANK_CUT[_ri],_hi=RANK_CUT[_ri+1]; _rf=Math.max(0,Math.min(1,(_rp-_lo)/(_hi-_lo))); }
     const mk=document.createElement('div'); mk.className='rank-marker'+(points>=_rp?' done':''); mk.style.left='clamp(2px, '+Math.min(100,(_ri+_rf)/TOP*100)+'%, calc(100% - 2px))'; track.appendChild(mk);
     const lbl=$('rank-label'); if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); }
@@ -843,7 +847,7 @@
   function fallRefresh(){ if(transitioning) return; transitioning=true; board.classList.remove('expiring'); sndCascade();
     board.classList.remove('cascading'); void board.offsetWidth; board.classList.add('cascading'); setTimeout(function(){ try{ board.classList.remove('cascading'); }catch(e){} }, CASCADE_MS+120);
     const old=layer; fallOld=old;
-    rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard(); assignRoles();
+    rng=mulberry32(fnv(boardSeed())); boardNum++; genBoard(); assignRoles();
     const nl=newLayer(); layer=nl; renderInto(nl);
     const H=ROWS*U; nl.style.transform='translateY('+(-H)+'px)';
     try{ old.animate([{transform:'translateY(0)'},{transform:'translateY('+H+'px)'}],{duration:SLIDE_MS,easing:'linear',fill:'forwards'}); }catch(e){}
@@ -914,14 +918,18 @@
 
   // ================= start / end =================
   function buildSVG(){ inner.innerHTML=''; svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 '+(COLS*U)+' '+(ROWS*U)); svg.setAttribute('id','bsvg'); svg.setAttribute('preserveAspectRatio','none'); inner.appendChild(svg); }
-  function startGame(){ points=0; cleared=0; boardsClear=0; combo=0; lastClearAt=0; lives=HEARTS_MAX; timeLeft=GAME_SECS; over=false; boardNum=0; transitioning=false; fallOld=null;
+  function boardSeed(){ return (training?('cascada-train-'+trainSalt+'-'):('cascada-'+ISO+'-'))+boardNum; }   // practice runs get fresh random boards; official runs keep the daily seed
+  function startGame(isTraining){ training=!!isTraining; if(training) trainSalt=Date.now()+'-'+((Math.random()*1e9)|0);
+    points=0; cleared=0; boardsClear=0; combo=0; lastClearAt=0; lives=HEARTS_MAX; timeLeft=GAME_SECS; over=false; boardNum=0; transitioning=false; fallOld=null;
     frozenUntil=0; freezeCharge=0; freezeReady=false; lastTick=0; lastNow=0; startMs=Date.now(); pausedMs=0; freezeVisual=0; shields=0; frenzyUntil=0; board.classList.remove('frenzy');
     best=+(lsGet('cascada-best-'+ISO)||0);
-    buildSVG(); rng=mulberry32(fnv('cascada-'+ISO+'-'+boardNum)); boardNum++; genBoard(); assignRoles(); layer=newLayer(); renderInto(layer);
+    buildSVG(); rng=mulberry32(fnv(boardSeed())); boardNum++; genBoard(); assignRoles(); layer=newLayer(); renderInto(layer);
     refreshAt=Date.now()+REFRESH_MS;
     { const rb=$('refresh-bar'); if(rb){ rb.style.transform='scaleX(1)'; rb.classList.remove('warn'); } }   // fill on Empezar (full countdown), then the loop drains it
     $('score').textContent='0'; { const cl=$('cleared'); if(cl) cl.textContent='0'; } { const bd=$('boards-done'); if(bd) bd.textContent='0'; } $('nextin').textContent=Math.round(REFRESH_MS/1000); $('timer').textContent=fmt(GAME_SECS); $('timer').classList.remove('low');
     renderLives(); updateShieldHUD(); updateFrenesi(); running=true; renderRank(); renderCombo(false);
+    const _tb=$('train-badge'); if(_tb){ clearTimeout(_tb._t); _tb.classList.toggle('show', training);
+      if(training) _tb._t=setTimeout(()=>{ try{ _tb.classList.remove('show'); }catch(e){} }, 2200); }   // brief tag while the run starts — hidden during play (Clásico standard)
     $('gate').classList.add('hidden'); updateFreeze(); rafId=requestAnimationFrame(loop); }
   function launchConfetti(n){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -949,29 +957,41 @@
     })(t0);
   }
   function endGame(reason){ if(over) return; over=true; running=false; if(rafId) cancelAnimationFrame(rafId); board.classList.remove('expiring','hot');
-    const isBest=points>best; if(isBest){ best=points; lsSet('cascada-best-'+ISO,String(points)); }
-    recordStats();
+    prevBestToday=best;   // best BEFORE this run — the share text flags 🔥 only on a STRICT new record
+    const isBest=!training && points>best;
+    if(!training){
+      if(!IS_ARCHIVE) lsSet('cascada-done-'+ISO,'1');   // the FIRST finished run of the day locks the official score (archive days never lock)
+      if(isBest){ best=points; lsSet('cascada-best-'+ISO,String(points)); }
+      recordStats(); }
     const idx=rankNow(); renderRank(); renderCombo(false); const spill=(reason==='spill');
     const reto=retoTarget(), hitReto=points>=reto;
     const g=$('gate'); g.classList.remove('hidden');
-    g.innerHTML='<h2>'+(spill?'¡Sin corazones!':'¡Se acabó el tiempo!')+'</h2><div class="v">'+points+'</div><div class="vlbl">puntos · '+RANK_NAMES[idx]+'</div>'
-      +'<p style="margin:6px 0 0;font-weight:700;">'+(hitReto?'✅ Reto del día logrado · '+reto+' pts':'📌 Reto del día: '+reto+' pts')+'</p>'
-      +'<p>'+cleared+' flechas despejadas'+(boardsClear>0?' · '+boardsClear+' tablero'+(boardsClear===1?'':'s')+' limpio'+(boardsClear===1?'':'s'):'')+'.<br>'+(isBest?'¡Nuevo récord de hoy! 🎉':'Récord de hoy: <b>'+best+'</b>')+'</p>'
-      +'<div class="go-row"><button class="btn" id="again-btn" type="button">Jugar de nuevo</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
-    $('again-btn').addEventListener('click', startGame); $('share-btn').addEventListener('click', doShare);
-    if(idx===RANK_NAMES.length-1 || hitReto || (isBest&&points>0)){ setTimeout(()=>launchConfetti(idx===RANK_NAMES.length-1?110:85), 480); }   // celebrate Maestro, the reto, or a new daily record
-    if(idx===RANK_NAMES.length-1 && !lsGet('cascada-maestro-'+ISO)){ lsSet('cascada-maestro-'+ISO,'1'); setTimeout(()=>{ const p=$('maestro-panel'); if(p) p.classList.add('open'); },700); }
-    else if(hitReto && !lsGet('cascada-goal-'+ISO)){ lsSet('cascada-goal-'+ISO,'1');
-      const s=$('goal-sub'); if(s) s.innerHTML='Superaste el reto del día ('+reto+' pts) con <b>'+points+' puntos</b>.';
-      setTimeout(()=>{ const p=$('goal-panel'); if(p) p.classList.add('open'); },700); } }
+    if(training){
+      g.innerHTML='<h2>Entrenamiento</h2><div class="v">'+points+'</div><div class="vlbl">puntos · '+RANK_NAMES[idx]+'</div>'
+        +'<p>'+cleared+' flechas despejadas'+(boardsClear>0?' · '+boardsClear+' tablero'+(boardsClear===1?'':'s')+' limpio'+(boardsClear===1?'':'s'):'')+'.</p>'
+        +'<div class="go-row"><button class="btn" id="again-btn" type="button">Otra vez</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+    } else {
+      g.innerHTML='<h2>'+(spill?'¡Sin corazones!':'¡Se acabó el tiempo!')+'</h2><div class="v">'+points+'</div><div class="vlbl">puntos · '+RANK_NAMES[idx]+'</div>'
+        +'<p style="margin:6px 0 0;font-weight:700;">'+(hitReto?'✅ Reto del día logrado · '+reto+' pts':'📌 Reto del día: '+reto+' pts')+'</p>'
+        +'<p>'+cleared+' flechas despejadas'+(boardsClear>0?' · '+boardsClear+' tablero'+(boardsClear===1?'':'s')+' limpio'+(boardsClear===1?'':'s'):'')+'.<br>'+(isBest?'¡Nuevo récord de hoy! 🎉':'Récord de hoy: <b>'+best+'</b>')+'</p>'
+        +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(IS_ARCHIVE?'Jugar de nuevo':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>'; }
+    $('again-btn').addEventListener('click', ()=>startGame(!IS_ARCHIVE)); $('share-btn').addEventListener('click', doShare);
+    if(!training){
+      if(idx===RANK_NAMES.length-1 || hitReto || (isBest&&points>0)){ setTimeout(()=>launchConfetti(idx===RANK_NAMES.length-1?110:85), 480); }   // celebrate Maestro, the reto, or a new daily record
+      if(idx===RANK_NAMES.length-1 && !lsGet('cascada-maestro-'+ISO)){ lsSet('cascada-maestro-'+ISO,'1'); setTimeout(()=>{ const p=$('maestro-panel'); if(p) p.classList.add('open'); },700); }
+      else if(hitReto && !lsGet('cascada-goal-'+ISO)){ lsSet('cascada-goal-'+ISO,'1');
+        const s=$('goal-sub'); if(s) s.innerHTML='Superaste el reto del día ('+reto+' pts) con <b>'+points+' puntos</b>.';
+        setTimeout(()=>{ const p=$('goal-panel'); if(p) p.classList.add('open'); },700); } } }
   function buildShareText(){
     let fullDate=ISO; try{ const d=new Date(ISO+'T12:00:00'); const cap=s=>s.charAt(0).toUpperCase()+s.slice(1); fullDate=cap(d.toLocaleDateString('es-ES',{weekday:'long'}))+', '+d.getDate()+' de '+d.toLocaleDateString('es-ES',{month:'long'})+' de '+d.getFullYear(); }catch(e){}
-    const idx=rankNow(), reto=retoTarget(), L=[fullDate,''];
+    const sp=training?+(lsGet('cascada-best-'+ISO)||0):points;   // training shares the OFFICIAL day score, never the practice run
+    let idx=0; for(let k=0;k<RANK_CUT.length;k++) if(sp>=RANK_CUT[k]) idx=k;
+    const reto=retoTarget(), L=[fullDate,''];
     L.push('🌊 Flechas · Cascada');
     if(idx===RANK_NAMES.length-1) L.push('👑 ¡Maestro/a de la cascada!'); else L.push('🏆 Rango: '+RANK_NAMES[idx]);
-    L.push((points>=reto?'✅ ¡Reto del día logrado!':'📌 Reto del día')+' ('+points+' / '+reto+' pts)');
-    L.push('🎯 '+cleared+' flechas'+(boardsClear>0?' · '+boardsClear+' tablero'+(boardsClear===1?'':'s')+' limpio'+(boardsClear===1?'':'s'):''));
-    if(points>=best&&best>0) L.push('🔥 Récord de hoy');
+    L.push((sp>=reto?'✅ ¡Reto del día logrado!':'📌 Reto del día')+' ('+sp+' / '+reto+' pts)');
+    if(!training) L.push('🎯 '+cleared+' flechas'+(boardsClear>0?' · '+boardsClear+' tablero'+(boardsClear===1?'':'s')+' limpio'+(boardsClear===1?'':'s'):''));
+    if(!training && points>prevBestToday && prevBestToday>0) L.push('🔥 Récord de hoy');
     L.push(''); L.push('https://flechas.dre-c8f.workers.dev/cascada.html');
     return L.join('\n');
   }
@@ -1008,7 +1028,7 @@
       const pl=tp>=10?Math.round(tp)+'%':(tp>0?tp.toFixed(1)+'%':'—');
       h+='<div class="stats-rank-row'+(i===bestIdx&&c?' best':'')+(c?'':' empty')+'"><span class="name">'+RANK_NAMES[i]+'</span><span class="bar"><span class="bar-fill" style="width:'+(c/mx*100).toFixed(1)+'%"></span></span><span class="count">'+c+' <span class="pct">('+pl+')</span></span></div>'; }
     $('stats-ranks').innerHTML=h; }
-  $('start-btn').addEventListener('click', startGame);
+  $('start-btn').addEventListener('click', ()=>{ const done=!IS_ARCHIVE && lsGet('cascada-done-'+ISO); startGame(!!done); });
   $('freeze-btn').addEventListener('click', useFreeze);
   $('rules-link').addEventListener('click', ()=>openRules(true));
   $('rules-x').addEventListener('click', ()=>openRules(false));
@@ -1081,6 +1101,9 @@
   $('m-sub').addEventListener('click', ()=>{ toggleMenu(false); window.open('https://cortadito.news','_blank'); });
   applyTheme((lsGet('cascada-theme')==='black')?'black':'light');
   best=+(lsGet('cascada-best-'+ISO)||0); lives=HEARTS_MAX; renderLives(); renderRank(); renderCombo(false); updateFreeze();
+  if(!IS_ARCHIVE && lsGet('cascada-done-'+ISO)){ const bs=+(lsGet('cascada-best-'+ISO)||0); const gg=$('gate');
+    if(gg) gg.innerHTML='<h2>Cascada</h2><p>Ya completaste el reto de hoy'+(bs>0?' con <b>'+bs+' pts</b>':'')+'. Puedes <b>entrenar</b> con tableros nuevos.</p><button class="btn" id="start-btn2" type="button">Entrenar</button>';
+    const b2=$('start-btn2'); if(b2) b2.addEventListener('click', ()=>startGame(true)); }
   try{ window.__casc={ pieceCount:()=>Object.keys(pieces).length, launchable:()=>Object.values(pieces).filter(p=>laneClear(p)).length,
     launchableIds:()=>Object.values(pieces).filter(p=>laneClear(p)).map(p=>p.id),
     facing:()=>facingCount(Object.values(pieces)), avgLen:()=>{ const a=Object.values(pieces); return a.length?Math.round(a.reduce((s,p)=>s+p.cells.length,0)/a.length*10)/10:0; },
