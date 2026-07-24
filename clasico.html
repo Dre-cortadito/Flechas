@@ -25,13 +25,13 @@
   * { touch-action:manipulation; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f; --on-accent:#ffffff;
-    --accent:#E3673D; --accent-deep:#B65231; --accent-soft:#FCEDE8; --accent-2:#DB8B60; --error:#C03A2E; --success:#6b8e3d;
+    --accent:#E3673D; --accent-deep:#B65231; --accent-soft:#FCEDE8; --accent-2:#DB8B60; --error:#CF2A2A; --success:#4F9E5F;
     --board-bg:#FCEDE8; --arrow:#141210; --clear:#0b6130;   /* success flash stays GREEN (semantic), red error unchanged */
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
     --bg:#100b07; --paper:#1a1109; --ink:#f3ece4; --ink-soft:#8b827a; --ink-line:#2a1d13; --box-edge:#8b827a; --on-accent:#ffffff;
-    --accent:#EA8B6C; --accent-deep:#EFA78E; --accent-soft:#3B1B10; --accent-2:#C17A4E; --error:#C03A2E; --success:#6b8e3d;
+    --accent:#EA8B6C; --accent-deep:#EFA78E; --accent-soft:#3B1B10; --accent-2:#C17A4E; --error:#CF2A2A; --success:#4F9E5F;
     --board-bg:#291810; --arrow:#efe0d4; --clear:#157145;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
@@ -94,7 +94,7 @@
   .lives-row { display:flex; align-items:center; gap:3px; }
   .lives-row .heart { width:24px; height:23px; display:inline-flex; }
   .lives-row .heart svg { width:100%; height:100%; }
-  .lives-row .heart .hon { fill:#C03A2E; }
+  .lives-row .heart .hon { fill:#CF2A2A; }
   .lives-row .heart .hoff { fill:var(--ink-line); }
   .lives-row.spill { animation:pshake .3s ease; }
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
@@ -342,7 +342,7 @@
   .tv-launch{ animation:tvLaunch 2.6s ease-in-out infinite; }
   @keyframes tvBump{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(38.5px);color:var(--ink)} 34.5%{transform:translateX(38.5px);color:var(--error)} 62%{transform:translateX(0);color:var(--error)} 72%,100%{transform:translateX(0);color:var(--ink)} }
   .tv-bump{ animation:tvBump 2.6s linear infinite; }
-  @keyframes tvBlk{ 0%,40%{color:var(--ink)} 48%,58%{color:#C03A2E} 80%,100%{color:var(--ink)} }
+  @keyframes tvBlk{ 0%,40%{color:var(--ink)} 48%,58%{color:#CF2A2A} 80%,100%{color:var(--ink)} }
   .tv-blk{ animation:tvBlk 2.6s ease-in-out infinite; }
   @keyframes tvEnf{ 0%,30%{color:var(--ink)} 48%,72%{color:var(--accent)} 92%,100%{color:var(--ink)} }
   .tv-enf{ animation:tvEnf 2.6s ease-in-out infinite; }
@@ -429,7 +429,7 @@
     <p>El modo puro: un solo tablero enredado. <b>Desenrédalo entero</b>, rápido y limpio.</p>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--arrow)" d="M14 20 L92 20"/><path class="lh" style="fill:var(--arrow);stroke:var(--arrow)" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt">Toca una flecha para <b>despejarla</b>. Solo sale si su <b>carril hasta el borde está libre</b> (por donde apunta). El tablero es un lienzo grande: <b>pellizca</b> para acercar y <b>arrastra</b> para moverte.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:var(--clear)" d="M14 20 L92 20"/><path class="lh" style="fill:var(--clear);stroke:var(--clear)" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt">Al despejarla <b style="color:var(--clear)">destella en verde</b> y desaparece — deja hueco para otras.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#C03A2E" d="M14 20 L92 20"/><path class="lh" style="fill:#C03A2E;stroke:#C03A2E" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt"><b>Choque:</b> tocar una flecha <b>tapada</b> destella en <b style="color:#C03A2E">rojo</b> y cuesta <b style="color:#C03A2E">½ corazón</b>. 3 corazones = 6 choques.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><path style="stroke:#CF2A2A" d="M14 20 L92 20"/><path class="lh" style="fill:#CF2A2A;stroke:#CF2A2A" d="M78 8 L100 20 L78 32 Z"/></svg></div><div class="txt"><b>Choque:</b> tocar una flecha <b>tapada</b> destella en <b style="color:#CF2A2A">rojo</b> y cuesta <b style="color:#CF2A2A">½ corazón</b>. 3 corazones = 6 choques.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="-3.5 -3.5 31 31" aria-hidden="true"><defs><mask id="enf-eye-lg"><rect x="-6" y="-6" width="36" height="36" fill="#fff"/><circle cx="10.2" cy="10.7" r="1.9" fill="#000"/></mask></defs><path d="M12 4.9C7.1 4.9 3.3 8.4 1.7 12c1.6 3.6 5.4 7.1 10.3 7.1s8.7-3.5 10.3-7.1C20.7 8.4 16.9 4.9 12 4.9Z" style="fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round"/><circle cx="12" cy="12.5" r="4.9" fill="var(--accent)" mask="url(#enf-eye-lg)"/></svg></div><div class="txt"><b>Enfoque:</b> el botón bajo el tablero se <b>llena solo</b> (~20 s). Úsalo para resaltar <b>3 s</b> las flechas que <b>ya pueden salir</b>. Una carga — el reloj no se detiene.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 46 46" aria-hidden="true"><circle cx="21" cy="25" r="14.5" style="fill:none;stroke:var(--accent);stroke-width:3.4"/><circle cx="21" cy="25" r="7.2" style="fill:none;stroke:var(--accent);stroke-width:3"/><circle cx="21" cy="25" r="2.8" style="fill:var(--accent);stroke:none"/><g transform="translate(21 25) rotate(-45)"><line x1="0" y1="0" x2="19" y2="0" style="stroke:var(--accent);stroke-width:2.8;stroke-linecap:round"/><path d="M15.5 0 L25.5 -5 L23 0 L25.5 5 Z" style="fill:var(--accent);stroke:var(--accent);stroke-width:1"/></g></svg></div><div class="txt"><b>Meta:</b> vacía el tablero entero. Tu <b>rango es el tiempo</b> — el reloj arranca en cuanto el tablero <b>se asienta</b>, justo tras <b>Empezar</b>. <b>Más rápido, mejor rango.</b></div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Despejar solo <b>quita</b> flechas, nunca traba el tablero. Tu <b>primer intento</b> cuenta como el reto de hoy; después puedes <b>entrenar</b> con tableros nuevos.</p>
@@ -1044,7 +1044,7 @@
   function launchConfetti(n){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     n=n||90;
-    const colors=['#E3673D','#DB8B60','#0b6130','#C99A34','#C03A2E'];
+    const colors=['#E3673D','#DB8B60','#0b6130','#C99A34','#CF2A2A'];
     const cv=document.createElement('canvas'); cv.className='confetti-box';
     const W=window.innerWidth, Hh=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
     cv.width=W*dpr; cv.height=Hh*dpr; cv.style.width=W+'px'; cv.style.height=Hh+'px';
@@ -1264,7 +1264,7 @@
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><g><line x1="150" y1="30" x2="150" y2="90" stroke="var(--arrow)"/><path d="M134 44 L150 20 L166 44 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g><g class="tv-bump"><line x1="22" y1="74" x2="96" y2="74" stroke="currentColor"/><path d="M82 58 L106 74 L82 90 Z" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g></svg></div>
         <h3>Choque</h3>
-        <p>Tocar una flecha <b>tapada</b> choca contra la que la tapa: destella en <b style="color:#C03A2E">rojo</b> y cuesta <b style="color:#C03A2E">&frac12; coraz&oacute;n</b>. 3 corazones = 6 choques.</p>
+        <p>Tocar una flecha <b>tapada</b> choca contra la que la tapa: destella en <b style="color:#CF2A2A">rojo</b> y cuesta <b style="color:#CF2A2A">&frac12; coraz&oacute;n</b>. 3 corazones = 6 choques.</p>
       </section>
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110"><defs><clipPath id="tut-zoom-clip"><rect x="38" y="10" width="156" height="90" rx="8"/></clipPath></defs><rect x="36" y="8" width="160" height="94" rx="9" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="2.5"/><g clip-path="url(#tut-zoom-clip)"><g class="tv-zoom"><line x1="76" y1="40" x2="102" y2="40" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><path d="M96 32 L110 40 L96 48 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/><line x1="144" y1="74" x2="144" y2="56" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><path d="M136 62 L144 50 L152 62 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/><line x1="118" y1="84" x2="94" y2="84" stroke="var(--arrow)" stroke-width="7" stroke-linecap="round"/><path d="M100 76 L86 84 L100 92 Z" fill="var(--arrow)" stroke="var(--arrow)" stroke-width="2.5" stroke-linejoin="round"/></g></g><g class="tv-zoom-btn" transform="translate(164 14)"><circle cx="11" cy="11" r="11" fill="var(--paper)" stroke="var(--arrow)" stroke-width="1.5"/><g transform="translate(3.5 3.5) scale(0.625)" fill="none" stroke="var(--arrow)" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></g></g></svg></div>
