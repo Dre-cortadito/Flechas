@@ -25,7 +25,7 @@
   .lives-row.spill { animation:livespill .3s ease; } @keyframes livespill{ 50%{ transform:translateX(2px);} }
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#5e5e5e;
-    --accent:#D98F3B; --accent-deep:#AE722F; --accent-soft:#FAF2E7; --accent-2:#2E7D73; --success:#4F9E5F; --error:#CF2A2A;
+    --accent:#D98F3B; --accent-deep:#AE722F; --accent-soft:#FAF2E7; --accent-2:#2E7D73; --success:#548C4C; --error:#CF2A2A;
     --board-bg:#f0efed; --arrow:#1c1c1c; --wall:#2b2b2b; --door:#8c8c8c; --gw:min(94vw,400px);
     --shield-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l8 3v6c0 5-3.5 8.6-8 11-4.5-2.4-8-6-8-11V5l8-3z'/%3E%3C/svg%3E");
     --font-display:'Newsreader','DM Serif Display', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
@@ -1236,7 +1236,7 @@
   function launchConfetti(n){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     n=n||90;
-    const colors=['#D98F3B','#2E7D73','#CF2A2A','#e8b84b','#4F9E5F','#AE722F'];
+    const colors=['#D98F3B','#2E7D73','#CF2A2A','#e8b84b','#548C4C','#AE722F'];
     const cv=document.createElement('canvas'); cv.className='confetti-box';
     const W=window.innerWidth, H=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
     cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
