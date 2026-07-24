@@ -24,15 +24,15 @@
   .lives-row .heart .hon { fill:#b03434; } .lives-row .heart .hoff { fill:var(--ink-line); }
   .lives-row.spill { animation:livespill .3s ease; } @keyframes livespill{ 50%{ transform:translateX(2px);} }
   :root {
-    --bg:#ffffff; --paper:#f5f4f2; --ink:#1c1c1c; --ink-soft:#8a8a8a; --ink-line:#e4e3e1; --box-edge:#5e5e5e;
-    --accent:#1c1c1c; --accent-deep:#000000; --accent-soft:#d5d5d2; --accent-2:#5e5e5e; --success:#1c1c1c; --error:#b03434;
+    --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#5e5e5e;
+    --accent:#CE7B39; --accent-deep:#A05F2C; --accent-soft:#F7ECE1; --accent-2:#2E7D73; --success:#6b8e3d; --error:#b03434;
     --board-bg:#f0efed; --arrow:#1c1c1c; --wall:#2b2b2b; --door:#8c8c8c; --gw:min(94vw,400px);
     --shield-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l8 3v6c0 5-3.5 8.6-8 11-4.5-2.4-8-6-8-11V5l8-3z'/%3E%3C/svg%3E");
-    --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
+    --font-display:'Newsreader','DM Serif Display', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
     --bg:#0d0d0d; --paper:#191919; --ink:#eee; --ink-soft:#8f8f8f; --ink-line:#2a2a2a; --box-edge:#9a9a9a;
-    --accent:#eee; --accent-deep:#fff; --accent-soft:#3a3a3a; --accent-2:#9a9a9a; --success:#eee; --board-bg:#1c1c1c; --arrow:#e6e6e6; --wall:#cfcfcf; --door:#888;
+    --accent:#DA9765; --accent-deep:#E4B28F; --accent-soft:#35200F; --accent-2:#3E9184; --success:#8fb35e; --board-bg:#1c1c1c; --arrow:#e6e6e6; --wall:#cfcfcf; --door:#888;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { overscroll-behavior:none; }
@@ -65,7 +65,7 @@
   .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(14px, env(safe-area-inset-bottom)); box-sizing:border-box; }
 
   /* ===== Rank bar (standard, ceiling model on time) ===== */
-  .rank-bar { width:var(--gw); display:flex; align-items:center; gap:10px; padding:6px 14px; margin:0 auto 4px; cursor:pointer; user-select:none; }
+  .rank-bar { width:var(--gw); display:flex; align-items:center; gap:10px; padding:6px 0; margin:0 auto 4px; cursor:pointer; user-select:none; }
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
   .rank-label.at-maestro { color:var(--accent); }
   .rank-track { position:relative; flex:1; height:22px; }
@@ -96,7 +96,7 @@
   .stile .sval { font:800 clamp(15px,4.6vw,19px) var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
   .stile .slbl { font:700 8.5px var(--font-ui); letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); }
   .stile.ex .sval { color:var(--error); transition:color .15s; }                 /* Salida = red while closed */
-  .bottom.open .stile.ex .sval { color:#157145; }                                /* …green once it's open */
+  .bottom.open .stile.ex .sval { color:var(--success); }                         /* …green once it's open */
   @keyframes tpulse { 50% { opacity:.45; } }
   /* right box flips to TWO live countdowns while a guard is chasing you */
   .ex-chase { display:none; flex-direction:column; gap:3px; align-items:center; }
@@ -109,7 +109,7 @@
   .ss-alert { font:800 clamp(9px,2.9vw,12px) var(--font-ui); letter-spacing:.03em; text-transform:uppercase; text-align:center; line-height:1.18; color:var(--ink-soft); transition:color .15s; }
   .ss-alert.idle { color:var(--ink-soft); opacity:.55; }
   .ss-alert.danger { color:var(--error); }
-  .ss-alert.ok { color:#157145; }
+  .ss-alert.ok { color:var(--success); }
   /* pursuit/alert board states */
   .maze.spotted { animation:spotpulse .55s ease; }
   @keyframes spotpulse { 0%{ background:var(--board-bg);} 28%{ background:rgba(214,48,48,.4);} 100%{ background:var(--board-bg);} }
@@ -152,8 +152,8 @@
   .dpad2.hidden { display:none; }
   .dbtn { display:flex; align-items:center; justify-content:center; padding:0; margin:0; cursor:pointer; border:none;
     background:var(--paper); color:var(--accent-deep); -webkit-tap-highlight-color:transparent; touch-action:none; transition:background .08s, transform .05s; }
-  .dbtn:active, .dbtn.on { background:var(--accent); transform:scale(.96); }
-  .dbtn:active .p, .dbtn.on .p { stroke:#fff; }
+  .dbtn:active, .dbtn.on { background:var(--ink-line); transform:scale(.96); }
+  .dbtn:active .p, .dbtn.on .p { stroke:var(--ink); }
   .dbtn svg { width:calc(var(--db,56px) * 0.5); height:calc(var(--db,56px) * 0.5); display:block; }   /* fixed size → every chevron identical on all 4 buttons */
   .dbtn .p { fill:none; stroke:var(--accent-deep); stroke-width:4.6; stroke-linecap:round; stroke-linejoin:round; }
   /* rounded only on the 4 outer corners so it reads as one solid pad */
@@ -189,7 +189,6 @@
   @keyframes alarmflash { 50% { box-shadow:inset 0 0 0 3px rgba(214,48,48,.45), 0 3px 12px rgba(0,0,0,.1); } }
   .maze.alarmed .zone.z-light { background:rgba(214,48,48,.30); }
   .maze.alarmed .en-light { background:radial-gradient(circle, rgba(255,120,120,.95), rgba(214,48,48,.55) 60%, rgba(214,48,48,0) 72%); }
-  .dot.frz { box-shadow:0 0 0 3px var(--freeze-fill), 0 1px 4px rgba(0,0,0,.3); }
   /* ---- stealth: guard + line of sight ---- */
   /* ---- real-time stealth enemies ---- */
   .enemy-layer{ position:absolute; inset:0; z-index:3; pointer-events:none; }
@@ -231,18 +230,9 @@
   .exit.locked .p{ stroke:var(--error); }
   .maze.detect{ animation:detectflash .5s ease; }
   @keyframes detectflash { 0%,100%{ box-shadow:none; } 40%{ box-shadow:inset 0 0 0 6px var(--error); } }
-  .rumbo-toast{ position:absolute; top:8px; left:50%; transform:translateX(-50%) translateY(-6px); background:var(--error); color:#fff; font:800 12px/1 system-ui,sans-serif; letter-spacing:.02em; padding:7px 13px; border-radius:999px; opacity:0; transition:opacity .18s ease, transform .18s ease; z-index:6; pointer-events:none; white-space:nowrap; }
+  .rumbo-toast{ position:absolute; top:8px; left:50%; transform:translateX(-50%) translateY(-6px); background:var(--accent); color:#fff; font:800 12px/1 var(--font-ui); letter-spacing:.02em; padding:7px 13px; border-radius:999px; opacity:0; transition:opacity .18s ease, transform .18s ease; z-index:30; pointer-events:none; white-space:nowrap; }
+  .rumbo-toast.error{ background:var(--error); }
   .rumbo-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
-  /* freeze button (family standard) */
-  .freeze { width:var(--gw); margin:9px auto 0; }
-  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:9px 12px; border-radius:14px; cursor:pointer; color:var(--freeze); background:rgba(0,98,227,.05); border:2px solid var(--freeze); }
-  .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); transition:transform .25s linear; z-index:0; }
-  .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:30px; }
-  .freeze-btn .ficon svg { width:30px; height:30px; display:block; }
-  .freeze-btn .fnum { position:relative; z-index:1; display:none; align-items:center; height:30px; font:800 26px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; }
-  .freeze-btn.frozen .ficon { display:none; } .freeze-btn.frozen .fnum { display:inline-flex; }
-  .freeze-btn:not(.ready):not(.frozen) { opacity:.5; cursor:default; }
-  .freeze-btn:active { transform:scale(.98); }
 
   /* ===== Control area: just a clean cross of buttons — NO box, NO circle, part of the UI ===== */
   .play-wrap { width:100%; display:flex; justify-content:center; }
@@ -269,9 +259,13 @@
   .gate .brand { width:54px; height:54px; }
   .train-badge { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:17; background:var(--accent); color:var(--bg); font:800 10px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; padding:4px 12px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,.16); opacity:0; pointer-events:none; transition:opacity .4s; }
   .train-badge.show { opacity:1; }
-  .btn { font:800 16px var(--font-ui); letter-spacing:.4px; color:#fff; background:var(--accent); border:none; border-radius:999px; padding:13px 38px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.14); }
-  .btn.ghost { color:var(--ink); background:var(--paper); border:1.5px solid var(--ink-line); box-shadow:none; padding:13px 32px; font-size:16px; }
-  .btn.ghost:active { transform:scale(.97); }
+  .btn { font:800 16px var(--font-ui); letter-spacing:.4px; color:var(--ink); background:var(--bg); border:1px solid var(--ink-line); border-radius:999px; padding:13px 38px; cursor:pointer; touch-action:manipulation; user-select:none; -webkit-touch-callout:none; }
+  .btn:active { transform:scale(.96); background:var(--ink-line); border-color:var(--ink); }
+  .btn.dark { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .btn.dark:active { background:var(--ink); }
+  .btn.share { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.share:active { background:var(--accent-deep); border-color:var(--accent-deep); }
+  @media (hover:hover){ .btn:hover{ border-color:var(--ink); } .btn.share:hover{ background:var(--accent-deep); border-color:var(--accent-deep); } }
   .go-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
 
   /* ===== Modals ===== */
@@ -283,7 +277,8 @@
   .modal h3 { font-family:var(--font-ui); font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:1.2px; color:var(--ink); margin:22px 0 8px; }
   .modal p { font-size:14px; line-height:1.5; color:var(--ink); }
   .modal .muted { color:var(--ink-soft); font-size:13px; }
-  .x { position:absolute; top:14px; right:16px; background:none; border:none; font-size:18px; color:var(--ink-soft); cursor:pointer; }
+  .x { position:absolute; top:16px; right:16px; width:36px; height:36px; border:none; background:transparent; color:var(--ink-soft); font-size:22px; line-height:1; cursor:pointer; border-radius:50%; display:flex; align-items:center; justify-content:center; touch-action:manipulation; }
+  @media (hover:hover){ .x:hover{ background:var(--bg); color:var(--ink); } }
   .legend-row { display:flex; align-items:center; gap:12px; margin:11px 0; }
   .legend-cell { width:54px; height:40px; flex:none; border-radius:8px; background:var(--board-bg); display:flex; align-items:center; justify-content:center; }
   .legend-cell svg { width:90%; height:90%; }
@@ -356,7 +351,7 @@
         <div class="gate" id="gate">
           <h2>Rumbo</h2>
           <p>Activa todos los <b>nodos</b> para encender la salida y llega a ella lo más rápido posible. Guardias, cámaras y focos vigilan: si te <b>detectan</b>, pierdes tiempo y vuelves al inicio. Usa <b>Sigilo</b> y <b>Hack</b> para escapar.</p>
-          <button class="btn" id="start-btn" type="button">Empezar</button>
+          <button class="btn dark" id="start-btn" type="button">Empezar</button>
         </div>
         <div class="train-badge" id="train-badge">Entrenamiento</div>
       </div>
@@ -396,7 +391,7 @@
     </div>
   </div>
 
-  <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
+  <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">×</button>
     <h2>Rumbo</h2>
     <p>Infíltrate en el laberinto: sal de la <b>base</b> 🏠, activa todos los <b>Nodos ◆</b> para encender la salida y escapa, esquivando a los <b>enemigos</b> que patrullan en <b>tiempo real</b>. Cronométralos, cruza cuando <b>no miren</b> y escóndete por los pasillos laterales. Si te ven: <b>−½ vida ❤</b>, unos segundos de castigo y vuelves a la base — pero <b>tu progreso se guarda</b>. Con <b>3 vidas</b>; si se acaban, pierdes.</p>
     <h3>Cómo se juega</h3>
@@ -410,14 +405,14 @@
     <p class="muted">Tu <strong style="color:var(--accent)">rango</strong> es tu <b>tiempo total</b> hasta la salida: empiezas en <strong style="color:var(--accent)">Maestro/a</strong> y bajas cuanto más tardas. Baja del <strong style="color:var(--accent)">Reto del día</strong> (el tiempo objetivo) y suena <strong style="color:var(--accent)">¡Buen sorbo!</strong></p>
   </div></div>
 
-  <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
+  <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">×</button>
     <h2>Rangos</h2>
     <p>Tu rango lo decide el <b>tiempo total</b> hasta la salida — más rápido, mejor rango. Reto del día: <b id="ranks-reto">—</b>. Mejor de hoy: <b id="ranks-best">—</b>.</p>
     <div class="ranks-cols"><span>Rango</span><span>Tiempo</span></div>
     <div class="ranklist" id="ranks-list"></div>
   </div></div>
 
-  <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button">✕</button>
+  <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button">×</button>
     <h2>Estadísticas</h2>
     <div class="cstat-grid" id="rumbo-stats"></div>
     <h3>Distribución de rangos</h3>
@@ -551,8 +546,8 @@
       if(!cell) for(let t=0;t<600;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; if(deep(r,c)){ cell={r,c}; break; } }                                                       // relax spacing
       if(!cell) for(let t=0;t<600;t++){ const r=(rng()*MR)|0,c=(rng()*MC)|0; if(reachable(r,c) && placed.every(p=>Math.abs(p.r-r)+Math.abs(p.c-c)>=2)){ cell={r,c}; break; } }  // last resort: any reachable cell
       if(cell){ keys.push({r:cell.r,c:cell.c,got:false}); placed.push(cell); } } }
-  function rumboToast(msg){ let t=document.getElementById('rumbo-toast'); if(!t){ t=document.createElement('div'); t.id='rumbo-toast'; t.className='rumbo-toast'; board.appendChild(t); }
-    t.textContent=msg; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>{ try{ t.classList.remove('show'); }catch(e){} },1200); }
+  function rumboToast(msg, kind){ let t=document.getElementById('rumbo-toast'); if(!t){ t=document.createElement('div'); t.id='rumbo-toast'; t.className='rumbo-toast'; board.appendChild(t); }
+    t.textContent=msg; t.classList.toggle('error', kind==='error'); t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>{ try{ t.classList.remove('show'); }catch(e){} },1200); }
   // ===== bottom-bar alert feed (keeps messages OFF the maze board) =====
   let _stickyMsg=null, _stickyKind='';   // persistent state (e.g. during a pursuit)
   function _renderAlert(msg,kind){ const el=$('ss-alert'); if(!el) return; el.textContent=msg; el.className='ss-alert '+(kind||'idle'); }
@@ -577,7 +572,7 @@
     const g=$('gate'); g.classList.remove('hidden');
     g.innerHTML=brand+'<h2>¡Te atraparon!</h2><div class="vlbl">'+(training?'Entrenamiento':'Te quedaste sin vidas')+'</div>'
       +'<p>Activaste '+keysGot+'/'+keys.length+' nodo'+(keys.length===1?'':'s')+'.<br>Muévete por las sombras y cronometra a los enemigos.</p>'
-      +'<div class="go-row"><button class="btn" id="again-btn" type="button">Reintentar</button></div>';
+      +'<div class="go-row"><button class="btn dark" id="again-btn" type="button">Reintentar</button></div>';
     $('again-btn').addEventListener('click', ()=>startGame(true)); }
   // movement is on LOGICAL cells; a move is allowed only if the wall segment between cells is open (doors don't affect pathing)
   function canMove(r,c,dr,dc){ const nr=r+dr,nc=c+dc; if(nr<0||nr>=MR||nc<0||nc>=MC) return false; return DG[2*r+1+dr][2*c+1+dc]==='.'; }
@@ -979,7 +974,7 @@
     // draw the coloured gate UNDER the black walls (insert before the wall path) and with butt caps, so it sits
     // exactly on its own edge and the walls cleanly cap its ends — no bleeding into neighbouring walls.
     const mkWall=(dstr,col)=>{ if(!dstr) return; const e=document.createElementNS(NS,'path'); e.setAttribute('d',dstr); e.setAttribute('fill','none'); e.setAttribute('stroke',col); e.setAttribute('stroke-width','0.16'); e.setAttribute('stroke-linecap','butt'); e.setAttribute('stroke-linejoin','miter'); svg.insertBefore(e, p); };
-    mkWall(cSeg,'#0aa39a'); mkWall(fSeg,'#2E8BC0');
+    mkWall(cSeg,'#0aa39a'); mkWall(fSeg,'#3E86A0');
     // camera-linked LASER WALLS (security barriers) + their power cables. State: red=active, teal=temporarily open, faded=permanently unlocked.
     const lwMid=[];
     for(let li=0; li<laserList.length; li++){ const w=laserList[li]; const r=w.r,c=w.c,dir=w.d;
@@ -1063,7 +1058,7 @@
   function openMini(type,onSolve){ ensureMiniEl(); miniOnSolve=onSolve;
     miniRng=mulberry32(fnv('rumbo-mini-'+seedTag+'-'+(currentDoor?currentDoor.r+'-'+currentDoor.c:'x')));
     const tt=$('mini-title'), hint=$('mini-hint'), area=$('mini-area'); area.innerHTML='';
-    if(type==='flujo'){ tt.textContent='Conecta el flujo'; tt.style.color='#2E8BC0'; hint.textContent='Toca para girar · une el origen con el desagüe'; buildFlujoMini(area); }
+    if(type==='flujo'){ tt.textContent='Conecta el flujo'; tt.style.color='#3E86A0'; hint.textContent='Toca para girar · une el origen con el desagüe'; buildFlujoMini(area); }
     else { tt.textContent='Despeja las flechas'; tt.style.color='#0aa39a'; hint.textContent='Toca una flecha con el carril libre'; buildCascadaMini(area); }
     miniEl.classList.add('show'); }
   function closeMini(){ if(miniEl) miniEl.classList.remove('show'); }
@@ -1104,7 +1099,7 @@
       const bg=document.createElementNS(NS,'rect'); bg.setAttribute('x',c*sz+1); bg.setAttribute('y',r*sz+1); bg.setAttribute('width',sz-2); bg.setAttribute('height',sz-2); bg.setAttribute('rx',3); bg.setAttribute('fill','#eef3f5'); g.appendChild(bg);
       const m=mPipes[i]; const seg=(x2,y2)=>{ const ln=document.createElementNS(NS,'line'); ln.setAttribute('x1',cx);ln.setAttribute('y1',cy);ln.setAttribute('x2',x2);ln.setAttribute('y2',y2); ln.setAttribute('stroke','#2b3138'); ln.setAttribute('stroke-width','4.5'); ln.setAttribute('stroke-linecap','round'); g.appendChild(ln); };
       if(m&U) seg(cx,r*sz); if(m&Dn) seg(cx,(r+1)*sz); if(m&L) seg(c*sz,cy); if(m&Rr) seg((c+1)*sz,cy);
-      if(i===mSrc){ const o=document.createElementNS(NS,'circle'); o.setAttribute('cx',cx);o.setAttribute('cy',cy);o.setAttribute('r',5.5); o.setAttribute('fill','#2E8BC0'); g.appendChild(o); }
+      if(i===mSrc){ const o=document.createElementNS(NS,'circle'); o.setAttribute('cx',cx);o.setAttribute('cy',cy);o.setAttribute('r',5.5); o.setAttribute('fill','#3E86A0'); g.appendChild(o); }
       else if(i===mSnk){ const o=document.createElementNS(NS,'circle'); o.setAttribute('cx',cx);o.setAttribute('cy',cy);o.setAttribute('r',5.5); o.setAttribute('fill','none'); o.setAttribute('stroke','#157145'); o.setAttribute('stroke-width','3'); g.appendChild(o); }
       g.addEventListener('click',()=>{ mPipes[i]=rotCW(mPipes[i]); if(flujoSolved()){ renderFlujoMini(area); setTimeout(miniWin,200); } else renderFlujoMini(area); });
       svg.appendChild(g); } }
@@ -1241,7 +1236,7 @@
   function launchConfetti(n){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     n=n||90;
-    const colors=['#1c1c1c','#0aa39a','#b03434','#e8b84b','#157145','#5e5e5e'];
+    const colors=['#CE7B39','#2E7D73','#b03434','#e8b84b','#6b8e3d','#A05F2C'];
     const cv=document.createElement('canvas'); cv.className='confetti-box';
     const W=window.innerWidth, H=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
     cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
@@ -1281,7 +1276,7 @@
     const g=$('gate'); g.classList.remove('hidden');
     g.innerHTML=brand+head+'<div class="v">'+fmt(secs)+'</div><div class="vlbl">'+(training?'tiempo':RANK_NAMES[finalRank]+(hit?' · ✅ reto':''))+'</div>'
       +'<p>'+doorsOpened+' puerta'+(doorsOpened===1?'':'s')+' abierta'+(doorsOpened===1?'':'s')+'.'+(training?'':(isBest?'<br>¡Tu mejor tiempo de hoy! 🎉':(best!==null?'<br>Mejor de hoy: <b>'+fmt(best)+'</b>':'')))+'</p>'
-      +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+      +'<div class="go-row"><button class="btn dark" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn share" id="share-btn" type="button">Compartir</button></div>';
     $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare); }
 
   // ===== share =====
@@ -1302,8 +1297,13 @@
     }
     lines.push(''); lines.push('https://flechas.dre-c8f.workers.dev/rumbo.html');
     const txt=lines.join('\n');
-    if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); }
-    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>{ const b=$('share-btn'); if(b) b.textContent='Copiado'; }).catch(()=>{}); } }
+    const copied=()=>{ rumboToast('Copiado al portapapeles'); const b=$('share-btn'); if(b){ b.textContent='Copiado'; clearTimeout(b._t); b._t=setTimeout(()=>{ try{ b.textContent='Compartir'; }catch(e){} },2000); } };
+    const legacyCopy=()=>{ try{ const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); copied(); }
+      catch(e){ prompt('Copia tu resultado:', txt); } };
+    const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if(navigator.share && isMobile){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); }
+    else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(copied).catch(legacyCopy); }
+    else legacyCopy(); }
 
   // ===== theme / modals =====
   function applyTheme(t){ document.body.setAttribute('data-theme',t); $('m-theme-name').textContent=(t==='black')?'Oscuro':'Claro'; lsSet('rumbo-tweaks',t); }
@@ -1365,7 +1365,7 @@
     $('reto').textContent=fmt(retoSecs);
     sizeAll(); buildBigPad(); placeDot(); buildRankTrack(); showMove(); drawHUD();
     if(!IS_ARCHIVE && lsGet('rumbo-done-'+ISO)){ const bs=bestToday(); const gg=$('gate');   // day already locked → start gate offers practice only
-      if(gg){ gg.innerHTML='<h2>Rumbo</h2><p>Ya completaste el reto de hoy'+(bs!==null?' en <b>'+fmt(bs)+'</b>':'')+'. Puedes <b>entrenar</b> con laberintos nuevos.</p><button class="btn" id="start-btn2" type="button">Entrenar</button>';
+      if(gg){ gg.innerHTML='<h2>Rumbo</h2><p>Ya completaste el reto de hoy'+(bs!==null?' en <b>'+fmt(bs)+'</b>':'')+'. Puedes <b>entrenar</b> con laberintos nuevos.</p><button class="btn dark" id="start-btn2" type="button">Entrenar</button>';
         const b2=$('start-btn2'); if(b2) b2.addEventListener('click', ()=>startGame(true)); } }
     window.__rumbo={ start:startGame, step, tapPiece, solve:()=>solvePath(), phase:()=>phase, pieces:()=>Object.keys(pcs).length, doorsLeft:()=>totalDoors-doorsOpened, totalDoors:()=>totalDoors,
       doorsDbg:()=>({ locked:[...lockedDoors], type:Object.assign({},doorType), DG:DG.map(r=>r.join('')), MR, MC, exit:{...exit} }),

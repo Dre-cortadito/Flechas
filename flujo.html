@@ -19,15 +19,15 @@
 <style>
   * { touch-action:manipulation; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   :root {
-    --bg:#ffffff; --paper:#fbfaf6; --ink:#15201c; --ink-soft:#7f8a86; --ink-line:#e6ece9; --box-edge:#7f8a86;
-    --accent:#2E8BC0; --accent-deep:#1B5E86; --accent-soft:#d8ebf7; --accent-2:#EA3546; --error:#EA3546;
-    --board-bg:#c3ccd4; --tile:#eef1f4; --tile-edge:#cdd5dc; --pipe:#2b3138; --pipe-lock:#5c6671; --water:#2E8BC0; --freeze-fill:#9CCCEC;
+    --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
+    --accent:#3E86A0; --accent-deep:#2D6073; --accent-soft:#DFEBF0; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d;
+    --board-bg:#c3ccd4; --tile:#eef1f4; --tile-edge:#cdd5dc; --pipe:#2b3138; --pipe-lock:#5c6671; --water:#3E86A0; --freeze-fill:#9CCCEC;
     --steel:#7c8794; --steel-dark:#4a535d; --brass:#C0892E;
-    --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
+    --font-display:'Newsreader','DM Serif Display',Georgia,serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
-    --bg:#0b0f12; --paper:#141a1d; --ink:#eef3f2; --ink-soft:#7f8b89; --ink-line:#222a2d; --box-edge:#7f8b89;
-    --accent:#43A6DA; --accent-deep:#2c87b8; --accent-soft:#0e2c3d; --accent-2:#EA3546; --board-bg:#1a2128; --tile:#283038; --tile-edge:#151b21; --pipe:#cfd8de; --pipe-lock:#8893a0; --water:#43A6DA; --freeze-fill:#2E7CB0;
+    --bg:#0c100f; --paper:#161b1a; --ink:#eef3f1; --ink-soft:#7f8b89; --ink-line:#232a29; --box-edge:#7f8b89;
+    --accent:#63A2B8; --accent-deep:#92BECE; --accent-soft:#12262D; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d; --board-bg:#1a2128; --tile:#283038; --tile-edge:#151b21; --pipe:#cfd8de; --pipe-lock:#8893a0; --water:#63A2B8; --freeze-fill:#2E7CB0;
     --steel:#5b6571; --steel-dark:#2a313a; --brass:#D2A24A;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
@@ -60,7 +60,7 @@
   body:not(.ready) .stage { opacity:0; }
 
   /* ===== Rank bar (standard) — driven by time ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 14px; margin:0 auto 2px; cursor:pointer; user-select:none; }
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 0; margin:0 auto 2px; cursor:pointer; user-select:none; }   /* STANDARD (2026-07-08): zero side padding — label flush left, chevron flush right */
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
   .rank-label.at-maestro { color:var(--accent); }
   .rank-track { position:relative; flex:1; height:22px; }
@@ -80,7 +80,7 @@
   .lives-row { display:flex; align-items:center; gap:3px; }
   .lives-row .heart { width:24px; height:23px; display:inline-flex; }
   .lives-row .heart svg { width:100%; height:100%; }
-  .lives-row .heart .hon { fill:#EA3546; }
+  .lives-row .heart .hon { fill:var(--error); }
   .lives-row .heart .hoff { fill:var(--ink-line); }
   .lives-row.spill { animation:pshake .3s ease; }
   @keyframes pshake { 0%,100%{ transform:translate(0,0);} 35%{ transform:translate(0,7px);} }
@@ -115,7 +115,7 @@
   .wall-bevel { fill:none; stroke:#ffffff; stroke-opacity:.18; stroke-width:3; }
   .wall-rivet { fill:var(--steel-dark); }
   /* selected tile to swap — the TILE highlights (it's a tile puzzle) */
-  .cell.sel .tile { stroke:#0062E3; stroke-width:4; fill:#dceaff; }
+  .cell.sel .tile { stroke:#3E86A0; stroke-width:4; fill:#dceaff; }
   body[data-theme="black"] .cell.sel .tile { fill:#13314a; }
   .cell.locked-water { cursor:default; }
   /* SOURCE — a blue water tank with a DARK outlet stub showing which side it feeds (4 orientations) */
@@ -131,9 +131,9 @@
   .snk-bar { stroke:#1b2026; stroke-width:7; stroke-linecap:round; }
   body[data-theme="black"] .snk-bar { stroke:#0d1217; }
   .snk-bolt { fill:var(--steel); }
-  .snk.filled .snk-ring { stroke:#157145; }
-  .snk.filled .snk-water { fill:#157145; }
-  .snk.filled .snk-spout, .snk.filled .pipe { stroke:#157145; }
+  .snk.filled .snk-ring { stroke:var(--success); }
+  .snk.filled .snk-water { fill:var(--success); }
+  .snk.filled .snk-spout, .snk.filled .pipe { stroke:var(--success); }
   /* FIXED pipe — gray steel clamps on a normal DARK pipe (pipe stays visible) */
   .clamp { fill:var(--steel); }
   .clamp-edge { fill:none; stroke:var(--steel-dark); stroke-width:2.5; }
@@ -142,8 +142,8 @@
   .crack { fill:none; stroke:#d8dee5; stroke-width:9; stroke-linecap:round; stroke-linejoin:round; }
   .crack-br { fill:none; stroke:#d8dee5; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; }
   /* BROKEN pipe — a bold, irregular red split + shard, masked inside the pipe */
-  .brk { fill:none; stroke:#EA3546; stroke-width:11; stroke-linecap:round; stroke-linejoin:round; }
-  .brk-shard { fill:#EA3546; }
+  .brk { fill:none; stroke:var(--error); stroke-width:11; stroke-linecap:round; stroke-linejoin:round; }
+  .brk-shard { fill:var(--error); }
   /* ACCELERATOR / RESISTOR — a steel valve gauge bolted on a DARK pipe; color is the accent only */
   .valve-body { fill:var(--steel-dark); }
   .valve-accel { fill:none; stroke:#34C759; stroke-width:4; }
@@ -178,7 +178,7 @@
   .speed-dots i.on { background:var(--accent); }
 
   .freeze { width:min(94vw,400px); margin:10px auto 0; }
-  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#0062E3; background:rgba(0,98,227,.05); border:2px solid #0062E3; }
+  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#3E86A0; background:rgba(0,98,227,.05); border:2px solid #3E86A0; }
   .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); transition:transform .25s linear; z-index:0; }
   .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; justify-content:center; height:34px; }
   .freeze-btn .ficon svg { width:27px; height:27px; display:block; }
@@ -206,9 +206,13 @@
   .gate p { margin:0; color:var(--ink-soft); font-size:13.5px; max-width:262px; line-height:1.5; }
   .gate .v { font:800 50px var(--font-display); color:var(--accent); line-height:1; }
   .gate .vlbl { font:700 9px var(--font-ui); letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-soft); margin-top:-8px; }
-  .btn { font:800 16px var(--font-ui); letter-spacing:.4px; color:#fff; background:var(--accent); border:none; border-radius:999px; padding:13px 40px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.14); }
-  .btn.ghost { color:var(--ink); background:var(--paper); border:1.5px solid var(--ink-line); box-shadow:none; padding:13px 32px; font-size:16px; }
-  .btn.ghost:active { transform:scale(.97); }
+  .btn { font:800 16px var(--font-ui); letter-spacing:.4px; color:var(--ink); background:var(--bg); border:1px solid var(--ink-line); border-radius:999px; padding:13px 32px; cursor:pointer; touch-action:manipulation; user-select:none; -webkit-touch-callout:none; }
+  .btn:active { transform:scale(.96); background:var(--ink-line); border-color:var(--ink); }
+  @media (hover:hover){ .btn:hover { border-color:var(--ink); } }
+  .btn.dark { color:var(--bg); background:var(--ink); border-color:var(--ink); }
+  .btn.dark:active { background:var(--ink); border-color:var(--ink); }
+  .btn.share { color:#fff; background:var(--accent); border-color:var(--accent); }
+  .btn.share:active { background:var(--accent-deep); border-color:var(--accent-deep); }
   .go-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
   .modal-ov { position:fixed; top:var(--header-h); left:0; right:0; bottom:0; z-index:80; display:none; align-items:flex-start; justify-content:center; padding:24px 16px 40px; background:rgba(14,20,18,.55); overflow:auto; overscroll-behavior:contain; }   /* start below the fixed header so the menu bar stays lit (Racimo standard) */
   .modal-ov.open { display:flex; }
@@ -229,9 +233,14 @@
   .legend-cell svg .pp { fill:none; stroke:var(--pipe); stroke-width:11; stroke-linecap:round; stroke-linejoin:round; }
   .legend-row .txt { font-size:14px; line-height:1.45; color:var(--ink); }
   .modal h2 { font:800 24px var(--font-display); margin:0 0 12px; }
-  .modal h3 { margin:18px 0 6px; font-size:15px; }
+  .modal h3 { margin:18px 0 8px; font:800 13px var(--font-ui); text-transform:uppercase; letter-spacing:1.2px; color:var(--ink); }
+  .stats-sec { margin:28px 0 14px; padding-top:22px; border-top:1px solid var(--ink-line); font-size:11px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:2px; display:flex; align-items:center; gap:10px; }
+  .stats-sec::before { content:""; width:6px; height:6px; background:var(--accent); border-radius:50%; flex-shrink:0; }
+  .stats-sec.first { margin-top:14px; padding-top:0; border-top:none; }
+  .stats-sec.first::before { display:none; }
   .modal p { font-size:14px; line-height:1.6; color:var(--ink); margin:0 0 10px; }
-  .modal .x { position:absolute; top:12px; right:12px; width:32px; height:32px; border:none; background:transparent; color:var(--ink-soft); font-size:20px; cursor:pointer; }
+  .modal .x { position:absolute; top:16px; right:16px; width:36px; height:36px; border:none; background:transparent; color:var(--ink-soft); font-size:22px; line-height:1; cursor:pointer; border-radius:50%; display:flex; align-items:center; justify-content:center; touch-action:manipulation; }
+  @media (hover:hover){ .modal .x:hover { background:var(--paper); color:var(--ink); } }
   /* Rangos list — shared Racimo standard */
   .ranks-cols { display:flex; justify-content:space-between; font-size:10px; text-transform:uppercase; letter-spacing:1.8px; font-weight:700; color:var(--ink-soft); border-bottom:1px solid var(--ink-line); padding:0 0 8px; margin:2px 0 6px; }
   .rank-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:999px; font-size:14px; }
@@ -296,7 +305,7 @@
         <div class="gate" id="gate">
           <h2>Flujo</h2>
           <p><b>Intercambia</b> tuberías (toca dos para cambiarlas de lugar) y lleva el agua de la <b>fuente</b> al <b>desagüe</b> antes de que se derrame. <b>5 tableros</b> con muros, fugas y trampas. Te cronometra de principio a fin.</p>
-          <button class="btn" id="start-btn" type="button">Empezar</button>
+          <button class="btn dark" id="start-btn" type="button">Empezar</button>
         </div>
       </div>
     </div>
@@ -321,36 +330,36 @@
     <div class="pausebar"><button class="pause-btn" id="pause-btn" type="button">⏸ Pausa</button></div>
   </div>
 
-  <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
+  <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button" aria-label="Cerrar">×</button>
     <h2>Flujo</h2>
     <p>El modo presión: <b>5 tableros</b> de tuberías. El reloj corre de principio a fin — termínalos lo más rápido que puedas.</p>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path d="M42 50 H100" fill="none" stroke="var(--pipe)" stroke-width="40" stroke-linecap="butt"/><rect x="15" y="23" width="54" height="54" rx="15" fill="var(--water)" stroke="var(--accent-deep)" stroke-width="4"/><rect x="22" y="29" width="40" height="11" rx="5" fill="#fff" opacity=".22"/><path d="M42 40 C55 56 51 70 42 74 C33 70 29 56 42 40 Z" fill="#fff"/></svg></div><div class="txt"><b>Fuente</b> (entrada) → <b>desagüe</b>. Toca <b>dos tuberías para intercambiarlas</b> y armar el camino. (Cuando el agua llega a una pieza, queda fija.)</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><rect x="20" y="20" width="60" height="60" rx="6" fill="var(--steel)" stroke="var(--steel-dark)" stroke-width="3"/><circle cx="31" cy="31" r="4" fill="var(--steel-dark)"/><circle cx="69" cy="31" r="4" fill="var(--steel-dark)"/><circle cx="31" cy="69" r="4" fill="var(--steel-dark)"/><circle cx="69" cy="69" r="4" fill="var(--steel-dark)"/></svg></div><div class="txt"><b>Muro / maquinaria.</b> No se mueve ni deja pasar el agua. Es el <b>terreno</b>: te obliga a rodear.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--water)" d="M14 50 H50 V86"/></svg></div><div class="txt">El <b style="color:var(--water)">agua</b> avanza sola desde la fuente. Conéctala al desagüe y <b style="color:#157145">se completa el tablero</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--water)" d="M14 50 H50 V86"/></svg></div><div class="txt">El <b style="color:var(--water)">agua</b> avanza sola desde la fuente. Conéctala al desagüe y <b style="color:var(--success)">se completa el tablero</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path class="pp" style="stroke:var(--error)" d="M14 50 H58"/><path class="pp" style="stroke:var(--error)" d="M70 38 l14 12 l-14 12"/></svg></div><div class="txt"><b style="color:var(--error)">Fuga:</b> si el agua llega a un extremo abierto antes de conectar, se derrama: <b>+8 s</b> y vuelve al inicio.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><path d="M0 50 H100" fill="none" stroke="var(--pipe)" stroke-width="46" stroke-linecap="butt"/><rect x="18" y="21" width="16" height="58" rx="5" fill="var(--steel)"/><rect x="18" y="21" width="16" height="58" rx="5" fill="none" stroke="var(--steel-dark)" stroke-width="2.5"/><rect x="66" y="21" width="16" height="58" rx="5" fill="var(--steel)"/><rect x="66" y="21" width="16" height="58" rx="5" fill="none" stroke="var(--steel-dark)" stroke-width="2.5"/><circle cx="26" cy="50" r="5" fill="var(--steel-dark)"/><circle cx="74" cy="50" r="5" fill="var(--steel-dark)"/></svg></div><div class="txt"><b style="color:var(--steel)">Tubería fija</b> (acero): ya está puesta y <b>no se mueve</b>. Un ancla útil — construye a su alrededor.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><mask id="la" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="100" height="100" fill="#000"/><path d="M0 50 H100" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="butt"/></mask><path d="M0 50 H100" fill="none" stroke="var(--pipe)" stroke-width="46" stroke-linecap="butt"/><g mask="url(#la)"><circle cx="50" cy="50" r="16" fill="var(--steel-dark)"/><circle cx="50" cy="50" r="16" fill="none" stroke="#34C759" stroke-width="4"/><path d="M42 55 L50 45 L58 55" fill="none" stroke="#34C759" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div><div class="txt"><b style="color:#2F9E44">Acelerador.</b> El agua <b>fluye más rápido</b> al cruzarlo. Bueno cerca del final, malo al principio.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><mask id="lr" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="100" height="100" fill="#000"/><path d="M0 50 H100" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="butt"/></mask><path d="M0 50 H100" fill="none" stroke="var(--pipe)" stroke-width="46" stroke-linecap="butt"/><g mask="url(#lr)"><circle cx="50" cy="50" r="16" fill="var(--steel-dark)"/><circle cx="50" cy="50" r="16" fill="none" stroke="#FF5A5A" stroke-width="4"/><path d="M42 45 L50 55 L58 45" fill="none" stroke="#FF5A5A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div><div class="txt"><b style="color:#E03131">Resistor.</b> El agua <b>va más lento</b> — te da tiempo.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><mask id="lc" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="100" height="100" fill="#000"/><path d="M0 50 H100" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="butt"/></mask><path d="M0 50 H100" fill="none" stroke="var(--pipe)" stroke-width="46" stroke-linecap="butt"/><g mask="url(#lc)"><path d="M50 16 L45 30 L53 42 L44 56 L52 70 L46 84" fill="none" stroke="#d8dee5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M53 42 L63 46" fill="none" stroke="#d8dee5" stroke-width="6" stroke-linecap="round"/><path d="M44 56 L34 60" fill="none" stroke="#d8dee5" stroke-width="6" stroke-linecap="round"/></g></svg></div><div class="txt"><b style="color:#8A8F96">Tubería agrietada.</b> El agua pasa, pero <b>cuesta una vida</b> ❤. A veces conviene sacrificarla para terminar rápido.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><mask id="lb" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="100" height="100" fill="#000"/><path d="M0 50 H100" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="butt"/></mask><path d="M0 50 H100" fill="none" stroke="var(--pipe)" stroke-width="46" stroke-linecap="butt"/><g mask="url(#lb)"><path d="M50 14 L43 30 L55 43 L42 57 L54 70 L44 86" fill="none" stroke="#EA3546" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 43 L65 45 L58 52 Z" fill="#EA3546"/></g></svg></div><div class="txt"><b style="color:#B23A2E">Tubería rota.</b> <b>No se puede mover.</b> Si el agua entra, <b>pierdes una vida</b> y vuelve al inicio. <b>Rodéala</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><mask id="lb" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="100" height="100" fill="#000"/><path d="M0 50 H100" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="butt"/></mask><path d="M0 50 H100" fill="none" stroke="var(--pipe)" stroke-width="46" stroke-linecap="butt"/><g mask="url(#lb)"><path d="M50 14 L43 30 L55 43 L42 57 L54 70 L44 86" fill="none" stroke="var(--error)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 43 L65 45 L58 52 Z" fill="var(--error)"/></g></svg></div><div class="txt"><b style="color:#B23A2E">Tubería rota.</b> <b>No se puede mover.</b> Si el agua entra, <b>pierdes una vida</b> y vuelve al inicio. <b>Rodéala</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><mask id="lal" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="100" height="100" fill="#000"/><path d="M0 50 H100" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="butt"/></mask><path d="M0 50 H100" fill="none" stroke="var(--pipe)" stroke-width="46" stroke-linecap="butt"/><g mask="url(#lal)"><path d="M50 31 L70 66 L30 66 Z" fill="#E03131" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><path d="M50 44 L50 54" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/><circle cx="50" cy="60" r="3.2" fill="#fff"/></g></svg></div><div class="txt"><b style="color:#CC2B2B">Alarma.</b> Si el agua entra, <b>el flujo se acelera</b> el resto del tablero (no quita vida, pero te mete prisa). <b>Rodéala</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#0062E3">❄ Congelar.</b> Se llena solo; <b>detiene el agua 5 s</b> mientras giras — pero <b>el reloj sigue</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#3E86A0;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#3E86A0">❄ Congelar.</b> Se llena solo; <b>detiene el agua 5 s</b> mientras giras — pero <b>el reloj sigue</b>.</div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Tu <b>rango</b> es el <b>tiempo total</b> de los 5 tableros (las fugas suman segundos). Tienes <b>3 vidas</b> ❤ — si se acaban, termina la partida.</p>
   </div></div>
 
-  <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
+  <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button" aria-label="Cerrar">×</button>
     <h2>Rangos</h2>
     <p>Tu rango lo decide el <b>tiempo total</b> de los 5 tableros (menos es mejor). Récord de hoy: <b id="ranks-best">—</b>.</p>
     <div class="ranks-cols"><span>Rango</span><span>Tiempo</span></div>
     <div id="ranks-list"></div>
   </div></div>
 
-  <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button">✕</button>
+  <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button" aria-label="Cerrar">×</button>
     <h2>Estadísticas</h2>
     <div class="cstat-grid" id="casc-stats"></div>
-    <h3>Distribución de rangos</h3>
+    <h3 class="stats-sec">Distribución de rangos</h3>
     <div id="casc-dist"></div>
-    <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a ningún servidor.</p>
+    <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador, las cookies o el historial del sitio, <b>tus estadísticas se borrarán</b>. Tampoco se sincronizan entre dispositivos: cada navegador tiene su propio registro.</p>
   </div></div>
 
   <div id="rotate-lock">
@@ -710,10 +719,20 @@
   // ===== rank =====
   function rankFromTime(t){ for(let i=0;i<RANK_LADDER.length;i++){ if(t<=RANK_LADDER[i]) return TOP-i; } return 0; }
   function curIdx(){ return rankFromTime(over?bestSecs0:elapsedSecs()); }
+  // Continuous position along the track for a TIME t (clasico's timePos mapping):
+  // the bubble GLIDES within the current time band instead of snapping dot to dot.
+  function timePos(t){ const idx=rankFromTime(t);
+    if(idx>=TOP) return 100;
+    if(idx<=0) return 0;
+    const hi=RANK_LADDER[TOP-idx], lo=RANK_LADDER[TOP-idx-1];   // band: lo < t <= hi (lower time = better rank)
+    const frac=Math.max(0,Math.min(1,(hi-t)/Math.max(1,hi-lo)));
+    return Math.min(100,(idx+frac)/TOP*100); }
   function renderRank(){ const track=$('rank-track'); if(!track) return; const idx=curIdx();
+    const pos=timePos(over?bestSecs0:elapsedSecs());
     let html='<div class="rank-track-line"></div><div class="rank-track-fill" id="rtf"></div>';
-    for(let i=0;i<=TOP;i++){ const left=(i/TOP)*100; if(i===idx) html+='<div class="rank-dot current" style="left:'+left+'%">'+(idx+1)+'</div>'; else html+='<div class="rank-dot'+(i<idx?' passed':'')+'" style="left:'+left+'%"></div>'; }
-    track.innerHTML=html; const f=$('rtf'); if(f) f.style.width=((idx/TOP)*100)+'%';
+    for(let i=0;i<=TOP;i++){ html+='<div class="rank-dot'+(i<idx?' passed':'')+'" style="left:clamp(3px, '+((i/TOP)*100)+'%, calc(100% - 3px))"></div>'; }
+    html+='<div class="rank-dot current" style="left:clamp(12px, '+pos+'%, calc(100% - 12px))"></div>';   // bubble is EMPTY (timer-game ruling)
+    track.innerHTML=html; const f=$('rtf'); if(f) f.style.width=pos+'%';
     const lbl=$('rank-label'); if(lbl){ lbl.textContent=(!running&&!over)?'Listo':RANK_NAMES[idx]; lbl.classList.toggle('at-maestro', (running||over)&&idx===TOP); } }
   function renderRanks(){ const list=$('ranks-list'); if(!list) return; const cur=(running||over)?curIdx():-1; let html='';
     for(let i=TOP;i>=0;i--){ const band=(i===TOP)?('≤ '+fmt(RANK_LADDER[0])):(i===0?('> '+fmt(RANK_LADDER[TOP-1])):(fmt(RANK_LADDER[TOP-i-1])+'–'+fmt(RANK_LADDER[TOP-i])));
@@ -744,7 +763,7 @@
   function launchConfetti(n){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     n=n||90;
-    const colors=['#2E8BC0','#EA3546','#e8b84b','#1B5E86','#3fae8e','#9CCCEC'];
+    const colors=['#3E86A0','#b03434','#e8b84b','#2D6073','#3fae8e','#9CCCEC'];
     const cv=document.createElement('canvas'); cv.className='confetti-box';
     const W=window.innerWidth, H=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
     cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
@@ -772,7 +791,7 @@
     if(fail){ bestSecs=+(lsGet('flujo-best-'+ISO)||0); $('timer').textContent=fmt(secs);
       if(!training){ lsSet('flujo-done-'+ISO,'1'); recordStats(0,false); }   // first attempt locks the day, win or lose
       g.innerHTML='<h2>'+(training?'Entrenamiento':'¡Sin vidas!')+'</h2><p>Una sobrecarga o demasiadas tuberías rotas acabaron la racha.<br>Llegaste al <b>tablero '+(bi+1)+'/'+BOARDS+'</b>.</p>'
-        +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button></div>';
+        +'<div class="go-row"><button class="btn dark" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button></div>';
       $('again-btn').addEventListener('click', ()=>startGame(true)); return; }
     let isBest=false;
     if(!training){ const prev=+(lsGet('flujo-best-'+ISO)||0); isBest=!prev||secs<prev; if(isBest){ bestSecs=secs; lsSet('flujo-best-'+ISO,String(secs)); } else bestSecs=prev;
@@ -781,7 +800,7 @@
     if(!training) setTimeout(()=>launchConfetti(idx===TOP?130:idx>=7?95:70), 260);
     g.innerHTML='<h2>'+(training?'Entrenamiento':'¡Completado!')+'</h2><div class="v">'+fmt(secs)+'</div><div class="vlbl">'+(training?'tiempo':RANK_NAMES[idx])+'</div>'
       +'<p>5 tableros · '+leaks+' fuga'+(leaks===1?'':'s')+'.'+(training?'':'<br>'+(isBest?'¡Mejor tiempo de hoy! 🎉':'Mejor de hoy: <b>'+fmt(bestSecs)+'</b>'))+'</p>'
-      +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+      +'<div class="go-row"><button class="btn dark" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn share" id="share-btn" type="button">Compartir</button></div>';
     $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare);
   }
   function buildShareText(){
@@ -797,7 +816,15 @@
     return L.join('\n');
   }
   function doShare(){ const txt=buildShareText();
-    if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); } else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>{ const b=$('share-btn'); if(b) b.textContent='Copiado'; }).catch(()=>{}); } }
+    const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if(isMobile && navigator.share){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); return; }
+    const done=()=>{ showToast('Copiado al portapapeles');
+      const b=$('share-btn'); if(b){ b.textContent='Copiado'; clearTimeout(b._t); b._t=setTimeout(()=>{ try{ b.textContent='Compartir'; }catch(e){} },2000); } };
+    const legacy=()=>{ try{ const ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
+        const ok=document.execCommand('copy'); document.body.removeChild(ta);
+        if(ok) done(); else prompt('Copia tu resultado:', txt);
+      }catch(e){ prompt('Copia tu resultado:', txt); } };
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(legacy); } else legacy(); }
 
   // ===== theme + menus =====
   function applyTheme(t){ document.body.setAttribute('data-theme',t); $('m-theme-name').textContent=(t==='black')?'Oscuro':'Claro'; lsSet('flujo-theme',t); }
@@ -843,7 +870,7 @@
   bestSecs=+(lsGet('flujo-best-'+ISO)||0);
   genBoard(0); render(); setStatus(); renderLives(); renderRank(); updateFreeze();
   if(lsGet('flujo-done-'+ISO)){ const bs=+(lsGet('flujo-best-'+ISO)||0); const gg=$('gate');
-    if(gg) gg.innerHTML='<h2>Flujo</h2><p>Ya completaste el reto de hoy'+(bs>0?' en <b>'+fmt(bs)+'</b>':'')+'. Puedes <b>entrenar</b> con tableros nuevos.</p><button class="btn" id="start-btn2" type="button">Entrenar</button>';
+    if(gg) gg.innerHTML='<h2>Flujo</h2><p>Ya completaste el reto de hoy'+(bs>0?' en <b>'+fmt(bs)+'</b>':'')+'. Puedes <b>entrenar</b> con tableros nuevos.</p><button class="btn dark" id="start-btn2" type="button">Entrenar</button>';
     const b2=$('start-btn2'); if(b2) b2.addEventListener('click', ()=>startGame(true)); }
   document.body.classList.add('ready');
 

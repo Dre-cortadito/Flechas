@@ -20,14 +20,14 @@
 <style>
   * { touch-action:manipulation; box-sizing:border-box; }
   :root {
-    --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f; --wall:#4ECDC4; --target:#662E9B;
-    --accent:#F86624; --accent-deep:#C44E12; --accent-soft:#FCE0D2; --accent-2:#EA3546; --error:#EA3546;
+    --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f; --wall:#4ECDC4; --target:#7A4A93;
+    --accent:#CE7B39; --accent-deep:#A05F2C; --accent-soft:#F7ECE1; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d;
     --board-bg:#FBEEE6; --arrow:#141210; --freeze-bg:#aec9de; --freeze-fill:#9CCCEC;
-    --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
+    --font-display:'Newsreader','DM Serif Display',Georgia,serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
     --bg:#0c100f; --paper:#161b1a; --ink:#eef3f1; --ink-soft:#7f8b89; --ink-line:#232a29; --box-edge:#7f8b89; --wall:#5AD6CD; --target:#A24DB8;
-    --accent:#FF7E45; --accent-deep:#E0561A; --accent-soft:#3A1C10; --accent-2:#EA3546; --board-bg:#241712; --arrow:#ECE7DC; --freeze-bg:#1c4256; --freeze-fill:#2E7CB0;
+    --accent:#DA9765; --accent-deep:#E4B28F; --accent-soft:#35200F; --accent-2:#b03434; --board-bg:#241712; --arrow:#ECE7DC; --freeze-bg:#1c4256; --freeze-fill:#2E7CB0;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { overscroll-behavior:none; }   /* no rubber-band bounce — feels locked, still scrolls a little */
@@ -60,7 +60,7 @@
   .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
 
   /* ===== Rank bar (standard) — driven by points ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 14px; margin:0 auto 2px; cursor:pointer; user-select:none; }
+  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 0; margin:0 auto 2px; cursor:pointer; user-select:none; }
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
   .rank-label.at-maestro { color:var(--accent); }
   .rank-track { position:relative; flex:1; height:22px; }
@@ -78,13 +78,13 @@
   .side .n { font:800 24px var(--font-display); font-variant-numeric:tabular-nums; color:var(--accent); }
   .side .l { font:700 9px var(--font-ui); letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-soft); }
   .timer { font:800 clamp(32px,9vw,44px) var(--font-display); font-style:italic; font-variant-numeric:tabular-nums; line-height:1; text-align:center; }
-  .timer.low { color:var(--accent-2); }
+  .timer.low { color:var(--error); }
 
   /* ===== Hearts (secondary colour) ===== */
   .lives-row { display:flex; align-items:center; gap:3px; }
   .lives-row .heart { width:24px; height:23px; display:inline-flex; }
   .lives-row .heart svg { width:100%; height:100%; }
-  .lives-row .heart .hon { fill:#EA3546; }   /* default heart colour (shared with Borde) */
+  .lives-row .heart .hon { fill:var(--error); }   /* default heart colour (shared with Borde) */
   .lives-row .heart .hoff { fill:var(--ink-line); }
   .lives-row.spill { animation:pshake .3s ease; }
 
@@ -121,7 +121,7 @@
   /* run-progress dots live BETWEEN the board and the status box */
   .refresh-box { width:min(94vw,400px); margin:9px auto 0; padding:7px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; display:flex; align-items:center; justify-content:center; gap:9px; }
   .pgdot { width:11px; height:11px; border-radius:50%; background:var(--ink-line); }
-  .pgdot.done { background:#157145; }
+  .pgdot.done { background:var(--success); }
   .pgdot.cur { background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
 
   /* ===== Status box under the board (mirrors the meta row up top) ===== */
@@ -131,14 +131,14 @@
   .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
   .stile .slbl { font:700 9px var(--font-ui); letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); }
   .stile.combo .sval { color:var(--ink); transition:color .15s, transform .12s; }   /* ×1 is black; turns yellow only when the combo is live */
-  .stile.combo.on .sval { color:#F9C80E; }   /* ×2, ×3… → the board-ring yellow */
+  .stile.combo.on .sval { color:#C99A34; }   /* ×2, ×3… → the board-ring yellow */
   .stile.combo.pop .sval { animation:cpop .2s ease; }
   @keyframes cpop { 0%{ transform:scale(1);} 45%{ transform:scale(1.22);} 100%{ transform:scale(1);} }
-  .stile .sbar { position:absolute; left:0; bottom:0; height:3px; width:100%; background:#F9C80E; transform-origin:left; transform:scaleX(0); }   /* combo timer bar → combo yellow */
+  .stile .sbar { position:absolute; left:0; bottom:0; height:3px; width:100%; background:#C99A34; transform-origin:left; transform:scaleX(0); }   /* combo timer bar → combo yellow */
   .stile.next.warn .sval { color:var(--accent); }   /* teal, not pink */
 
   .freeze { width:min(94vw,400px); margin:10px auto 0; }
-  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#0062E3; background:rgba(0,98,227,.05); border:2px solid #0062E3; }   /* intense freeze blue — border always full; only the fill grows */
+  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#3E86A0; background:rgba(0,98,227,.05); border:2px solid #3E86A0; }   /* intense freeze blue — border always full; only the fill grows */
   .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); transition:transform .25s linear; z-index:0; }   /* charge fill = the exact frozen-board blue, so button-full and frozen board match */
   .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:34px; }   /* fixed height so the button doesn't resize when the number swaps in */
   .freeze-btn .ficon svg { width:34px; height:34px; display:block; }   /* icon-only, large within reason */
@@ -157,8 +157,17 @@
   .gate p { margin:0; color:var(--ink-soft); font-size:13.5px; max-width:255px; line-height:1.5; }
   .gate .v { font:800 50px var(--font-display); color:var(--accent); line-height:1; }
   .gate .vlbl { font:700 9px var(--font-ui); letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-soft); margin-top:-8px; }
-  .btn { font:800 16px var(--font-ui); letter-spacing:.4px; color:#fff; background:var(--accent); border:none; border-radius:999px; padding:13px 40px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.14); }
-  .btn.ghost { color:var(--ink-soft); background:transparent; border:1.5px solid var(--ink-line); box-shadow:none; padding:12px 26px; font-size:14px; }
+  .btn { font:800 16px var(--font-ui); letter-spacing:.4px; color:var(--ink); background:var(--bg); border:1px solid var(--ink-line); border-radius:999px; padding:13px 40px; cursor:pointer; touch-action:manipulation; user-select:none; -webkit-touch-callout:none; }
+  .btn:active { transform:scale(.96); background:var(--ink-line); border-color:var(--ink); }
+  .btn.dark { background:var(--ink); color:var(--bg); border:1px solid var(--ink); }
+  .btn.dark:active { background:var(--ink); border-color:var(--ink); }
+  .btn.share { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.share:active { background:var(--accent-deep); border-color:var(--accent-deep); }
+  .btn.ghost { color:var(--ink); background:var(--paper); border:1.5px solid var(--ink-line); box-shadow:none; padding:13px 32px; font-size:16px; }
+  @media (hover:hover){
+    .btn:hover { border-color:var(--ink); }
+    .btn.share:hover { background:var(--accent-deep); border-color:var(--accent-deep); }
+  }
   .go-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
   .modal-ov { position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(20,18,14,.55); }
   .modal-ov.open { display:flex; }
@@ -179,8 +188,10 @@
   .legend-cell svg path { fill:none; stroke:var(--arrow); stroke-width:8.5; stroke-linecap:round; stroke-linejoin:round; }
   .legend-row .txt { font-size:14px; line-height:1.45; color:var(--ink); }
   .modal h2 { font:800 24px var(--font-display); margin:0 0 12px; }
+  .modal h3 { font-family:var(--font-ui); font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:1.2px; color:var(--ink); margin:22px 0 8px; }
   .modal p { font-size:14px; line-height:1.6; color:var(--ink); margin:0 0 10px; }
-  .modal .x { position:absolute; top:12px; right:12px; width:32px; height:32px; border:none; background:transparent; color:var(--ink-soft); font-size:20px; cursor:pointer; }
+  .modal .x { position:absolute; top:16px; right:16px; width:36px; height:36px; border:none; background:transparent; color:var(--ink-soft); font-size:22px; line-height:1; cursor:pointer; border-radius:50%; display:flex; align-items:center; justify-content:center; touch-action:manipulation; }
+  @media (hover:hover){ .modal .x:hover { background:var(--paper); color:var(--ink); } }
   .rank-row { display:flex; justify-content:space-between; align-items:center; padding:7px 11px; border-radius:8px; font-size:14px; }
   .rank-row .rname { font-weight:600; }
   .rank-row .rband { color:var(--ink-soft); font-variant-numeric:tabular-nums; font-weight:600; }
@@ -205,7 +216,8 @@
   .tut-ov{ position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(20,18,14,.62); }
   .tut-ov.open{ display:flex; }
   .tut-card{ position:relative; background:var(--paper); border-radius:20px; width:100%; max-width:360px; padding:16px 0 16px; box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden; }
-  .tut-x{ position:absolute; top:9px; right:13px; z-index:3; border:none; background:transparent; font-size:20px; color:var(--ink-soft); cursor:pointer; }
+  .tut-x{ position:absolute; top:16px; right:16px; width:36px; height:36px; z-index:3; border:none; background:transparent; font-size:22px; line-height:1; color:var(--ink-soft); cursor:pointer; border-radius:50%; display:flex; align-items:center; justify-content:center; touch-action:manipulation; }
+  @media (hover:hover){ .tut-x:hover{ background:var(--paper); color:var(--ink); } }
   .tut-track{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
   .tut-track::-webkit-scrollbar{ display:none; }
   .tut-slide{ flex:0 0 100%; scroll-snap-align:center; padding:16px 26px 2px; box-sizing:border-box; text-align:center; }
@@ -221,9 +233,9 @@
   .tv line,.tv polyline{ stroke-width:11; stroke-linecap:round; stroke-linejoin:round; fill:none; }
   @keyframes tvLaunch{ 0%{transform:translateX(0);color:var(--ink);opacity:1} 28%{color:#157145} 64%{transform:translateX(116px);color:#157145;opacity:1} 82%,100%{transform:translateX(152px);opacity:0} }
   .tv-launch{ animation:tvLaunch 2.6s ease-in-out infinite; }
-  @keyframes tvBump{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(46px);color:var(--ink)} 44%{color:#EA3546} 58%{transform:translateX(46px);color:#EA3546} 80%,100%{transform:translateX(0);color:var(--ink)} }
+  @keyframes tvBump{ 0%{transform:translateX(0);color:var(--ink)} 34%{transform:translateX(46px);color:var(--ink)} 44%{color:var(--error)} 58%{transform:translateX(46px);color:var(--error)} 80%,100%{transform:translateX(0);color:var(--ink)} }
   .tv-bump{ animation:tvBump 2.6s ease-in-out infinite; }
-  @keyframes tvBlk{ 0%,40%{color:var(--ink)} 48%,58%{color:#EA3546} 80%,100%{color:var(--ink)} }
+  @keyframes tvBlk{ 0%,40%{color:var(--ink)} 48%,58%{color:var(--error)} 80%,100%{color:var(--ink)} }
   .tv-blk{ animation:tvBlk 2.6s ease-in-out infinite; }
   @keyframes tvRing{ 0%,100%{opacity:.16} 50%{opacity:1} }
   .tv-ring{ animation:tvRing 1.7s ease-in-out infinite; }
@@ -290,7 +302,7 @@
         <div class="gate" id="gate">
           <h2>Desvío</h2>
           <p>Desliza las flechas para abrir paso y <b>libera la flecha</b> <span style="color:var(--target)">morada</span> por la <b>salida</b>. <b>5 tableros</b> — tu rango es el <b>tiempo total</b>.</p>
-          <button class="btn" id="start-btn" type="button">Empezar</button>
+          <button class="btn dark" id="start-btn" type="button">Empezar</button>
         </div>
       </div>
     </div>
@@ -313,31 +325,31 @@
     </div>
   </div>
 
-  <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">✕</button>
+  <div class="modal-ov" id="rules-ov"><div class="modal"><button class="x" id="rules-x" type="button">×</button>
     <h2>Desvío</h2>
     <button class="tut-open-btn" style="display:none" onclick="openTutorial()">Ver tutorial animado</button>
     <p>Un atasco de flechas. <b>5 tableros</b> seguidos — tu rango es el <b>tiempo total</b> en resolverlos.</p>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="16" y1="20" x2="84" y2="20" style="stroke:var(--arrow);stroke-width:11;stroke-linecap:round"/><polyline points="76,9 100,20 76,31" style="fill:none;stroke:var(--arrow);stroke-width:11;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt"><b>Desliza</b> una flecha a lo largo de su carril. Las flechas <b>no salen</b> del tablero: solo se deslizan y se estorban.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="14" y1="20" x2="86" y2="20" style="stroke:var(--target);stroke-width:14;stroke-linecap:round"/><polyline points="78,9 102,20 78,31" style="fill:none;stroke:var(--target);stroke-width:7;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt">La flecha <b style="color:var(--target)">morada</b> es tu objetivo: deslízala hasta la <b>salida</b> en el borde derecho.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="14" y1="20" x2="86" y2="20" style="stroke:#157145;stroke-width:14;stroke-linecap:round"/><polyline points="78,9 102,20 78,31" style="fill:none;stroke:#157145;stroke-width:7;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt">Cuando sale, <b style="color:#157145">destella en verde</b> — tablero resuelto, pasas al siguiente.</div></div>
-    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="16" y1="20" x2="84" y2="20" style="stroke:#EA3546;stroke-width:11;stroke-linecap:round"/><polyline points="76,9 100,20 76,31" style="fill:none;stroke:#EA3546;stroke-width:11;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt"><b>Atasco:</b> tirar de una flecha <b>totalmente trabada</b> destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">½ corazón</b>. Sin corazones → fin.</div></div>
+    <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="16" y1="20" x2="84" y2="20" style="stroke:var(--error);stroke-width:11;stroke-linecap:round"/><polyline points="76,9 100,20 76,31" style="fill:none;stroke:var(--error);stroke-width:11;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt"><b>Atasco:</b> tirar de una flecha <b>totalmente trabada</b> destella en <b style="color:var(--error)">rojo</b> y cuesta <b style="color:var(--error)">½ corazón</b>. Sin corazones → fin.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="var(--ink-soft)" stroke-width="4"/><text x="60" y="27" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="16" fill="var(--ink-soft)">Par</text></svg></div><div class="txt"><b>Par</b> es la solución óptima (mínimo de movimientos). No es obligatorio igualarlo — solo cuenta el <b>tiempo</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#0062E3;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#0062E3">❄ Congelar.</b> Se llena solo; <b>para el reloj 5 s</b> para que pienses sin que corra el tiempo.</div></div>
+    <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#3E86A0;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#3E86A0">❄ Congelar.</b> Se llena solo; <b>para el reloj 5 s</b> para que pienses sin que corra el tiempo.</div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Tu <b>rango</b> es el <b>tiempo total</b> de los 5 tableros: menos segundos, mejor rango. Cada tablero tiene solución garantizada.</p>
   </div></div>
 
-  <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">✕</button>
+  <div class="modal-ov" id="ranks-ov"><div class="modal"><button class="x" id="ranks-x" type="button">×</button>
     <h2>Rangos</h2>
     <p>Tu rango es el <b>tiempo total</b> de los 5 tableros: menos segundos, mejor rango. Mejor de hoy: <b id="ranks-best">—</b>.</p>
     <div id="ranks-list"></div>
   </div></div>
 
-  <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button">✕</button>
+  <div class="modal-ov" id="stats-ov"><div class="modal"><button class="x" id="stats-x" type="button">×</button>
     <h2>Estadísticas</h2>
     <div class="cstat-grid" id="desvio-stats"></div>
-    <h3 style="margin:18px 0 6px;font-size:15px;">Distribución de rangos</h3>
+    <h3>Distribución de rangos</h3>
     <div id="desvio-dist"></div>
-    <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a ningún servidor.</p>
+    <p style="margin:14px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">Tus estadísticas se guardan <b>solo en este navegador</b>. Nada se envía a Cortadito ni a ningún servidor. Si limpias los datos del navegador, las cookies o el historial del sitio, <b>tus estadísticas se borrarán</b>. Tampoco se sincronizan entre dispositivos: cada navegador tiene su propio registro.</p>
   </div></div>
 
 <script>
@@ -507,7 +519,7 @@
   function useFreeze(){ if(!freezeReady||!running||over||between) return; frozenUntil=Date.now()+FREEZE_DUR; freezeCharge=0; freezeReady=false; updateFreeze(); }
   function updateFreeze(){ const btn=$('freeze-btn'), num=$('freeze-num'), fill=$('freeze-fill'), tm=$('timer'); const fz=Date.now()<frozenUntil;
     if(fz){ const rem=frozenUntil-Date.now(); num.textContent=Math.ceil(rem/1000); fill.style.transform='scaleX('+Math.max(0,rem/FREEZE_DUR).toFixed(3)+')';
-      btn.classList.add('frozen'); btn.classList.remove('ready'); const cs=getComputedStyle(board); const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC'; board.style.background=DK; if(tm) tm.style.color='#0062E3'; }
+      btn.classList.add('frozen'); btn.classList.remove('ready'); const cs=getComputedStyle(board); const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC'; board.style.background=DK; if(tm) tm.style.color='#3E86A0'; }
     else { btn.classList.remove('frozen'); board.style.background=''; if(tm) tm.style.color='';
       if(freezeReady){ fill.style.transform='scaleX(1)'; btn.classList.add('ready'); } else { fill.style.transform='scaleX('+freezeCharge.toFixed(3)+')'; btn.classList.remove('ready'); } } }
 
@@ -534,18 +546,34 @@
     const g=$('gate'); g.classList.remove('hidden');
     g.innerHTML='<h2>'+(training?'Entrenamiento':'¡Resuelto!')+'</h2><div class="v">'+fmt(totalMs)+'</div><div class="vlbl">'+(training?'tiempo':RANK_NAMES[idx])+'</div>'
       +'<p>5 tableros resueltos.'+(training?'':'<br>'+(isBest?'¡Tu mejor tiempo de hoy! 🎉':'Mejor de hoy: <b>'+fmt(bestS*1000)+'</b>'))+'</p>'
-      +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+      +'<div class="go-row"><button class="btn dark" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn share" id="share-btn" type="button">Compartir</button></div>';
     $('again-btn').addEventListener('click', ()=>startRun(true)); $('share-btn').addEventListener('click', doShare); }
   function endRun(reason){ if(over) return; over=true; finished=false; running=false; between=false; if(rafId) cancelAnimationFrame(rafId);
-    if(!training) lsSet('desvio-done-'+ISO,'1'); if(!training) recordStats(0,false);
+    if(!training) lsSet('desvio-done-'+ISO,'1:'+boardIdx); if(!training) recordStats(0,false);
     renderRank();
     const g=$('gate'); g.classList.remove('hidden');
     g.innerHTML='<h2>¡Sin corazones!</h2><div class="v">'+boardIdx+'/'+N+'</div><div class="vlbl">tableros · '+fmt(totalMs)+'</div>'
       +'<p>Te quedaste sin corazones. Vuelve a intentarlo.</p>'
-      +'<div class="go-row"><button class="btn" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn ghost" id="share-btn" type="button">Compartir</button></div>';
+      +'<div class="go-row"><button class="btn dark" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn share" id="share-btn" type="button">Compartir</button></div>';
     $('again-btn').addEventListener('click', ()=>startRun(true)); $('share-btn').addEventListener('click', doShare); }
-  function doShare(){ const secs=Math.round(totalMs/1000); const ok=finished; const txt='🚗 Desvío · Flechas\n'+(ok?(fmt(totalMs)+' · '+RANK_NAMES[rankFromTime(secs)]):(boardIdx+'/'+N+' tableros'))+'\nhttps://cortadito.news';
-    if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); } else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>{ const b=$('share-btn'); if(b) b.textContent='Copiado'; }).catch(()=>{}); } }
+  function buildShareText(){
+    let fullDate=ISO; try{ const d=new Date(ISO+'T12:00:00'); const cap=s=>s.charAt(0).toUpperCase()+s.slice(1); fullDate=cap(d.toLocaleDateString('es-ES',{weekday:'long'}))+', '+d.getDate()+' de '+d.toLocaleDateString('es-ES',{month:'long'})+' de '+d.getFullYear(); }catch(e){}
+    const L=[fullDate,'','🧩 Flechas 🚗 Desvío'];
+    const doneV=lsGet('desvio-done-'+ISO)||''; const bestS=+(lsGet('desvio-best-'+ISO)||0);
+    if(!doneV){ L.push('⏳ Todavía sin terminar'); }
+    else if(bestS>0){ const idx=rankFromTime(bestS);
+      L.push(idx===TOP?'👑 ¡Maestro/a del desvío!':'🏆 Rango: '+RANK_NAMES[idx]);
+      L.push('⏱️ '+fmt(bestS*1000)); }
+    else { const nb=(doneV.indexOf(':')>0)?(+doneV.split(':')[1]||0):0; L.push('🚗 '+nb+'/'+N+' tableros'); }
+    L.push(''); L.push('https://flechas.dre-c8f.workers.dev/desvio.html');
+    return L.join('\n');
+  }
+  function doShare(){ const txt=buildShareText();
+    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && navigator.share){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); return; }
+    const b=$('share-btn');
+    const done=()=>{ showToast('Copiado al portapapeles'); if(b){ const t0=b.textContent; b.textContent='Copiado'; setTimeout(()=>{ try{ b.textContent=t0; }catch(_){}} ,2000); } };
+    const legacy=()=>{ try{ const ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); const okc=document.execCommand('copy'); document.body.removeChild(ta); if(okc) done(); else window.prompt('Copia tu resultado:', txt); }catch(e){ window.prompt('Copia tu resultado:', txt); } };
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(legacy); } else legacy(); }
 
   // ===== theme + menu + modals =====
   function applyTheme(t){ document.body.setAttribute('data-theme',t); $('m-theme-name').textContent=(t==='black')?'Oscuro':'Claro'; lsSet('desvio-theme',t); }
@@ -587,7 +615,7 @@
   // ===== boot =====
   applyTheme((lsGet('desvio-theme')==='black')?'black':'light');
   lives=HEARTS_MAX; renderLives(); renderRank(); renderProgress(); updateFreeze();
-  if(lsGet('desvio-done-'+ISO)){ const bs=+(lsGet('desvio-best-'+ISO)||0); const gg=$('gate'); if(gg) gg.innerHTML='<h2>Desvío</h2><p>Ya completaste el reto de hoy'+(bs>0?' en <b>'+fmt(bs*1000)+'</b>':'')+'. Puedes <b>entrenar</b> con tableros nuevos.</p><button class="btn" id="start-btn2" type="button">Entrenar</button>'; const b2=$('start-btn2'); if(b2) b2.addEventListener('click', ()=>startRun(true)); }
+  if(lsGet('desvio-done-'+ISO)){ const bs=+(lsGet('desvio-best-'+ISO)||0); const gg=$('gate'); if(gg) gg.innerHTML='<h2>Desvío</h2><p>Ya completaste el reto de hoy'+(bs>0?' en <b>'+fmt(bs*1000)+'</b>':'')+'. Puedes <b>entrenar</b> con tableros nuevos.</p><button class="btn dark" id="start-btn2" type="button">Entrenar</button>'; const b2=$('start-btn2'); if(b2) b2.addEventListener('click', ()=>startRun(true)); }
 
   // ===== test hook =====
   try{ window.__dsv={ board:()=>boardIdx, pieces:()=>meta.length, par:()=>par, moves:()=>movesThis, target:()=>{ const i=meta.findIndex(m=>m.t); return pos[i]; }, over:()=>over, finished:()=>finished,
@@ -615,7 +643,7 @@
 <!-- ===== Animated tutorial ===== -->
 <div class="tut-ov" id="tut-ov">
   <div class="tut-card">
-    <button class="tut-x" id="tut-x" aria-label="Cerrar">&#10005;</button>
+    <button class="tut-x" id="tut-x" aria-label="Cerrar">×</button>
     <div class="tut-track" id="tut-track">
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><line x1="40" y1="24" x2="40" y2="96" stroke="var(--ink-soft)" stroke-width="8" stroke-linecap="round"/><g class="tv-drag"><line x1="80" y1="55" x2="150" y2="55" stroke="currentColor" stroke-width="11" stroke-linecap="round"/><polyline points="140,42 166,55 140,68" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div>
@@ -630,7 +658,7 @@
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><line x1="150" y1="20" x2="150" y2="92" stroke="var(--ink-soft)" stroke-width="9" stroke-linecap="round"/><g class="tv-bump"><line x1="40" y1="55" x2="120" y2="55" stroke="currentColor" stroke-width="13" stroke-linecap="round"/></g></svg></div>
         <h3>Atasco</h3>
-        <p>Si tiras de una flecha <b>totalmente trabada</b>, destella en <b style="color:#EA3546">rojo</b> y cuesta <b style="color:#EA3546">&frac12; coraz&oacute;n</b>. Piensa antes de tirar.</p>
+        <p>Si tiras de una flecha <b>totalmente trabada</b>, destella en <b style="color:var(--error)">rojo</b> y cuesta <b style="color:var(--error)">&frac12; coraz&oacute;n</b>. Piensa antes de tirar.</p>
       </section>
       <section class="tut-slide">
         <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-ring" x="56" y="22" width="120" height="64" rx="12" fill="none" stroke="var(--ink-soft)" stroke-width="4"/><text class="tv-combo" x="116" y="66" text-anchor="middle" font-family="var(--font-display)" font-weight="800" font-size="30" fill="var(--ink-soft)">Par 8</text></svg></div>
@@ -638,9 +666,9 @@
         <p>Cada tablero muestra su <b>Par</b>: la soluci&oacute;n &oacute;ptima. No hace falta igualarlo &mdash; solo cuenta el <b>tiempo</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-fz-board" x="46" y="10" width="140" height="56" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="80" width="140" height="22" rx="11" fill="none" stroke="#0062E3" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="82" width="136" height="18" rx="9" fill="#9CCCEC"/></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-fz-board" x="46" y="10" width="140" height="56" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="80" width="140" height="22" rx="11" fill="none" stroke="#3E86A0" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="82" width="136" height="18" rx="9" fill="#9CCCEC"/></svg></div>
         <h3>Congelar</h3>
-        <p>El bot&oacute;n <b style="color:#0062E3">&#10052; Congelar</b> se llena solo. <b>Para el reloj 5 s</b> para que estudies el atasco sin que corra el tiempo. <b>5 tableros</b> &mdash; tu rango es el <b>tiempo total</b>.</p>
+        <p>El bot&oacute;n <b style="color:#3E86A0">&#10052; Congelar</b> se llena solo. <b>Para el reloj 5 s</b> para que estudies el atasco sin que corra el tiempo. <b>5 tableros</b> &mdash; tu rango es el <b>tiempo total</b>.</p>
       </section>
     </div>
     <div class="tut-dots" id="tut-dots"></div>
