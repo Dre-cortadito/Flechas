@@ -25,14 +25,14 @@
   .lives-row.spill { animation:livespill .3s ease; } @keyframes livespill{ 50%{ transform:translateX(2px);} }
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#5e5e5e;
-    --accent:#CE7B39; --accent-deep:#A05F2C; --accent-soft:#F7ECE1; --accent-2:#2E7D73; --success:#6b8e3d; --error:#b03434;
+    --accent:#D98F3B; --accent-deep:#AE722F; --accent-soft:#FAF2E7; --accent-2:#2E7D73; --success:#6b8e3d; --error:#b03434;
     --board-bg:#f0efed; --arrow:#1c1c1c; --wall:#2b2b2b; --door:#8c8c8c; --gw:min(94vw,400px);
     --shield-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l8 3v6c0 5-3.5 8.6-8 11-4.5-2.4-8-6-8-11V5l8-3z'/%3E%3C/svg%3E");
     --font-display:'Newsreader','DM Serif Display', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
     --bg:#0d0d0d; --paper:#191919; --ink:#eee; --ink-soft:#8f8f8f; --ink-line:#2a2a2a; --box-edge:#9a9a9a;
-    --accent:#DA9765; --accent-deep:#E4B28F; --accent-soft:#35200F; --accent-2:#3E9184; --success:#8fb35e; --board-bg:#1c1c1c; --arrow:#e6e6e6; --wall:#cfcfcf; --door:#888;
+    --accent:#E2AA6A; --accent-deep:#E9BE8D; --accent-soft:#38250F; --accent-2:#3E9184; --success:#8fb35e; --board-bg:#1c1c1c; --arrow:#e6e6e6; --wall:#cfcfcf; --door:#888;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { overscroll-behavior:none; }
@@ -974,7 +974,7 @@
     // draw the coloured gate UNDER the black walls (insert before the wall path) and with butt caps, so it sits
     // exactly on its own edge and the walls cleanly cap its ends — no bleeding into neighbouring walls.
     const mkWall=(dstr,col)=>{ if(!dstr) return; const e=document.createElementNS(NS,'path'); e.setAttribute('d',dstr); e.setAttribute('fill','none'); e.setAttribute('stroke',col); e.setAttribute('stroke-width','0.16'); e.setAttribute('stroke-linecap','butt'); e.setAttribute('stroke-linejoin','miter'); svg.insertBefore(e, p); };
-    mkWall(cSeg,'#0aa39a'); mkWall(fSeg,'#3E86A0');
+    mkWall(cSeg,'#0aa39a'); mkWall(fSeg,'#3BB2D9');
     // camera-linked LASER WALLS (security barriers) + their power cables. State: red=active, teal=temporarily open, faded=permanently unlocked.
     const lwMid=[];
     for(let li=0; li<laserList.length; li++){ const w=laserList[li]; const r=w.r,c=w.c,dir=w.d;
@@ -1058,7 +1058,7 @@
   function openMini(type,onSolve){ ensureMiniEl(); miniOnSolve=onSolve;
     miniRng=mulberry32(fnv('rumbo-mini-'+seedTag+'-'+(currentDoor?currentDoor.r+'-'+currentDoor.c:'x')));
     const tt=$('mini-title'), hint=$('mini-hint'), area=$('mini-area'); area.innerHTML='';
-    if(type==='flujo'){ tt.textContent='Conecta el flujo'; tt.style.color='#3E86A0'; hint.textContent='Toca para girar · une el origen con el desagüe'; buildFlujoMini(area); }
+    if(type==='flujo'){ tt.textContent='Conecta el flujo'; tt.style.color='#3BB2D9'; hint.textContent='Toca para girar · une el origen con el desagüe'; buildFlujoMini(area); }
     else { tt.textContent='Despeja las flechas'; tt.style.color='#0aa39a'; hint.textContent='Toca una flecha con el carril libre'; buildCascadaMini(area); }
     miniEl.classList.add('show'); }
   function closeMini(){ if(miniEl) miniEl.classList.remove('show'); }
@@ -1099,7 +1099,7 @@
       const bg=document.createElementNS(NS,'rect'); bg.setAttribute('x',c*sz+1); bg.setAttribute('y',r*sz+1); bg.setAttribute('width',sz-2); bg.setAttribute('height',sz-2); bg.setAttribute('rx',3); bg.setAttribute('fill','#eef3f5'); g.appendChild(bg);
       const m=mPipes[i]; const seg=(x2,y2)=>{ const ln=document.createElementNS(NS,'line'); ln.setAttribute('x1',cx);ln.setAttribute('y1',cy);ln.setAttribute('x2',x2);ln.setAttribute('y2',y2); ln.setAttribute('stroke','#2b3138'); ln.setAttribute('stroke-width','4.5'); ln.setAttribute('stroke-linecap','round'); g.appendChild(ln); };
       if(m&U) seg(cx,r*sz); if(m&Dn) seg(cx,(r+1)*sz); if(m&L) seg(c*sz,cy); if(m&Rr) seg((c+1)*sz,cy);
-      if(i===mSrc){ const o=document.createElementNS(NS,'circle'); o.setAttribute('cx',cx);o.setAttribute('cy',cy);o.setAttribute('r',5.5); o.setAttribute('fill','#3E86A0'); g.appendChild(o); }
+      if(i===mSrc){ const o=document.createElementNS(NS,'circle'); o.setAttribute('cx',cx);o.setAttribute('cy',cy);o.setAttribute('r',5.5); o.setAttribute('fill','#3BB2D9'); g.appendChild(o); }
       else if(i===mSnk){ const o=document.createElementNS(NS,'circle'); o.setAttribute('cx',cx);o.setAttribute('cy',cy);o.setAttribute('r',5.5); o.setAttribute('fill','none'); o.setAttribute('stroke','#157145'); o.setAttribute('stroke-width','3'); g.appendChild(o); }
       g.addEventListener('click',()=>{ mPipes[i]=rotCW(mPipes[i]); if(flujoSolved()){ renderFlujoMini(area); setTimeout(miniWin,200); } else renderFlujoMini(area); });
       svg.appendChild(g); } }
@@ -1236,7 +1236,7 @@
   function launchConfetti(n){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     n=n||90;
-    const colors=['#CE7B39','#2E7D73','#b03434','#e8b84b','#6b8e3d','#A05F2C'];
+    const colors=['#D98F3B','#2E7D73','#b03434','#e8b84b','#6b8e3d','#AE722F'];
     const cv=document.createElement('canvas'); cv.className='confetti-box';
     const W=window.innerWidth, H=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
     cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';

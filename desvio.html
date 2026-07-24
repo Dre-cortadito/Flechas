@@ -20,14 +20,14 @@
 <style>
   * { touch-action:manipulation; box-sizing:border-box; }
   :root {
-    --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f; --wall:#4ECDC4; --target:#7A4A93;
-    --accent:#CE7B39; --accent-deep:#A05F2C; --accent-soft:#F7ECE1; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d;
+    --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f; --wall:#4ECDC4; --target:#8A3BD9;
+    --accent:#D98F3B; --accent-deep:#AE722F; --accent-soft:#FAF2E7; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d;
     --board-bg:#FBEEE6; --arrow:#141210; --freeze-bg:#aec9de; --freeze-fill:#9CCCEC;
     --font-display:'Newsreader','DM Serif Display',Georgia,serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
     --bg:#0c100f; --paper:#161b1a; --ink:#eef3f1; --ink-soft:#7f8b89; --ink-line:#232a29; --box-edge:#7f8b89; --wall:#5AD6CD; --target:#A24DB8;
-    --accent:#DA9765; --accent-deep:#E4B28F; --accent-soft:#35200F; --accent-2:#b03434; --board-bg:#241712; --arrow:#ECE7DC; --freeze-bg:#1c4256; --freeze-fill:#2E7CB0;
+    --accent:#E2AA6A; --accent-deep:#E9BE8D; --accent-soft:#38250F; --accent-2:#b03434; --board-bg:#241712; --arrow:#ECE7DC; --freeze-bg:#1c4256; --freeze-fill:#2E7CB0;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { overscroll-behavior:none; }   /* no rubber-band bounce — feels locked, still scrolls a little */
@@ -138,7 +138,7 @@
   .stile.next.warn .sval { color:var(--accent); }   /* teal, not pink */
 
   .freeze { width:min(94vw,400px); margin:10px auto 0; }
-  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#3E86A0; background:rgba(0,98,227,.05); border:2px solid #3E86A0; }   /* intense freeze blue — border always full; only the fill grows */
+  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#3BB2D9; background:rgba(0,98,227,.05); border:2px solid #3BB2D9; }   /* intense freeze blue — border always full; only the fill grows */
   .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); transition:transform .25s linear; z-index:0; }   /* charge fill = the exact frozen-board blue, so button-full and frozen board match */
   .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:34px; }   /* fixed height so the button doesn't resize when the number swaps in */
   .freeze-btn .ficon svg { width:34px; height:34px; display:block; }   /* icon-only, large within reason */
@@ -334,7 +334,7 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="14" y1="20" x2="86" y2="20" style="stroke:#157145;stroke-width:14;stroke-linecap:round"/><polyline points="78,9 102,20 78,31" style="fill:none;stroke:#157145;stroke-width:7;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt">Cuando sale, <b style="color:#157145">destella en verde</b> — tablero resuelto, pasas al siguiente.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><line x1="16" y1="20" x2="84" y2="20" style="stroke:var(--error);stroke-width:11;stroke-linecap:round"/><polyline points="76,9 100,20 76,31" style="fill:none;stroke:var(--error);stroke-width:11;stroke-linecap:round;stroke-linejoin:round"/></svg></div><div class="txt"><b>Atasco:</b> tirar de una flecha <b>totalmente trabada</b> destella en <b style="color:var(--error)">rojo</b> y cuesta <b style="color:var(--error)">½ corazón</b>. Sin corazones → fin.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 120 40"><rect x="9" y="5" width="102" height="30" rx="7" fill="none" stroke="var(--ink-soft)" stroke-width="4"/><text x="60" y="27" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="16" fill="var(--ink-soft)">Par</text></svg></div><div class="txt"><b>Par</b> es la solución óptima (mínimo de movimientos). No es obligatorio igualarlo — solo cuenta el <b>tiempo</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#3E86A0;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#3E86A0">❄ Congelar.</b> Se llena solo; <b>para el reloj 5 s</b> para que pienses sin que corra el tiempo.</div></div>
+    <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#3BB2D9;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#3BB2D9">❄ Congelar.</b> Se llena solo; <b>para el reloj 5 s</b> para que pienses sin que corra el tiempo.</div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Tu <b>rango</b> es el <b>tiempo total</b> de los 5 tableros: menos segundos, mejor rango. Cada tablero tiene solución garantizada.</p>
   </div></div>
 
@@ -519,7 +519,7 @@
   function useFreeze(){ if(!freezeReady||!running||over||between) return; frozenUntil=Date.now()+FREEZE_DUR; freezeCharge=0; freezeReady=false; updateFreeze(); }
   function updateFreeze(){ const btn=$('freeze-btn'), num=$('freeze-num'), fill=$('freeze-fill'), tm=$('timer'); const fz=Date.now()<frozenUntil;
     if(fz){ const rem=frozenUntil-Date.now(); num.textContent=Math.ceil(rem/1000); fill.style.transform='scaleX('+Math.max(0,rem/FREEZE_DUR).toFixed(3)+')';
-      btn.classList.add('frozen'); btn.classList.remove('ready'); const cs=getComputedStyle(board); const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC'; board.style.background=DK; if(tm) tm.style.color='#3E86A0'; }
+      btn.classList.add('frozen'); btn.classList.remove('ready'); const cs=getComputedStyle(board); const DK=cs.getPropertyValue('--freeze-fill').trim()||'#9CCCEC'; board.style.background=DK; if(tm) tm.style.color='#3BB2D9'; }
     else { btn.classList.remove('frozen'); board.style.background=''; if(tm) tm.style.color='';
       if(freezeReady){ fill.style.transform='scaleX(1)'; btn.classList.add('ready'); } else { fill.style.transform='scaleX('+freezeCharge.toFixed(3)+')'; btn.classList.remove('ready'); } } }
 
@@ -666,9 +666,9 @@
         <p>Cada tablero muestra su <b>Par</b>: la soluci&oacute;n &oacute;ptima. No hace falta igualarlo &mdash; solo cuenta el <b>tiempo</b>.</p>
       </section>
       <section class="tut-slide">
-        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-fz-board" x="46" y="10" width="140" height="56" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="80" width="140" height="22" rx="11" fill="none" stroke="#3E86A0" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="82" width="136" height="18" rx="9" fill="#9CCCEC"/></svg></div>
+        <div class="tut-anim"><svg viewBox="0 0 232 110" class="tv"><rect class="tv-fz-board" x="46" y="10" width="140" height="56" rx="7" fill="var(--board-bg)" stroke="var(--ink-line)" stroke-width="3"/><rect x="46" y="80" width="140" height="22" rx="11" fill="none" stroke="#3BB2D9" stroke-width="2.5"/><rect class="tv-fz-fill" x="48" y="82" width="136" height="18" rx="9" fill="#9CCCEC"/></svg></div>
         <h3>Congelar</h3>
-        <p>El bot&oacute;n <b style="color:#3E86A0">&#10052; Congelar</b> se llena solo. <b>Para el reloj 5 s</b> para que estudies el atasco sin que corra el tiempo. <b>5 tableros</b> &mdash; tu rango es el <b>tiempo total</b>.</p>
+        <p>El bot&oacute;n <b style="color:#3BB2D9">&#10052; Congelar</b> se llena solo. <b>Para el reloj 5 s</b> para que estudies el atasco sin que corra el tiempo. <b>5 tableros</b> &mdash; tu rango es el <b>tiempo total</b>.</p>
       </section>
     </div>
     <div class="tut-dots" id="tut-dots"></div>

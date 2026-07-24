@@ -20,14 +20,14 @@
   * { touch-action:manipulation; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
-    --accent:#3E86A0; --accent-deep:#2D6073; --accent-soft:#DFEBF0; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d;
-    --board-bg:#c3ccd4; --tile:#eef1f4; --tile-edge:#cdd5dc; --pipe:#2b3138; --pipe-lock:#5c6671; --water:#3E86A0; --freeze-fill:#9CCCEC;
+    --accent:#3BB2D9; --accent-deep:#2F8EAE; --accent-soft:#E7F6FA; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d;
+    --board-bg:#c3ccd4; --tile:#eef1f4; --tile-edge:#cdd5dc; --pipe:#2b3138; --pipe-lock:#5c6671; --water:#3BB2D9; --freeze-fill:#9CCCEC;
     --steel:#7c8794; --steel-dark:#4a535d; --brass:#C0892E;
     --font-display:'Newsreader','DM Serif Display',Georgia,serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
     --bg:#0c100f; --paper:#161b1a; --ink:#eef3f1; --ink-soft:#7f8b89; --ink-line:#232a29; --box-edge:#7f8b89;
-    --accent:#63A2B8; --accent-deep:#92BECE; --accent-soft:#12262D; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d; --board-bg:#1a2128; --tile:#283038; --tile-edge:#151b21; --pipe:#cfd8de; --pipe-lock:#8893a0; --water:#63A2B8; --freeze-fill:#2E7CB0;
+    --accent:#6AC4E2; --accent-deep:#8DD2E9; --accent-soft:#0F2E38; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d; --board-bg:#1a2128; --tile:#283038; --tile-edge:#151b21; --pipe:#cfd8de; --pipe-lock:#8893a0; --water:#6AC4E2; --freeze-fill:#2E7CB0;
     --steel:#5b6571; --steel-dark:#2a313a; --brass:#D2A24A;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
@@ -115,7 +115,7 @@
   .wall-bevel { fill:none; stroke:#ffffff; stroke-opacity:.18; stroke-width:3; }
   .wall-rivet { fill:var(--steel-dark); }
   /* selected tile to swap — the TILE highlights (it's a tile puzzle) */
-  .cell.sel .tile { stroke:#3E86A0; stroke-width:4; fill:#dceaff; }
+  .cell.sel .tile { stroke:#3BB2D9; stroke-width:4; fill:#dceaff; }
   body[data-theme="black"] .cell.sel .tile { fill:#13314a; }
   .cell.locked-water { cursor:default; }
   /* SOURCE — a blue water tank with a DARK outlet stub showing which side it feeds (4 orientations) */
@@ -178,7 +178,7 @@
   .speed-dots i.on { background:var(--accent); }
 
   .freeze { width:min(94vw,400px); margin:10px auto 0; }
-  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#3E86A0; background:rgba(0,98,227,.05); border:2px solid #3E86A0; }
+  .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#3BB2D9; background:rgba(0,98,227,.05); border:2px solid #3BB2D9; }
   .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); transition:transform .25s linear; z-index:0; }
   .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; justify-content:center; height:34px; }
   .freeze-btn .ficon svg { width:27px; height:27px; display:block; }
@@ -343,7 +343,7 @@
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><mask id="lc" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="100" height="100" fill="#000"/><path d="M0 50 H100" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="butt"/></mask><path d="M0 50 H100" fill="none" stroke="var(--pipe)" stroke-width="46" stroke-linecap="butt"/><g mask="url(#lc)"><path d="M50 16 L45 30 L53 42 L44 56 L52 70 L46 84" fill="none" stroke="#d8dee5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M53 42 L63 46" fill="none" stroke="#d8dee5" stroke-width="6" stroke-linecap="round"/><path d="M44 56 L34 60" fill="none" stroke="#d8dee5" stroke-width="6" stroke-linecap="round"/></g></svg></div><div class="txt"><b style="color:#8A8F96">Tubería agrietada.</b> El agua pasa, pero <b>cuesta una vida</b> ❤. A veces conviene sacrificarla para terminar rápido.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><mask id="lb" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="100" height="100" fill="#000"/><path d="M0 50 H100" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="butt"/></mask><path d="M0 50 H100" fill="none" stroke="var(--pipe)" stroke-width="46" stroke-linecap="butt"/><g mask="url(#lb)"><path d="M50 14 L43 30 L55 43 L42 57 L54 70 L44 86" fill="none" stroke="var(--error)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 43 L65 45 L58 52 Z" fill="var(--error)"/></g></svg></div><div class="txt"><b style="color:#B23A2E">Tubería rota.</b> <b>No se puede mover.</b> Si el agua entra, <b>pierdes una vida</b> y vuelve al inicio. <b>Rodéala</b>.</div></div>
     <div class="legend-row"><div class="legend-cell"><svg viewBox="0 0 100 100"><mask id="lal" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="100" height="100" fill="#000"/><path d="M0 50 H100" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="butt"/></mask><path d="M0 50 H100" fill="none" stroke="var(--pipe)" stroke-width="46" stroke-linecap="butt"/><g mask="url(#lal)"><path d="M50 31 L70 66 L30 66 Z" fill="#E03131" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><path d="M50 44 L50 54" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/><circle cx="50" cy="60" r="3.2" fill="#fff"/></g></svg></div><div class="txt"><b style="color:#CC2B2B">Alarma.</b> Si el agua entra, <b>el flujo se acelera</b> el resto del tablero (no quita vida, pero te mete prisa). <b>Rodéala</b>.</div></div>
-    <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#3E86A0;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#3E86A0">❄ Congelar.</b> Se llena solo; <b>detiene el agua 5 s</b> mientras giras — pero <b>el reloj sigue</b>.</div></div>
+    <div class="legend-row"><div class="legend-cell" style="font-size:24px;color:#3BB2D9;display:flex;align-items:center;justify-content:center;line-height:1">❄</div><div class="txt"><b style="color:#3BB2D9">❄ Congelar.</b> Se llena solo; <b>detiene el agua 5 s</b> mientras giras — pero <b>el reloj sigue</b>.</div></div>
     <p class="muted" style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Tu <b>rango</b> es el <b>tiempo total</b> de los 5 tableros (las fugas suman segundos). Tienes <b>3 vidas</b> ❤ — si se acaban, termina la partida.</p>
   </div></div>
 
@@ -763,7 +763,7 @@
   function launchConfetti(n){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     n=n||90;
-    const colors=['#3E86A0','#b03434','#e8b84b','#2D6073','#3fae8e','#9CCCEC'];
+    const colors=['#3BB2D9','#b03434','#e8b84b','#2F8EAE','#3fae8e','#9CCCEC'];
     const cv=document.createElement('canvas'); cv.className='confetti-box';
     const W=window.innerWidth, H=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
     cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
