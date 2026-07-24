@@ -20,14 +20,14 @@
   * { touch-action:manipulation; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f;
-    --accent:#3BB2D9; --accent-deep:#2F8EAE; --accent-soft:#E7F6FA; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d;
+    --accent:#3BB2D9; --accent-deep:#2F8EAE; --accent-soft:#E7F6FA; --accent-2:#C03A2E; --error:#C03A2E; --success:#6b8e3d;
     --board-bg:#c3ccd4; --tile:#eef1f4; --tile-edge:#cdd5dc; --pipe:#2b3138; --pipe-lock:#5c6671; --water:#3BB2D9; --freeze-fill:#9CCCEC;
     --steel:#7c8794; --steel-dark:#4a535d; --brass:#C0892E;
     --font-display:'Newsreader','DM Serif Display',Georgia,serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
     --bg:#0c100f; --paper:#161b1a; --ink:#eef3f1; --ink-soft:#7f8b89; --ink-line:#232a29; --box-edge:#7f8b89;
-    --accent:#6AC4E2; --accent-deep:#8DD2E9; --accent-soft:#0F2E38; --accent-2:#b03434; --error:#b03434; --success:#6b8e3d; --board-bg:#1a2128; --tile:#283038; --tile-edge:#151b21; --pipe:#cfd8de; --pipe-lock:#8893a0; --water:#6AC4E2; --freeze-fill:#2E7CB0;
+    --accent:#6AC4E2; --accent-deep:#8DD2E9; --accent-soft:#0F2E38; --accent-2:#C03A2E; --error:#C03A2E; --success:#6b8e3d; --board-bg:#1a2128; --tile:#283038; --tile-edge:#151b21; --pipe:#cfd8de; --pipe-lock:#8893a0; --water:#6AC4E2; --freeze-fill:#2E7CB0;
     --steel:#5b6571; --steel-dark:#2a313a; --brass:#D2A24A;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
@@ -763,7 +763,7 @@
   function launchConfetti(n){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     n=n||90;
-    const colors=['#3BB2D9','#b03434','#e8b84b','#2F8EAE','#3fae8e','#9CCCEC'];
+    const colors=['#3BB2D9','#C03A2E','#e8b84b','#2F8EAE','#3fae8e','#9CCCEC'];
     const cv=document.createElement('canvas'); cv.className='confetti-box';
     const W=window.innerWidth, H=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
     cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
