@@ -10,5 +10,11 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "routes": [
+    {
+      "pattern": "cortadito.games/flechas*",
+      "zone_name": "cortadito.games"
+    }
   ]
 }
