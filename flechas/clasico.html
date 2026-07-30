@@ -1113,7 +1113,7 @@
     try{ const ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); const ok=document.execCommand('copy'); document.body.removeChild(ta); if(ok){ done(); return; } }catch(e){}
     prompt('Copia tu resultado:', txt); }
   function doShare(){ const txt=buildShareText();
-    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && navigator.share){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); return; }
+    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && navigator.share && !navigator.standalone){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); return; }
     const done=()=>{ showToast('Copiado al portapapeles');
       const b=$('share-btn'); if(b){ const prev=(b.textContent==='Copiado')?'Compartir':b.textContent; b.textContent='Copiado'; clearTimeout(b._t); b._t=setTimeout(()=>{ try{ b.textContent=prev; }catch(e){} },2000); } };
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(()=>legacyCopy(txt,done)); }

@@ -1003,7 +1003,7 @@
     return L.join('\n');
   }
   function doShare(ev){ const txt=buildShareText();
-    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && navigator.share){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); return; }
+    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && navigator.share && !navigator.standalone){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); return; }
     const btn=(ev && ev.currentTarget && ev.currentTarget.tagName==='BUTTON')?ev.currentTarget:$('share-btn');
     const copied=()=>{ if(btn){ if(!btn._lbl) btn._lbl=btn.textContent; btn.textContent='Copiado'; clearTimeout(btn._t); btn._t=setTimeout(()=>{ try{ btn.textContent=btn._lbl; btn._lbl=null; }catch(e){} },2000); }
       else showToast('Copiado al portapapeles'); };

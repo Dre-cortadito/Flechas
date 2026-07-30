@@ -569,7 +569,7 @@
     return L.join('\n');
   }
   function doShare(){ const txt=buildShareText();
-    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && navigator.share){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); return; }
+    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && navigator.share && !navigator.standalone){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); return; }
     const b=$('share-btn');
     const done=()=>{ showToast('Copiado al portapapeles'); if(b){ const t0=b.textContent; b.textContent='Copiado'; setTimeout(()=>{ try{ b.textContent=t0; }catch(_){}} ,2000); } };
     const legacy=()=>{ try{ const ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); const okc=document.execCommand('copy'); document.body.removeChild(ta); if(okc) done(); else window.prompt('Copia tu resultado:', txt); }catch(e){ window.prompt('Copia tu resultado:', txt); } };

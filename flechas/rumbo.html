@@ -1301,7 +1301,7 @@
     const legacyCopy=()=>{ try{ const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); copied(); }
       catch(e){ prompt('Copia tu resultado:', txt); } };
     const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if(navigator.share && isMobile){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); }
+    if(navigator.share && isMobile && !navigator.standalone){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); }
     else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(copied).catch(legacyCopy); }
     else legacyCopy(); }
 

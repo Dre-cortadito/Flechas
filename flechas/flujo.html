@@ -817,7 +817,7 @@
   }
   function doShare(){ const txt=buildShareText();
     const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if(isMobile && navigator.share){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); return; }
+    if(isMobile && navigator.share && !navigator.standalone){ navigator.share({title:'Flechas', text:txt}).catch(()=>{}); return; }
     const done=()=>{ showToast('Copiado al portapapeles');
       const b=$('share-btn'); if(b){ b.textContent='Copiado'; clearTimeout(b._t); b._t=setTimeout(()=>{ try{ b.textContent='Compartir'; }catch(e){} },2000); } };
     const legacy=()=>{ try{ const ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
