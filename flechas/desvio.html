@@ -60,7 +60,7 @@
   .stage { width:100%; display:flex; flex-direction:column; align-items:center; padding-top:calc(var(--header-h) + 10px); padding-bottom:max(20px, env(safe-area-inset-bottom)); box-sizing:border-box; }
 
   /* ===== Rank bar (standard) — driven by points ===== */
-  .rank-bar { width:min(94vw,400px); display:flex; align-items:center; gap:10px; padding:6px 0; margin:0 auto 2px; cursor:pointer; user-select:none; }
+  .rank-bar { width:min(94vw, max(400px, var(--cg-wide, 0px))); display:flex; align-items:center; gap:10px; padding:6px 0; margin:0 auto 2px; cursor:pointer; user-select:none; }
   .rank-label { font-family:var(--font-ui); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--ink); white-space:nowrap; min-width:88px; flex:none; display:flex; align-items:center; height:22px; line-height:1; }
   .rank-label.at-maestro { color:var(--accent); }
   .rank-track { position:relative; flex:1; height:22px; }
@@ -71,7 +71,7 @@
   .rank-dot.current { width:24px; height:24px; background:var(--accent); color:#fff; font:700 11px var(--font-ui); display:flex; align-items:center; justify-content:center; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .35s ease; }
   .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; }
 
-  .meta { width:min(94vw,400px); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:0 auto 6px; }
+  .meta { width:min(94vw, max(400px, var(--cg-wide, 0px))); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:0 auto 6px; }
   .side { line-height:1.05; }
   .side.is-left { justify-self:start; text-align:left; }
   .side.is-right { justify-self:end; text-align:right; }
@@ -88,7 +88,7 @@
   .lives-row .heart .hoff { fill:var(--ink-line); }
   .lives-row.spill { animation:pshake .3s ease; }
 
-  .board-wrap { width:min(94vw,400px); margin:0 auto 0; }   /* same width as the boxes below */
+  .board-wrap { width:min(94vw, max(400px, var(--cg-wide, 0px))); margin:0 auto 0; }   /* same width as the boxes below */
   /* Board keeps its 7:9 shape (so the gate/empty state has height). The inner fills it via ABSOLUTE
      inset (a definite box) rather than height:100% — that avoids the iOS Safari quirk where a
      percentage-height child of an aspect-ratio box renders too tall and clips the bottom row. */
@@ -119,13 +119,13 @@
   .board.swap #board-inner { transition:opacity .18s ease; opacity:0; }
 
   /* run-progress dots live BETWEEN the board and the status box */
-  .refresh-box { width:min(94vw,400px); margin:9px auto 0; padding:7px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; display:flex; align-items:center; justify-content:center; gap:9px; }
+  .refresh-box { width:min(94vw, max(400px, var(--cg-wide, 0px))); margin:9px auto 0; padding:7px; background:var(--paper); border:2px solid var(--box-edge); border-radius:10px; display:flex; align-items:center; justify-content:center; gap:9px; }
   .pgdot { width:11px; height:11px; border-radius:50%; background:var(--ink-line); }
   .pgdot.done { background:var(--success); }
   .pgdot.cur { background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
 
   /* ===== Status box under the board (mirrors the meta row up top) ===== */
-  .statusbox { width:min(94vw,400px); margin:8px auto 0; flex:0 0 auto; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
+  .statusbox { width:min(94vw, max(400px, var(--cg-wide, 0px))); margin:8px auto 0; flex:0 0 auto; display:grid; grid-template-columns:repeat(4,1fr); background:var(--paper); border:2px solid var(--box-edge); border-radius:14px; overflow:hidden; }
   .stile { position:relative; padding:8px 6px 9px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
   .stile + .stile::before { content:''; position:absolute; left:0; top:18%; bottom:18%; width:2px; background:var(--box-edge); }   /* short divider, inset from the edges (Borde-style) */
   .stile .sval { font:800 20px var(--font-display); font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); }
@@ -137,7 +137,7 @@
   .stile .sbar { position:absolute; left:0; bottom:0; height:3px; width:100%; background:#C99A34; transform-origin:left; transform:scaleX(0); }   /* combo timer bar → combo yellow */
   .stile.next.warn .sval { color:var(--accent); }   /* teal, not pink */
 
-  .freeze { width:min(94vw,400px); margin:10px auto 0; }
+  .freeze { width:min(94vw, max(400px, var(--cg-wide, 0px))); margin:10px auto 0; }
   .freeze-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:11px 12px; border-radius:14px; cursor:pointer; color:#3BB2D9; background:rgba(0,98,227,.05); border:2px solid #3BB2D9; }   /* intense freeze blue — border always full; only the fill grows */
   .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--freeze-fill); transform-origin:left; transform:scaleX(0); transition:transform .25s linear; z-index:0; }   /* charge fill = the exact frozen-board blue, so button-full and frozen board match */
   .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:34px; }   /* fixed height so the button doesn't resize when the number swaps in */
@@ -383,6 +383,18 @@
   };
 })();
 </script>
+<!-- ===== CORTADITO — installable app (2026-08-02) =====
+     This manifest link is what makes Android install a REAL app (a WebAPK)
+     when a player adds a GAME page to their home screen. Without it Chrome
+     creates a plain bookmark shortcut that opens inside Chrome and inherits
+     the site's "Sitio para computadoras" setting — which is how a Samsung
+     tester ended up playing at a 980px CSS viewport with the board at 41% of
+     the screen. start_url/scope are "/", so installing from any page gives
+     one icon, "Cortadito Games", opening at the hub. -->
+<link rel="manifest" href="/site.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cortadito Games">
 </head>
 <body data-theme="light">
 
@@ -864,5 +876,29 @@
   });
 })();
 </script>
+<style>
+  /* ===== Forced-desktop guard (2026-08-02) =====
+     Belt and suspenders for the manifest fix above: a player who switches on
+     "Sitio para computadoras" by hand still gets a ~980px CSS viewport on a
+     phone, and every board renders at its desktop px cap — about 41% of the
+     physical screen, adrift in whitespace.
+
+     A viewport that WIDE and that TALL and driven by a COARSE pointer is a
+     phone held upright; it is never a desktop window (those report
+     pointer: fine) and never a tablet (wrong aspect ratio). There, and only
+     there, boards use their vw width instead of their px cap.
+
+     --cg-wide is 0px everywhere else, so every patched
+     min(<n>vw, max(<cap>, var(--cg-wide, 0px))) computes to exactly the
+     original min(<n>vw, <cap>) outside this query — a provable no-op. */
+  :root { --cg-wide: 0px; }
+  @media (min-width: 700px) and (max-aspect-ratio: 2/3) and (pointer: coarse) {
+    :root { --cg-wide: 100vw; --max-page: 100vw; }
+    main, .page, .wrap, .shell, .container, .stage { max-width: none; }
+    /* Racimo's mobile branch caps the cherry cluster at 460px, which never
+       binds on a real phone (the column is ~340px) but does bind here. */
+    .cluster-stage { max-width: 92vw; }
+  }
+</style>
 </body>
 </html>
