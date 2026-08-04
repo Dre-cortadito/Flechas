@@ -1506,14 +1506,33 @@
      --cg-wide is 0px everywhere else, so every patched
      min(<n>vw, max(<cap>, var(--cg-wide, 0px))) computes to exactly the
      original min(<n>vw, <cap>) outside this query — a provable no-op. */
+  /* v2 (2026-08-05): the stretch below is retired. It widened the BOARDS to
+     100vw but left every px-sized thing (header, fonts, keyboard) tiny — a
+     Samsung tester still saw a miniature game. The fix is now the cgPhoneZoom
+     script at the end of the page, which lays the page out as a 520px phone and
+     scales it up. --cg-wide stays 0px so the min(vw, max(px, var)) caps in
+     this file keep computing to their original px values. */
   :root { --cg-wide: 0px; }
-  @media (min-width: 700px) and (max-aspect-ratio: 2/3) and (pointer: coarse) {
-    :root { --cg-wide: 100vw; --max-page: 100vw; }
-    main, .page, .wrap, .shell, .container, .stage { max-width: none; }
-    /* Racimo's mobile branch caps the cherry cluster at 460px, which never
-       binds on a real phone (the column is ~340px) but does bind here. */
-    .cluster-stage { max-width: 92vw; }
-  }
 </style>
+<script>
+/* ===== CORTADITO — cgPhoneZoom (2026-08-05) =====
+   A phone forced to "Sitio para computadoras" gets a ~980px CSS viewport, so
+   px-sized UI renders tiny. When that state is detected (wide + very tall +
+   coarse pointer = a phone held upright, never a desktop or tablet), lay the
+   page out as a 520px phone and scale it up with CSS zoom. zoom divides the
+   layout viewport, so EVERYTHING (fonts, header, keyboard, boards) scales
+   together. Media queries still see the real viewport. Real phones and real
+   desktops are untouched. */
+(function(){
+  var MQ = '(min-width: 700px) and (max-aspect-ratio: 2/3) and (pointer: coarse)';
+  function apply(){
+    var on = window.matchMedia(MQ).matches;
+    document.body.style.zoom = on ? String(window.innerWidth/520) : '';
+  }
+  apply();
+  window.addEventListener('resize', apply);
+  try{ window.matchMedia(MQ).addEventListener('change', apply); }catch(e){}
+})();
+</script>
 </body>
 </html>
