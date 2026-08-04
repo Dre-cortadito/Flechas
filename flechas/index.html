@@ -515,28 +515,36 @@
   }
 </style>
 <script>
-/* ============ CORTADITO — CANONICAL SHARE (2026-08-01) ============
+/* ============ CORTADITO — CANONICAL SHARE (rev 2026-08-02) ============
    One share behavior for every game. Do not fork this per game.
 
-   - iOS INSTALLED APP (navigator.standalone === true): iOS strips the text
-     payload from the Web Share API inside home-screen web apps, so the sheet
-     would send a bare URL. Instead we hand off to Messages with the whole
-     result prefilled (sms:&body=...) and copy to the clipboard as a silent
-     safety net.
-   - Safari / Android / Android PWA: native share sheet.
-   - Desktop: clipboard.
+   - ANY PHONE, including the installed iOS app: the NATIVE SHARE SHEET, so
+     the player picks Mensajes / WhatsApp / Notas / whatever. This is what
+     Dre wants and what the games did originally.
+   - Desktop: clipboard (desktop share sheets are rare and not what a
+     "Compartir" button implies there).
+
+   PAYLOAD RULE — the whole reason this was ever broken. Share TEXT ONLY:
+   navigator.share({ text }). No `url`, and no `title` either. When iOS gets
+   a title or a url alongside text it treats the whole thing as a page share
+   and sends a bare link with the score stripped off — that was the
+   2026-07-30 bug, "the share sent only https://cortadito.games/". The July
+   workaround (copy to clipboard in the installed app) and the 2026-08-01
+   one (hand off to Messages via sms:&body=) both traded the share sheet
+   away to dodge it. Keeping the payload to a single text field is the fix
+   that keeps both. If a bare link ever shows up again, the first suspect is
+   something adding `title` or `url` back into this call.
 
    Feedback goes through cgToast() -- a fixed, z-index 99999 toast -- because
    each game's own toast sits UNDER the celebration modal (Palabreo's was
    z-index 30 vs the modal's 70). The copy worked but nothing was visible,
    which read to players as "the button doesn't do anything".
 
-   Returns a Promise resolving to: 'messages' | 'shared' | 'copied' |
-   'cancelled' | 'failed'. Pass {silent:true} to suppress the toast when the
-   caller shows its own feedback (Racimo does).                            */
+   Returns a Promise resolving to: 'shared' | 'copied' | 'cancelled' |
+   'failed'. Pass {silent:true} to suppress the toast when the caller shows
+   its own feedback (Racimo does).                                         */
 (function () {
-  var IOS_APP = !!window.navigator.standalone;
-  var MOBILE  = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  var MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   function cgToast(msg) {
     try {
@@ -599,30 +607,17 @@
     opts = opts || {};
     var say = opts.silent ? function () {} : cgToast;
 
-    if (IOS_APP) {
-      copy(text);                       /* safety net, still inside the gesture */
-      try {
-        window.location.href = 'sms:&body=' + encodeURIComponent(text);
-      } catch (e) {
-        say('Copiado al portapapeles');
-        return Promise.resolve('copied');
-      }
-      /* If Messages opened, this page is hidden and the toast never shows.
-         If the handoff failed, tell them it is on the clipboard.          */
-      setTimeout(function () {
-        if (document.visibilityState === 'visible') {
-          say('Copiado — pégalo donde quieras');
-        }
-      }, 1500);
-      return Promise.resolve('messages');
-    }
-
+    /* Text only -- see PAYLOAD RULE above. Called first and synchronously so
+       it still holds the tap's user activation; iOS rejects navigator.share
+       without it. Nothing runs before it that could spend that activation. */
     if (MOBILE && navigator.share) {
       try {
-        return navigator.share({ title: title || 'Cortadito', text: text })
+        return navigator.share({ text: text })
           .then(function () { say('Compartido'); return 'shared'; })
           .catch(function (err) {
-            if (err && err.name === 'AbortError') return 'cancelled';
+            if (err && err.name === 'AbortError') return 'cancelled';   /* dismissed the sheet */
+            /* Sheet unavailable or refused -- fall back to the clipboard so
+               the result is never simply lost. */
             return copy(text).then(function (ok) {
               say(ok ? 'Copiado al portapapeles' : 'No se pudo copiar');
               return ok ? 'copied' : 'failed';
