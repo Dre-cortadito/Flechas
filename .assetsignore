@@ -1,19 +1,21 @@
-# Files that must never be served publicly. The game ships its .html files:
-#   index.html, cascada.html, oleada.html, desvio.html
+# Files that must never be served publicly.
+#
+# Cloudflare serves this whole repo root as static assets, so anything not
+# listed here ships to the CDN. The deployed surface is:
+#   flechas/          the live game (index, cascada, clasico)
+#   *.html at root    redirect stubs for old workers.dev links
+#
+# Everything below is source material, docs or work in progress.
 .git
 .gitignore
 .assetsignore
-wrangler.jsonc
 .wrangler
 .DS_Store
+wrangler.jsonc
 *.command
-_reference
-_archive
-DEPLOY-GUIDE.md
-RULES.md
-Style Previews/
+*.webloc
+_assets
 _docs
-_art
-Style Previews
-_smoke-clasico.js
+_archive
 _wip
+_reference
