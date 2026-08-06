@@ -25,14 +25,14 @@
   * { touch-action:manipulation; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   :root {
     --bg:#ffffff; --paper:#fbfaf6; --ink:#1a1614; --ink-soft:#8a847f; --ink-line:#ece7df; --box-edge:#8a847f; --on-accent:#ffffff;
-    --accent:#548C4C; --accent-deep:#43703D; --accent-soft:#EAF1EA; --accent-2:#86A85A; --error:#CF2A2A; --success:#548C4C;
-    --board-bg:#EAF1EA; --arrow:#141210; --clear:#0b6130;   /* success flash stays GREEN (semantic), red error unchanged */
+    --accent:#136B60; --accent-deep:#0E5249; --accent-soft:#EAF1F0; --accent-2:#2E8F82; --error:#CF2A2A; --success:#548C4C;   /* acento PINO (2026-08-06): el verde queda reservado para "correcto" */
+    --board-bg:#EAF1F0; --arrow:#141210; --clear:#0b6130;   /* success flash stays GREEN (semantic), red error unchanged */
     --font-display:'Newsreader', Georgia, serif; --font-ui:'Helvetica Neue', Helvetica, Arial, sans-serif; --header-h:56px;
   }
   body[data-theme="black"] {
-    --bg:#0c0f0c; --paper:#151a14; --ink:#eef2ea; --ink-soft:#84887e; --ink-line:#232b22; --box-edge:#84887e; --on-accent:#ffffff;
-    --accent:#86A85A; --accent-deep:#A3C184; --accent-soft:#20291B; --accent-2:#6D9455; --error:#CF2A2A; --success:#548C4C;
-    --board-bg:#1F2818; --arrow:#ebf0e8; --clear:#157145;
+    --bg:#0C0F0F; --paper:#141A19; --ink:#EAF2F1; --ink-soft:#84887e; --ink-line:#222B2A; --box-edge:#84887e; --on-accent:#ffffff;
+    --accent:#4FB3A6; --accent-deep:#6FC9BD; --accent-soft:#1B2927; --accent-2:#3E9E92; --error:#CF2A2A; --success:#548C4C;
+    --board-bg:#182826; --arrow:#E8F0EF; --clear:#157145;
   }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--font-ui); -webkit-font-smoothing:antialiased; }
   html { height:100%; overscroll-behavior:none; }
@@ -108,15 +108,15 @@
      freeze-btn dimensions). Clásico's verb: 👁 Enfoque — highlights every arrow whose lane
      is clear for 3 s. Auto-charges (~20 s), one charge, green like the game. */
   .freeze { width:var(--gw); margin:12px auto 0; }
-  .freeze-btn { width:100%; height:60px; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:0 12px; border-radius:14px; cursor:pointer; color:var(--accent); background:rgba(84,140,76,.12); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }   /* FIXED height — the eye can grow without changing the bar */
-  .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:#d6e8d2; transform-origin:left; transform:scaleX(0); z-index:0; }   /* translucent accent — accent-soft was the page cream, invisible on the pale button */
+  .freeze-btn { width:100%; height:60px; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:0 12px; border-radius:14px; cursor:pointer; color:var(--accent); background:rgba(19,107,96,.12); border:2px solid var(--accent); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }   /* FIXED height — the eye can grow without changing the bar */
+  .freeze-btn .fill { position:absolute; left:0; top:0; bottom:0; width:100%; background:#D2E8E5; transform-origin:left; transform:scaleX(0); z-index:0; }   /* translucent accent — accent-soft was the page cream, invisible on the pale button */
   .freeze-btn:focus { outline:none; }   /* stop the browser blue focus ring after tapping */
   .freeze-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
   .freeze-btn .ficon { position:relative; z-index:1; display:inline-flex; align-items:center; height:52px; }
   .freeze-btn .ficon svg { width:52px; height:52px; display:block; }
   .freeze-btn:not(.ready){ cursor:default; }
   .freeze-btn:active { transform:scale(.98); }
-  .piece.enfoque { --ac:var(--accent) !important; }   /* Enfoque highlight blinks in the game accent (orange), not purple */
+  .piece.enfoque { --ac:var(--accent) !important; }   /* Enfoque highlight blinks in the game accent (verde), not purple */
   .piece.enfoque .pline, .piece.enfoque .phead { animation:enfpulse 1s ease infinite; }
   @keyframes enfpulse { 0%,100%{ opacity:1; } 50%{ opacity:.5; } }
   #board-inner { position:absolute; inset:14px; }
@@ -133,7 +133,7 @@
   .board.clearflash { animation:boardclear .9s ease; }
   @keyframes boardclear { 0%{ background:var(--board-bg);} 40%{ background:var(--accent-soft);} 100%{ background:var(--board-bg);} }
   /* Board inset ring (11px). Charged/ready = static accent border; active (5s window
-     after you press) = the same accent border, pulsing. Orange throughout — no purple. */
+     after you press) = the same accent border, pulsing. Verde throughout — no purple. */
   .board::after { content:''; position:absolute; inset:0; border-radius:18px; pointer-events:none; z-index:17;
     box-shadow:inset 0 0 0 11px var(--accent); opacity:0; transition:opacity .25s ease, box-shadow .2s ease; }
   .board.enf-ready::after { opacity:1; }
@@ -1176,7 +1176,7 @@
   function launchConfetti(n){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     n=n||90;
-    const colors=['#548C4C','#86A85A','#0b6130','#C99A34','#CF2A2A'];
+    const colors=['#136B60','#2E8F82','#0b6130','#C99A34','#CF2A2A'];
     const cv=document.createElement('canvas'); cv.className='confetti-box';
     const W=window.innerWidth, Hh=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
     cv.width=W*dpr; cv.height=Hh*dpr; cv.style.width=W+'px'; cv.style.height=Hh+'px';

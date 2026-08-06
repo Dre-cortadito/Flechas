@@ -15,11 +15,11 @@
       }
 
       .st2 {
-        fill: #eaf1ea;
+        fill: #EAF1F0;
       }
 
       .st3 {
-        fill: #598e52;
+        fill: #136B60;
       }
     </style>
   </defs>
