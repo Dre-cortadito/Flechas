@@ -17,5 +17,9 @@
       "zone_name": "cortadito.games"
     }
   ],
-  "workers_dev": true
+  // 2026-08-20: OFF. The direct <name>.workers.dev host served the game but
+  // NOT /gate.js (that lives in the Cortadito Games hub), so the paywall
+  // script 404d and the game fell open. The zone route below is the only
+  // supported entrance. Re-enabling this reopens that bypass.
+  "workers_dev": false
 }
