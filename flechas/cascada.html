@@ -321,7 +321,6 @@
   .stats-sec { margin:28px 0 14px; padding-top:22px; border-top:1px solid var(--ink-line); font-size:11px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:2px; display:flex; align-items:center; gap:10px; }
   .stats-sec::before { content:""; width:6px; height:6px; background:var(--accent); border-radius:50%; flex-shrink:0; }
   .stats-sec.first { margin-top:14px; padding-top:0; border-top:none; }
-  .stats-sec.first::before { display:none; }
   .stats-row { display:flex; gap:32px; flex-wrap:wrap; align-items:baseline; }
   .stat-block { min-width:0; }
   .stat-value { font-family:var(--font-display); font-size:28px; font-weight:800; letter-spacing:-.5px; color:var(--ink); line-height:1; }
@@ -1130,7 +1129,7 @@
     L.push((sp>=reto?'✅ ¡Reto del día logrado!':'📌 Reto del día')+' ('+sp+' / '+reto+' pts)');
     if(!training) L.push('🎯 '+cleared+' flechas'+(boardsClear>0?' · '+boardsClear+' tablero'+(boardsClear===1?'':'s')+' limpio'+(boardsClear===1?'':'s'):''));
     if(!training && points>prevBestToday && prevBestToday>0) L.push('🔥 Récord de hoy');
-    L.push(''); L.push('https://cortadito.games/flechas/cascada.html');
+    L.push(''); L.push('https://cortadito.games/flechas/cascada');
     return L.join('\n');
   }
   /* Canonical share -- see cgShare() in <head>. */

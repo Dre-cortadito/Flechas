@@ -241,7 +241,6 @@
   .stats-sec { margin:28px 0 14px; padding-top:22px; border-top:1px solid var(--ink-line); font-size:11px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:2px; display:flex; align-items:center; gap:10px; }
   .stats-sec::before { content:""; width:6px; height:6px; background:var(--accent); border-radius:50%; flex-shrink:0; }
   .stats-sec.first { margin-top:14px; padding-top:0; border-top:none; }
-  .stats-sec.first::before { display:none; }
   .stats-row { display:flex; gap:32px; flex-wrap:wrap; align-items:baseline; }
   .stat-block { min-width:0; }
   .stat-value { font-family:var(--font-display); font-size:28px; font-weight:800; letter-spacing:-.5px; color:var(--ink); line-height:1; }
@@ -1156,7 +1155,7 @@
       L.push((secs<=reto?'✅ ¡Reto del día logrado!':'📌 Reto del día')+' (⏱ '+fmt(totalMs)+' / ≤ '+fmtSec(reto)+')');
       L.push(choques===0?'✨ Sin choques':'💥 '+choques+' choque'+(choques===1?'':'s'));
     }
-    L.push(''); L.push('https://cortadito.games/flechas/clasico.html');
+    L.push(''); L.push('https://cortadito.games/flechas/clasico');
     return L.join('\n');
   }
   function legacyCopy(txt,done){

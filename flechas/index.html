@@ -853,7 +853,7 @@
     <div class="goal-card">
       <button class="goal-close" data-close-goal="maestro-panel">×</button>
       <div class="goal-mark goal-cup" aria-hidden="true"></div>
-      <h2 class="goal-headline maestro">¡Maestro/a!</h2>
+      <h2 class="goal-headline maestro">¡Maestro/a del borde!</h2>
       <p class="goal-subhead">Terminaste con el mejor tiempo del tablero.</p>
       <div class="goal-actions">
         <button class="btn accent" id="maestro-share">Compartir</button>
@@ -2360,7 +2360,7 @@ function buildShareText(){
   L.push('🧩 Flechas 🧱 Borde');
   if(!finished){ L.push('⏳ Todavía sin terminar'); L.push(''); L.push(SHARE_URL); return L.join('\n'); }
   const idx=rankNow(), beat=effTime()<=META;
-  if(idx===TOP) L.push('👑 ¡Maestro/a del tablero!'); else L.push('🏆 Rango: '+RANK_NAMES[idx]);
+  if(idx===TOP) L.push('👑 ¡Maestro/a del borde!'); else L.push('🏆 Rango: '+RANK_NAMES[idx]);
   L.push((beat?'✅ ¡Reto del día logrado!':'📌 Reto del día')+' (⏱ '+fmtTime(elapsed)+' / ≤ '+fmtTime(META)+')');
   L.push(mistakes===0?'✨ Sin choques':'💥 '+mistakes+' choque'+(mistakes===1?'':'s'));
   L.push(''); L.push(SHARE_URL); return L.join('\n');
