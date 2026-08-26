@@ -114,9 +114,13 @@
   .rank-dot.passed { background:var(--ink); }
   .rank-dot.current { width:24px; height:24px; background:var(--accent); color:#fff; font:700 11px var(--font-ui);
     display:flex; align-items:center; justify-content:center; box-shadow:0 1px 3px rgba(0,0,0,.2); }
-  /* Reto-del-día marker — matches Racimo exactly: a bold 3×26px vertical bar, accent (→ green when beaten) */
-  .rank-marker { position:absolute; top:50%; width:3px; height:26px; background:var(--accent); border-radius:2px; transform:translate(-50%,-50%); z-index:4; pointer-events:none; opacity:.95; transition:background .25s ease; }
-  .rank-marker.done { background:var(--success); opacity:1; }
+  /* Reto-del-día marker — a bold 3×26px vertical bar in the accent. It is on screen while
+     the reto is STILL ACHIEVABLE AND UNRESOLVED, and gone once the outcome is settled,
+     whether it was met or missed (_kit §3.2). It never turns green: a marker that recolours
+     is still a target on screen, and after the outcome there is no target left to point at.
+     No transition on the hide — the marker's job is to be unambiguous, not to fade. */
+  .rank-marker { position:absolute; top:50%; width:3px; height:26px; background:var(--accent); border-radius:2px; transform:translate(-50%,-50%); z-index:4; pointer-events:none; opacity:.95; }
+  .rank-marker.settled { opacity:0; visibility:hidden; }
   .rank-chev { color:var(--ink); font-size:14px; flex:none; display:flex; align-items:center; height:22px; transition:transform .2s, color .15s; }
 
   /* ===== feedback toast ===== */
@@ -1816,7 +1820,7 @@ function loseLife(n, fromWall){ n=n||1; if(lives<=0) return;
   flash(msg,'error');
   if(lives<=0){ const bp=document.getElementById('board-panel'); if(bp){ bp.classList.add('ks-shake'); setTimeout(()=>{ try{bp.classList.remove('ks-shake');}catch(e){} },500); } gameOver(); } }
 // 0 hearts = the cup spills → GAME OVER. The run ends; your time only counts if you FINISH. Retry is allowed.
-function gameOver(){ if(finished) return; finished=true; stopTimer(); document.body.classList.add('over');
+function gameOver(){ if(finished) return; won=false; finished=true; stopTimer(); document.body.classList.add('over');
   if(!training) recordResult(false);   // the first-attempt spill IS your daily result (locked)
   const sub=document.querySelector('#over-panel .goal-subhead');
   if(sub) sub.textContent = training ? 'Entrenamiento — no cuenta para hoy. Vuelve a intentarlo.' : 'Te quedaste sin corazones. Hoy se queda así — pero puedes entrenar para mañana.';
@@ -2021,6 +2025,14 @@ function useDesviar(){ if(freezeCharges<=0 || finished || !started) return;
 
 let firedP=new Array(PIECES.length).fill(false);
 let mistakes=0, hintsUsed=0, solved=false, finished=false, busy=false, score=0;
+// `finished` means THE RUN ENDED — a cleared 5th board OR a spill. `won` means it ended
+// by CLEARING it. They are not the same fact, and the reto is only ever earned by the
+// second: recordResult(true) fires from onSolved(), recordResult(false) from gameOver().
+// Nothing on screen that speaks about the reto may read `finished`, or a fast spill will
+// claim a target it never met. `solved` is not a run outcome either — computeScore()
+// recomputes it from the board CURRENTLY on screen, which is also true for the 420ms
+// hand-off between boards 3 and 4.
+let won=false;
 let training=false;   // after the FIRST attempt (win or spill) the daily is locked; further runs are practice only
 function dailyDone(){ return !!LS.getItem(DSCOPE+'-counted-'+ISO); }
 let elapsed=0, startedAt=null, timerId=null, started=false;
@@ -2056,11 +2068,19 @@ function computeScore(){
 function rankIndex(s){let idx=0;for(let i=0;i<RANK_THRESHOLDS.length;i++){if(s>=RANK_THRESHOLDS[i])idx=i;}return idx;}
 
 /* ============================ PERSISTENCE ============================ */
-function saveState(){ try{ LS.setItem(DSCOPE+'-state-'+ISO, JSON.stringify({f:firedP,m:mistakes,h:hintsUsed,e:elapsed,st:started,lv:lives,fz:freezeCharges,ff:freezeFill,bi:beamBaseIndex,bti:beamBaseTime,tr:training,bn:boardNum})); }catch(e){} }
+function saveState(){ try{ LS.setItem(DSCOPE+'-state-'+ISO, JSON.stringify({f:firedP,m:mistakes,h:hintsUsed,e:elapsed,st:started,lv:lives,fz:freezeCharges,ff:freezeFill,bi:beamBaseIndex,bti:beamBaseTime,tr:training,bn:boardNum,w:won})); }catch(e){} }
 function loadState(){
   try{ const o=JSON.parse(LS.getItem(DSCOPE+'-state-'+ISO)); if(!o) return;
     const bn=o.bn||1; if(bn!==boardNum) genBoard(bn);   // rebuild the saved board first so firedP lines up with its pieces
-    if(Array.isArray(o.f) && o.f.length===PIECES.length){ firedP=o.f.map(Boolean); mistakes=o.m||0; hintsUsed=o.h||0; elapsed=o.e||0; started=!!o.st||elapsed>0; lives=(typeof o.lv==='number')?o.lv:HEARTS_MAX; freezeCharges=Math.min(FREEZE_MAX,o.fz|0); freezeFill=(typeof o.ff==='number')?o.ff:0; beamBaseIndex=o.bi|0; beamBaseTime=(typeof o.bti==='number')?o.bti:0; training=!!o.tr; document.body.classList.toggle('training', training); }
+    if(Array.isArray(o.f) && o.f.length===PIECES.length){ firedP=o.f.map(Boolean); mistakes=o.m||0; hintsUsed=o.h||0; elapsed=o.e||0; started=!!o.st||elapsed>0; lives=(typeof o.lv==='number')?o.lv:HEARTS_MAX; freezeCharges=Math.min(FREEZE_MAX,o.fz|0); freezeFill=(typeof o.ff==='number')?o.ff:0; beamBaseIndex=o.bi|0; beamBaseTime=(typeof o.bti==='number')?o.bti:0; training=!!o.tr; document.body.classList.toggle('training', training);
+      /* MIGRATION — saves written before `w` existed have no run outcome in them. Read the
+         DAY'S RECORDED RESULT instead, which every such save's day already carries: an
+         eligible (non-training) save on a day recorded as a win IS that win. Never infer a
+         win from the board on screen being clear — that is exactly the hand-off bug. A
+         legacy practice save (tr:true) resolves to false, so a finished practice run
+         restores as resumable rather than over; the DAY's result is untouched either way. */
+      won = ('w' in o) ? !!o.w : (!o.tr && /^win/.test(dailyOutcome()));
+    }
   }catch(e){}
 }
 
@@ -2263,7 +2283,7 @@ function onSolved(){
     return;
   }
   // last board cleared → the run is over; total time is the score
-  finished=true; stopTimer(); if(!training) recordResult(true);   // only the FIRST attempt counts
+  won=true; finished=true; stopTimer(); if(!training) recordResult(true);   // only the FIRST attempt counts
   maybeCelebrate(); renderHints(); renderRank();
 }
 
@@ -2298,6 +2318,51 @@ function timePos(t){ const idx=rankForTime(t);
   const lo=(idx>=TOP)?0:timeMaxFor(idx+1);
   const frac=Math.max(0,Math.min(1,(hi-t)/Math.max(1,hi-lo)));
   return Math.min(100,(idx+frac)/TOP*100); }
+/* ===================== THE DAY'S RETO STATE — one canonical helper =====================
+   The marker, the stats strip and the share line all speak about THE DAY, never about the
+   run currently on screen. The day's ELIGIBLE attempt is the first non-training run; once
+   it ends, recordResult() locks its outcome and every later run is practice. Three states,
+   and the last two are NOT the same fact:
+     pending  — the eligible attempt is still live and can still be won
+     achieved — the eligible attempt was WON and came in at or under META
+     failed   — it spilled, or it finished over META, or the run on screen is a training /
+                retry run, which can never earn the day however fast it is
+   The eligible outcome must survive resetToday(), which zeroes `won` and `elapsed` — so it
+   is read back from the key recordResult() already writes, not from the live run. */
+function dailyOutcome(){ return LS.getItem(DSCOPE+'-counted-'+ISO)||''; }   // '' | 'fail' | 'win' | 'win-reto'
+function legacyWinBeatMeta(){
+  /* A 'win' with no reto bit was recorded before that bit existed. Two read-only sources,
+     in order of authority; neither writes anything. */
+  try{ if(getStats().lastReto===ISO) return true; }catch(e){}   // the streak recorded it that day
+  return (!training && won && effTime()<=META);                 // the eligible run is still the one on screen
+}
+function retoState(){
+  const rec=dailyOutcome();
+  if(!rec){
+    /* No record yet: the run on screen IS the eligible attempt.
+       A training run records nothing and so can never reach 'achieved'. */
+    if(training) return 'failed';
+    /* BORDE'S CLOCK ONLY GOES UP. The moment elapsed passes META the target is out of reach
+       for the rest of the run, so the state settles THEN — not at the finish. Waiting would
+       leave a marker on screen pointing at something nothing the player does can still
+       reach, which is the same defect Sudoku Mini had. */
+    if(effTime()>META) return 'failed';
+    if(!finished) return 'pending';
+    return won ? 'achieved' : 'failed';
+  }
+  if(rec==='win-reto') return 'achieved';            // locked the moment the eligible run ended
+  if(rec==='win')      return legacyWinBeatMeta() ? 'achieved' : 'failed';
+  return 'failed';                                   // 'fail' — a spill is settled and cannot be retried into a win
+}
+function retoAchieved(){ return retoState()==='achieved'; }
+/* THE MARKER AND THE STATS STRIP DESCRIBE THE DAY. THE SHARE DESCRIBES THE RUN JUST PLAYED —
+   they are different subjects, and one helper for both would have to lie in one of them. A
+   practice run played after the day was won is a real 3:15 on a day whose reto was taken at
+   2:00: the bar is right to keep its ✓, and the share is right not to staple '¡logrado!' to
+   a slower clock. A practice run therefore never claims the reto in a share, whatever its
+   time, because a practice run is awarded nothing. It understates; it never overclaims. */
+function retoAchievedForShare(){ return retoAchieved() && !training; }
+
 function renderRank(){
   const track=document.getElementById('rank-track'); if(!track) return;
   if(!_rankBuilt || !track.querySelector('.rank-track-fill')) buildRankTrack(track);   // (re)build only if missing
@@ -2305,10 +2370,10 @@ function renderRank(){
   const fill=track.querySelector('.rank-track-fill'); if(fill) fill.style.width=pos+'%';
   track.querySelectorAll('.rank-dot:not(.current)').forEach(d=>d.classList.toggle('passed', live&&(+d.dataset.i)<=idx));
   const bubble=document.getElementById('rank-bubble'); if(bubble){ bubble.style.left='clamp(12px, '+pos+'%, calc(100% - 12px))'; bubble.classList.toggle('at-maestro',idx===TOP); }
-  const mk=document.getElementById('rank-marker'); if(mk) mk.classList.toggle('done', finished&&effTime()<=META);
+  const mk=document.getElementById('rank-marker'); if(mk) mk.classList.toggle('settled', retoState()!=='pending');   // visible ⟺ pending
   const lbl=document.getElementById('rank-label'); if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); }
   const st=document.getElementById('stat-today'); if(st) st.innerHTML=(started||finished)
-    ? SB(RANK_NAMES[idx],'Rango de hoy',true)+SB(fmtTime(elapsed),'Tiempo')+SB(finished&&effTime()<=META?'✅':'—','Meta del día')
+    ? SB(RANK_NAMES[idx],'Rango de hoy',true)+SB(fmtTime(elapsed),'Tiempo')+SB(retoAchieved()?'✅':'—','Meta del día')
     : '<div class="stats-empty">Aún no has empezado la carrera de hoy.</div>';
 }
 
@@ -2329,7 +2394,13 @@ function getStats(){
 }
 // The OFFICIAL daily — recorded once, on the first attempt's conclusion (a finish OR a spill).
 function recordResult(won){
-  if(LS.getItem(DSCOPE+'-counted-'+ISO)) return; LS.setItem(DSCOPE+'-counted-'+ISO, won?'win':'fail');
+  /* The value now carries the reto bit as well as the win: 'win-reto' | 'win' | 'fail'.
+     dailyDone() tests truthiness and nothing else compares it, so every existing reader is
+     unaffected; legacy 'win' values are handled by legacyWinBeatMeta(). This is the ONLY
+     line of the award path that changes, and it changes what is REMEMBERED, not what is
+     awarded — every streak, count and rank below is byte-identical. */
+  if(LS.getItem(DSCOPE+'-counted-'+ISO)) return;
+  LS.setItem(DSCOPE+'-counted-'+ISO, won?(effTime()<=META?'win-reto':'win'):'fail');
   const s=getStats(), y=prevISO(ISO);
   s.played++;
   if(!IS_ARCHIVE){ s.curPlay=(s.lastPlay===y)?s.curPlay+1:1; s.lastPlay=ISO; s.maxPlay=Math.max(s.maxPlay,s.curPlay); }
@@ -2359,7 +2430,7 @@ function buildShareText(){
   const SHARE_URL='https://cortadito.games/flechas', L=[fullDate,''];
   L.push('🧩 Flechas 🧱 Borde');
   if(!finished){ L.push('⏳ Todavía sin terminar'); L.push(''); L.push(SHARE_URL); return L.join('\n'); }
-  const idx=rankNow(), beat=effTime()<=META;
+  const idx=rankNow(), beat=retoAchievedForShare();   // the run just played, and only if it could earn the day
   if(idx===TOP) L.push('👑 ¡Maestro/a del borde!'); else L.push('🏆 Rango: '+RANK_NAMES[idx]);
   L.push((beat?'✅ ¡Reto del día logrado!':'📌 Reto del día')+' (⏱ '+fmtTime(elapsed)+' / ≤ '+fmtTime(META)+')');
   L.push(mistakes===0?'✨ Sin choques':'💥 '+mistakes+' choque'+(mistakes===1?'':'s'));
@@ -2462,7 +2533,7 @@ function setLandMode(m){ const d=LAND_MODES[m]; if(!d) return; landMode=m;
 /* ============================ RESET ============================ */
 function resetToday(){
   training = dailyDone();   // once the daily is locked, every reset is a PRACTICE run
-  firedP=new Array(PIECES.length).fill(false); mistakes=0; hintsUsed=0; solved=false; finished=false; busy=false;
+  firedP=new Array(PIECES.length).fill(false); mistakes=0; hintsUsed=0; solved=false; won=false; finished=false; busy=false;
   elapsed=0; startedAt=null; started=false; combo=0; lastLaunch=0; stopTimer();
   lives=HEARTS_MAX; rachaLeft=-1; rachaTotal=0; rachaCount=0; candadoUntil=0; candadoCount=0; giroFlashT=0; freezeEnd=0; freezeCharges=0; freezeFill=0; beamBaseIndex=0; beamBaseTime=0; document.body.classList.remove('frozen','candado','racha-on','over');
   document.body.classList.toggle('training', training);
@@ -2486,7 +2557,7 @@ function boot(){
     document.querySelectorAll('.land-tab').forEach(t=>t.addEventListener('click',()=>setLandMode(t.getAttribute('data-mode'))));
     { const _o=document.getElementById('flx-objetivo'); if(_o) _o.textContent='Objetivo de hoy · ≤ '+fmtTime(META); }
 
-    loadState(); computeScore(); collectBeans(true); finished=solved||lives<=0; if(lives<=0&&!solved) document.body.classList.add('over');
+    loadState(); computeScore(); collectBeans(true); finished=won||lives<=0; if(lives<=0&&!won) document.body.classList.add('over');
     buildBoard(); renderStatus(); renderRank(); renderRangos(); renderHints();
 
     // single daily — hide difficulty / experimental toggles
