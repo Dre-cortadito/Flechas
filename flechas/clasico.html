@@ -333,6 +333,8 @@
   .tut-ov{ position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(20,18,14,.62); }
   .tut-ov.open{ display:flex; }
   .tut-card{ position:relative; background:var(--paper); border-radius:20px; width:100%; max-width:360px; padding:16px 0 16px; box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden; }
+  .tut-title{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
+    clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
   .tut-x{ position:absolute; top:16px; right:16px; width:36px; height:36px; z-index:3; border:none; background:transparent; font-size:22px; line-height:1; color:var(--ink-soft); cursor:pointer; border-radius:50%; display:flex; align-items:center; justify-content:center; touch-action:manipulation; }
   @media (hover:hover){ .tut-x:hover{ background:var(--paper); color:var(--ink); } }
   .tut-track{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -1506,8 +1508,9 @@
 </div>
 
 <!-- ===== Animated tutorial (first visit + menú → Ver tutorial) ===== -->
-<div class="tut-ov" id="tut-ov">
+<div class="tut-ov" id="tut-ov" role="dialog" aria-modal="true" aria-labelledby="tut-title">
   <div class="tut-card">
+    <h2 class="tut-title" id="tut-title">Tutorial</h2>
     <button class="tut-x" id="tut-x" aria-label="Cerrar">×</button>
     <div class="tut-track" id="tut-track">
       <section class="tut-slide">
@@ -1560,8 +1563,54 @@
   nextb.onclick=function(){ if(cur>=n-1) close(); else go(cur+1); };
   document.getElementById('tut-x').onclick=close;
   ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
-  function open(){ chk.checked=!!lsGet(KEY); ov.classList.add('open'); cur=0; track.scrollLeft=0; upd(); }
-  function close(){ ov.classList.remove('open'); try{ if(chk.checked) localStorage.setItem(KEY,'1'); else localStorage.removeItem(KEY); }catch(e){} }
+  /* ---- Dialog semantics (family standard). The overlay is a modal: while it is
+     open the rest of the page leaves the tab order and the accessibility tree,
+     focus lives inside it, and Escape closes it. Restoring the background does NOT
+     clear inert blindly - each sibling's prior state is recorded and put back.
+     Escape also stops propagating: this page has a document-level Escape handler for
+     its own overlays, and runtime checks showed a key meant for the tutorial was also
+     closing the panel behind it. ---- */
+  var lastFocus=null, prevInert=null;
+  function bgSiblings(){ return [].slice.call(document.body.children).filter(function(el){
+    return el!==ov && el.tagName!=='SCRIPT' && el.tagName!=='STYLE'; }); }
+  function bgInert(on){
+    if(on){ if(prevInert) return;
+      prevInert=bgSiblings().map(function(el){ return { el:el, was:el.hasAttribute('inert') }; });
+      prevInert.forEach(function(r){ r.el.setAttribute('inert',''); });
+    } else if(prevInert){
+      prevInert.forEach(function(r){ if(!r.was) r.el.removeAttribute('inert'); });
+      prevInert=null;
+    }
+  }
+  function tutFocusables(){ return [].slice.call(ov.querySelectorAll('a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])'))
+    .filter(function(el){ return el.offsetParent!==null && !el.disabled; }); }
+  function restoreFocus(){
+    var el=lastFocus; lastFocus=null;
+    if(el && document.contains(el) && el.offsetParent!==null && !(el.closest && el.closest('[inert]'))){ el.focus(); return; }
+    // auto-open case: the opener was the landing button or nothing at all. Fall back
+    // to the rank bar, which is role=button tabindex=0 and always present in game.
+    var bar=document.getElementById('rank-bar');
+    if(bar && !(bar.closest && bar.closest('[inert]')) && bar.offsetParent!==null) bar.focus();
+  }
+  ov.addEventListener('keydown', function(e){
+    if(!ov.classList.contains('open')) return;
+    if(e.key==='Escape'||e.key==='Esc'){ e.preventDefault(); e.stopPropagation(); close(); return; }
+    if(e.key!=='Tab') return;
+    var f=tutFocusables(); if(!f.length) return;
+    var first=f[0], last=f[f.length-1], a=document.activeElement;
+    if(e.shiftKey){ if(a===first||!ov.contains(a)){ e.preventDefault(); last.focus(); } }
+    else { if(a===last||!ov.contains(a)){ e.preventDefault(); first.focus(); } }
+  });
+  /* Idempotent: the auto-open timer and a manual open can overlap. A second open()
+     would reset the slide position and overwrite lastFocus with an element that is
+     inert by then; a second close() would re-run focus restoration. */
+  function open(){ if(ov.classList.contains('open')) return;
+    lastFocus=document.activeElement;
+    chk.checked=!!lsGet(KEY); ov.classList.add('open'); cur=0; track.scrollLeft=0; upd();
+    bgInert(true);
+    var f=tutFocusables(); if(f.length) (document.getElementById('tut-next')||f[0]).focus(); }
+  function close(){ if(ov.classList.contains('open')===false) return;
+    ov.classList.remove('open'); bgInert(false); try{ if(chk.checked) localStorage.setItem(KEY,'1'); else localStorage.removeItem(KEY); }catch(e){} restoreFocus(); }
   window.openTutorial=open;
   // First visit: open automatically before the first game, until "No volver a mostrar" is checked.
   try{ if(!lsGet(KEY)) setTimeout(open,800); }catch(e){}
