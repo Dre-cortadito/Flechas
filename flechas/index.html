@@ -2415,7 +2415,7 @@ function ensureRankObserver(track){
 }
 /* The pixel pass. frac and goalFrac are 0..1 on the mode's OWN interpolation - this function
    never re-derives them, so every ladder and every timePos()/rankNow() stays untouched. */
-var _rankFrac=0, _rankGoalFrac=0, _rankMarkerOn=true;
+var _rankFrac=0, _rankGoalFrac=0, _rankMarkerOn=true, _rankHairlineOn=true;
 function placeRankPixels(){
   if(!_rankBuilt) return;
   var track=document.getElementById('rank-track'), bar=document.getElementById('rank-bar');
@@ -2445,12 +2445,14 @@ function placeRankPixels(){
        passes it, it switches to --rank-goal-fill (4.5:1 against the fill). One test, because
        the marker occupies a single x. */
     _rankGoal.classList.toggle('over-fill', _rankFrac>=_rankGoalFrac);
+    /* A tick may only be hidden while the HAIRLINE is covering it. The chevron
+       sits above the capsule and covers nothing. §3.2, 2026-09-11. */
   }
   /* No marker on screen => no tick may be hidden on its account, so anything it was covering
      comes back automatically. */
   for(var j=0;j<_rankTicks.length;j++){
     var c=parseFloat(_rankTicks[j].style.left)||0;
-    _rankTicks[j].classList.toggle('under-goal', goalPx!==null && Math.abs(c-goalPx)<PENDING_TICK_GAP);
+    _rankTicks[j].classList.toggle('under-goal', _rankHairlineOn && goalPx!==null && Math.abs(c-goalPx)<PENDING_TICK_GAP);
   }
   bar.classList.remove('rank-unplaced');
 }
@@ -2520,12 +2522,19 @@ function renderRank(){
   _rankFrac     = live ? Math.max(0,Math.min(1, timePos(effTime())/100)) : 0;
   _rankGoalFrac = Math.max(0,Math.min(1, timePos(META)/100));
   var st8 = retoState();                       /* commit 1's canonical helper, consumed unchanged */
-  _rankMarkerOn = (st8==='pending');
+  /* §3.2 (2026-09-11): the chevron is the permanent memory of where the goal was.
+     Flechas always has a META, so the marker is always positioned — the old
+     `st8==='pending'` stopped POSITIONING it once the day settled, which took the
+     chevron off the bar on a miss as well as a win. Only the hairline is
+     stateful: it merges away on a win, and stays on a miss so the gap to the
+     reto stays readable. */
+  _rankMarkerOn = true;
+  _rankHairlineOn = (st8!=='achieved');
   bar.style.setProperty('--rank-tick-done', rankTickFlip(
     getComputedStyle(bar).getPropertyValue('--accent').trim()||'#000000'));
   for(var i=0;i<_rankTicks.length;i++) _rankTicks[i].classList.toggle('passed', live && _rankTickIdx[i]<=idx);
-  _rankGoal.classList.toggle('settled', !_rankMarkerOn);
-  _rankChev.classList.toggle('settled', !_rankMarkerOn);
+  _rankGoal.classList.toggle('settled', !_rankHairlineOn);
+  _rankChev.classList.remove('settled');
   var lbl=document.getElementById('rank-label');
   if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); }
   /* The bar's accessible name carries the rank and the challenge state, LIVE. It carries no
