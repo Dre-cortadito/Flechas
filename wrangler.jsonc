@@ -15,6 +15,10 @@
     {
       "pattern": "cortadito.games/flechas*",
       "zone_name": "cortadito.games"
+    },
+    {
+      "pattern": "www.cortadito.games/flechas*",
+      "zone_name": "cortadito.games"
     }
   ],
   // 2026-08-20: OFF. The direct <name>.workers.dev host served the game but
