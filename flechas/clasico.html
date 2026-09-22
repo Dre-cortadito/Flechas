@@ -1318,10 +1318,43 @@
       if(alive && dt<3200) raf=requestAnimationFrame(frame); else cv.remove();
     })(t0);
   }
+  /* ===== P0 medallas: resultado local del día (cg-day-v1, 2026-09-21) =====
+     Solo local: nunca sale del navegador (el prefijo cg- lo deja fuera del
+     snapshot anónimo). Clave cg-day-v1-<juego>-<modo>-<AAAA-MM-DD>, con la
+     fecha LOCAL del dispositivo. Solo se escribe el día de HOY: un enlace a
+     un día pasado o futuro nunca escribe, y una página abierta desde ayer
+     tampoco. "final"/"fail" se escriben una sola vez (manda el primer
+     resultado oficial del día); "open" (Racimo) se reescribe. */
+  function cgDayToday(){
+    var t = new Date();
+    return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
+  }
+  function cgDaySeal(g, m, d, st, r, bs, s, u, k){
+    try{
+      if (d !== cgDayToday()) return false;
+      var ls = window.localStorage, key = "cg-day-v1-" + g + "-" + m + "-" + d;
+      if (st !== "open" && ls.getItem(key) !== null) return false;
+      ls.setItem(key, JSON.stringify({ v: 1, g: g, m: m, d: d, st: st,
+        r: (r == null ? null : r), bs: !!bs, s: (s == null ? null : s), u: u,
+        k: (k == null ? null : k), t: Date.now() }));
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function cgDayClasico(){
+    try{
+      if(IS_ARCHIVE || ISO!==cgDayToday() || !lsGet("clasico-done-"+ISO)) return;
+      const v=+(lsGet("clasico-best-"+ISO)||0), ok=v>0, bs=ok && v<=retoTarget(), s=getStats();
+      cgDaySeal("flechas","clasico",ISO, ok?"final":"fail", ok?rankFromTime(v):null, bs, ok?v:null, "sec",
+        bs?(s.lastReto===ISO?(s.curReto||0):null):0);
+    }catch(e){}
+  }
+
   function winGame(){ if(over) return; finished=true; over=true; running=false; if(rafId) cancelAnimationFrame(rafId);
     const secs=Math.round(totalMs/1000); const idx=rankFromTime(secs); const reto=retoTarget();
     if(!training){ const prev=+(lsGet('clasico-best-'+ISO)||0); if(prev===0||secs<prev){ bestSecs=secs; lsSet('clasico-best-'+ISO,String(secs)); } else bestSecs=prev;
       lsSet('clasico-done-'+ISO,'1'); recordStats(secs,true); }
+    if(!training) cgDayClasico();
     else { bestSecs=+(lsGet('clasico-best-'+ISO)||0); }
     renderRank();
     boardEl.classList.remove('clearflash'); void boardEl.offsetWidth; boardEl.classList.add('clearflash');
@@ -1342,6 +1375,7 @@
     $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare); }
   function endGame(reason){ if(over) return; over=true; finished=false; running=false; if(rafId) cancelAnimationFrame(rafId);
     if(!training){ lsSet('clasico-done-'+ISO,'1'); recordStats(0,false); }
+    if(!training) cgDayClasico();
     renderRank();
     const g=$('gate'); g.classList.remove('hidden');
     g.innerHTML='<h2>¡Sin corazones!</h2><div class="v">'+boardNum+'/'+RUN_BOARDS+'</div><div class="vlbl">tablero alcanzado</div>'
@@ -1482,6 +1516,7 @@
   if(!IS_ARCHIVE && lsGet('clasico-done-'+ISO)){ const bs=+(lsGet('clasico-best-'+ISO)||0); const gg=$('gate');   // v11 fix (Cascada parity): archive days always re-open on the real board, not the "ya completaste" training gate
     if(gg) gg.innerHTML='<h2>Clásico</h2><p>Ya completaste el reto de hoy'+(bs>0?' en <b>'+fmt(bs*1000)+'</b>':'')+'. Puedes <b>entrenar</b> con tableros nuevos.</p><button class="btn dark" id="start-btn2" type="button">Entrenar</button>';
     const b2=$('start-btn2'); if(b2) b2.addEventListener('click', ()=>startGame(true)); }
+  cgDayClasico();   /* P0: sella hoy si ya estaba jugado */
 
   // ================= test hook (Node/console self-checks) =================
   try{ window.__cla={ generateBoard:generateBoard, greedySolve:greedySolve, cloneBoard:cloneBoard, coverage:coverage, isTrivial:isTrivial, mulberry32:mulberry32, fnv:fnv,
