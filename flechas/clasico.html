@@ -92,10 +92,21 @@
     border:1.5px solid var(--rank-outline); background:transparent; box-sizing:border-box; overflow:hidden; }
   /* This mode shows NO number, so the fill carries the inset light cap that reads as a
      position rather than a right padding for a score that is not there. */
-  .rank-fill { position:absolute; left:2px; top:2px; bottom:2px; width:0; border-radius:999px;
+  /* fb1 (2026-10-06, §3.2 estate rule): flush fill — the capsule's overflow clip and radius define the shape;
+     the 1 px vertical bleed is Palabreo's (6724e5f), kept as harmless against the sub-pixel seam. */
+  .rank-fill { position:absolute; left:0; top:-1px; bottom:-1px; width:0; border-radius:0;
     background:var(--accent); box-sizing:border-box; transition:width .3s ease; overflow:hidden;
     box-shadow:inset -3px 0 0 rgba(255,255,255,.55); }
   .rank-fill.empty { display:none; }
+  /* THE PERIMETER, painted by a sibling rather than by .rank-track itself (fb1, §3.2). Sudoku's finding on iPhone
+     Safari, not reproducible in Chromium: the target marker replaced pixels of the capsule's border where it crossed.
+     An element's own border paints UNDER its descendants whatever z-index they carry, so the perimeter leaves the
+     track to sit above them. z-index 8 clears the chevron (7), the hairline (6) and the ticks (2). */
+  .rank-track-frame { position:absolute; border-radius:999px; border:1.5px solid var(--rank-outline); box-sizing:border-box; z-index:8; pointer-events:none; }
+  /* border-COLOR, not border:none — the 1.5 px box has to stay or the capsule's content width changes and every x moves. */
+  .rank-track.rank-framed { border-color:transparent; }
+  /* hidden until placeRankPixels() has given it a real rect: unsized, its own border paints a 3 px dot at the row's start */
+  .rank-track-frame[hidden] { display:none; }
   .rank-tick { position:absolute; top:50%; transform:translate(-50%,-50%); width:2px; height:54%;
     border-radius:1px; background:var(--rank-tick-idle); z-index:2; opacity:1; transition:opacity .18s ease; }
   .rank-tick.passed { background:var(--rank-tick-done); }
@@ -1087,7 +1098,9 @@
      whole interior on every render - 14 nodes through an innerHTML parse - which for a bar
      that re-renders on a 1s timer is thousands of element creations per run, and it threw
      away the ResizeObserver with them. */
-  var RANK_PAD = 2, PENDING_TICK_GAP = 6, RANK_CONTRAST_FLOOR = 3.2;
+  /* fb1 (2026-10-06): RANK_PAD 2 → 0 and PENDING_TICK_GAP 6 → 2, shipped WITH .rank-track-frame as §3.2 requires.
+     The gap is the exact overlap condition: the hairline and a tick are both 2 px wide and both lefts are centres. */
+  var RANK_PAD = 0, PENDING_TICK_GAP = 2, RANK_CONTRAST_FLOOR = 3.2;
   function rankLum(hex){
     hex = String(hex||'').trim().replace('#','');
     if(hex.length===3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
@@ -1128,6 +1141,10 @@
     track.appendChild(_rankGoal);
     _rankChev=document.createElement('div'); _rankChev.className='rank-goal-chev'; _rankChev.id='rank-goal-chev';
     track.parentNode.appendChild(_rankChev);
+    /* fb1: the perimeter is outside the track for the same reason as the chevron, created LAST so tree order agrees
+       with its z-index; a sibling of the track, built once with the rest of the structure. */
+    var _f=document.createElement('div'); _f.className='rank-track-frame'; _f.id='rank-track-frame'; _f.hidden=true;
+    track.parentNode.appendChild(_f);
     _rankBuilt=true;
     ensureRankObserver(track);
   }
@@ -1179,6 +1196,16 @@
     for(var j=0;j<_rankTicks.length;j++){
       var c=parseFloat(_rankTicks[j].style.left)||0;
       _rankTicks[j].classList.toggle('under-goal', goalPx!==null && Math.abs(c-goalPx)<PENDING_TICK_GAP);
+    }
+    /* fb1: the perimeter — measured from the same two rects as the chevron and re-run on every pass, so a resize or a
+       rotation carries it. Not gated on the marker: the outline is there in every state. Only now, and together: the
+       track may not stop painting its own border until a real frame is on screen to replace it. */
+    var frameEl=bar.querySelector('.rank-track-frame');
+    if(frameEl){
+      var ftb=track.getBoundingClientRect(), fbb=bar.getBoundingClientRect();
+      frameEl.style.left=(ftb.left-fbb.left)+'px'; frameEl.style.top=(ftb.top-fbb.top)+'px';
+      frameEl.style.width=ftb.width+'px'; frameEl.style.height=ftb.height+'px';
+      frameEl.hidden=false; track.classList.add('rank-framed');
     }
     bar.classList.remove('rank-unplaced');
   }
