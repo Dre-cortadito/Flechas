@@ -591,14 +591,14 @@
    that keeps both. If a bare link ever shows up again, the first suspect is
    something adding `title` or `url` back into this call.
 
-   Feedback goes through cgToast() -- a fixed, z-index 99999 toast -- because
+   Native API resolution, confirmed copy or final failure goes through cgToast() -- a fixed, z-index 99999 toast -- because
    each game's own toast sits UNDER the celebration modal (Palabreo's was
    z-index 30 vs the modal's 70). The copy worked but nothing was visible,
    which read to players as "the button doesn't do anything".
 
    Returns a Promise resolving to: 'shared' | 'copied' | 'cancelled' |
-   'failed'. Pass {silent:true} to suppress the toast when the caller shows
-   its own feedback (Racimo does).                                         */
+   'failed'. Native resolution is a platform handoff, not recipient delivery.
+   Pass {silent:true} when the caller owns feedback (Racimo does).                                         */
 (function () {
   var MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
@@ -609,18 +609,22 @@
         t = document.createElement('div');
         t.id = 'cg-toast';
         t.setAttribute('role', 'status');
+        t.setAttribute('aria-live', 'polite');
+        t.setAttribute('aria-atomic', 'true');
         t.style.cssText =
-          'position:fixed;left:50%;top:calc(env(safe-area-inset-top, 0px) + 18px);' +
-          'transform:translateX(-50%);z-index:99999;pointer-events:none;' +
+          'position:fixed;left:50%;top:50%;' +
+          'transform:translate(-50%,-50%);z-index:99999;pointer-events:none;' +
           'max-width:calc(100vw - 32px);text-align:center;' +
-          'background:rgba(28,17,8,.94);color:#FAF5EC;' +
+          'background:var(--ink,#1a1614);color:var(--bg,#fff);' +
           'font:600 15px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;' +
           'padding:11px 18px;border-radius:999px;' +
           'box-shadow:0 8px 28px rgba(0,0,0,.28);opacity:0;transition:opacity .18s;';
         document.body.appendChild(t);
       }
-      t.textContent = msg;
-      requestAnimationFrame(function () { t.style.opacity = '1'; });
+      t.style.transition = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity .18s';
+      /* Clear first so a repeated confirmation is announced again. */
+      t.textContent = '';
+      requestAnimationFrame(function () { t.textContent = msg; t.style.opacity = '1'; });
       clearTimeout(t._cgT);
       t._cgT = setTimeout(function () { t.style.opacity = '0'; }, 2200);
     } catch (e) {}
