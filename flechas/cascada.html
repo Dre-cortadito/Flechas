@@ -637,20 +637,20 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Cortadito Games">
 <style id="tutorial-rank-demo-style">
-/* Static tutorial illustration only. The capsule, fill, ticks, target and
-   arrow use the game's existing native classes and theme tokens. No game IDs,
-   event handlers, calibration, scores or real-world percentages are added. */
+/* Static tutorial only: native clipped interior line; stem-free SVG triangle.
+   Foreground outline protects both gray borders. Same anchor, sizes and tokens.
+   No game IDs, events, calibration or real-world percentages added. */
 #tut-ov .tut-rank-demo{position:relative;width:100%;max-width:258px;font-family:var(--font-ui);color:var(--ink);pointer-events:none}
-#tut-ov .tut-rank-demo-title{display:block;margin:0 0 30px;font-size:12px;font-weight:700;color:var(--ink-soft)}
 #tut-ov .tut-rank-native{--tut-rank-border:1.5px;--tut-rank-goal:67%;position:relative;display:block;width:100%;height:22px}
-#tut-ov .tut-rank-native .rank-track{width:100%;height:22px;margin:0;display:block;border-width:var(--tut-rank-border);padding:0}
+#tut-ov .tut-rank-native .rank-track{width:100%;height:22px;margin:0;display:block;border-width:var(--tut-rank-border);padding:0;border-color:transparent}
 #tut-ov .tut-rank-marker-frame{position:absolute;inset:0;box-sizing:border-box;border:var(--tut-rank-border) solid transparent;padding:0;overflow:visible;pointer-events:none}
 #tut-ov .tut-rank-native .rank-fill{padding:0;border-radius:0;transition:none;animation:none}
 #tut-ov .tut-rank-native .rank-goal{left:var(--tut-rank-goal);transition:none;animation:none}
-#tut-ov .tut-rank-native .rank-goal-chev{left:var(--tut-rank-goal);top:-11px;width:12px;height:9px;transition:none;animation:none}
+/* No bridge crosses the gray outline. Both markers use matching padding-box anchors. */
+#tut-ov .tut-rank-triangle{position:absolute;left:var(--tut-rank-goal);top:-11px;width:12px;height:9px;transform:translateX(-50%);display:block;overflow:hidden;fill:var(--rank-goal-track);pointer-events:none;z-index:7}
+#tut-ov .tut-rank-outline{position:absolute;inset:0;box-sizing:border-box;border:var(--tut-rank-border) solid var(--rank-outline);border-radius:999px;pointer-events:none;z-index:8}
 #tut-ov .tut-rank-target-label{position:absolute;left:var(--tut-rank-goal);bottom:38px;transform:translateX(-50%);white-space:nowrap;font-size:13px;font-weight:700;color:var(--ink)}
 #tut-ov .tut-rank-fill-label{position:relative;display:block;text-align:left;margin:7px 0 0;font-size:13px;font-weight:700;color:var(--ink)}
-#tut-ov .tut-rank-example-note{display:block;margin-top:7px;font-size:11px;color:var(--ink-soft)}
 #tut-ov .tut-rank-demo *{animation:none!important;transition:none!important}
 </style>
 </head>
@@ -1799,7 +1799,7 @@
         <h3>Congelar</h3>
         <p>Las flechas <b style="color:#3B7FD9">azules</b> llenan el congelador (~3 = un congelado). Al usarlo, el <b>borde se pone azul</b> y se pausan <b>el reloj y el cambio de tablero</b> 5 s.</p>
       </section>
-          <section class="tut-slide"><div class="tut-anim"><div class="tut-rank-demo" role="img" aria-label="Ejemplo ilustrativo de la barra de rangos. El relleno representa tu avance en puntos. La línea vertical y la flechita señalan el Reto de hoy. No son valores de tu partida."><div class="tut-rank-native" aria-hidden="true"><div class="rank-track"><span class="rank-fill" style="width:40%"></span><span class="rank-tick passed" style="left:10%" aria-hidden="true"></span><span class="rank-tick passed" style="left:20%" aria-hidden="true"></span><span class="rank-tick passed" style="left:30%" aria-hidden="true"></span><span class="rank-tick" style="left:50%" aria-hidden="true"></span><span class="rank-tick" style="left:60%" aria-hidden="true"></span><span class="rank-tick" style="left:80%" aria-hidden="true"></span><span class="rank-tick" style="left:90%" aria-hidden="true"></span><span class="rank-goal"></span></div><div class="tut-rank-marker-frame"><span class="tut-rank-target-label">Reto de hoy</span><span class="rank-goal-chev"></span></div></div><span class="tut-rank-fill-label" aria-hidden="true">↳ Tu avance en puntos</span></div></div><h3>El reto del día</h3><p>La <b>línea vertical y la flechita</b> marcan el <b>Reto de hoy</b> en la barra de rangos. El relleno muestra los puntos que llevas. Logras el reto en cuanto <b>igualas o superas la meta</b> en tu intento diario. Al alcanzarla, el marcador desaparece; si acabas antes, no logras el reto. Entrenar no cuenta.</p></section>
+          <section class="tut-slide"><div class="tut-anim"><div class="tut-rank-demo" role="img" aria-label="Ejemplo ilustrativo de la barra de rangos. El relleno representa tu avance en puntos. La línea vertical y la flechita señalan el Reto de hoy. No son valores de tu partida."><div class="tut-rank-native" aria-hidden="true"><div class="rank-track"><span class="rank-fill" style="width:40%"></span><span class="rank-tick passed" style="left:10%" aria-hidden="true"></span><span class="rank-tick passed" style="left:20%" aria-hidden="true"></span><span class="rank-tick passed" style="left:30%" aria-hidden="true"></span><span class="rank-tick" style="left:50%" aria-hidden="true"></span><span class="rank-tick" style="left:60%" aria-hidden="true"></span><span class="rank-tick" style="left:80%" aria-hidden="true"></span><span class="rank-tick" style="left:90%" aria-hidden="true"></span><span class="rank-goal"></span></div><div class="tut-rank-marker-frame"><span class="tut-rank-target-label">Reto de hoy</span><svg class="tut-rank-triangle" width="12" height="9" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path d="M0 0H12L6 9Z"/></svg></div><span class="tut-rank-outline" aria-hidden="true"></span></div><span class="tut-rank-fill-label" aria-hidden="true">↳ Tu avance en puntos</span></div></div><h3>El reto del día</h3><p>La <b>línea vertical y la flechita</b> marcan el <b>Reto de hoy</b> en la barra de rangos. El relleno muestra los puntos que llevas. Logras el reto en cuanto <b>igualas o superas la meta</b> en tu intento diario. Al alcanzarla, el marcador desaparece; si acabas antes, no logras el reto. Entrenar no cuenta.</p></section>
     </div>
     <div class="tut-dots" id="tut-dots"></div>
     <button class="tut-next" id="tut-next">Siguiente</button>
