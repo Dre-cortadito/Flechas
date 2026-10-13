@@ -653,6 +653,12 @@
 #tut-ov .tut-rank-fill-label{position:relative;display:block;text-align:left;margin:7px 0 0;font-size:13px;font-weight:700;color:var(--ink)}
 #tut-ov .tut-rank-demo *{animation:none!important;transition:none!important}
 </style>
+
+<!-- CG-MASCOT-HEAD BEGIN -->
+<link rel="stylesheet" href="/flechas/_mascot/20261013-nine-abd/mascot.css">
+<script defer src="/flechas/_mascot/20261013-nine-abd/daily-selector.js"></script>
+<script defer src="/flechas/_mascot/20261013-nine-abd/mascot.js"></script>
+<!-- CG-MASCOT-HEAD END -->
 </head>
 <body data-theme="light">
 
@@ -1646,6 +1652,10 @@
     L.appendChild(prRow('Flechas despejadas:', String(cleared)));
     if(boardsClear>0) L.appendChild(prRow('Tableros limpios:', String(boardsClear)));
     L.appendChild(o.isBest ? prRow('', '¡Nuevo récord de hoy!', true) : prRow('Récord de hoy:', String(best)));
+/* CG-MASCOT-ONLY BEGIN */
+if(window.CGMascot && window.DailyMascot) CGMascot.render({host:"#pr-done .pr-content",mode:'flechas-cascada',day:DailyMascot.localDay(),eligible:over && !training && met,scope:document.getElementById('pr-flow'),freeze:document.body.classList.contains('pr-open'),onLayout:prSyncScroll});
+/* CG-MASCOT-ONLY END */
+
     $('pr-reto-sorbo').hidden=!met;
     $('pr-reto-status').textContent=met?'✅ Logrado':'❌ No alcanzado';
     const pv=$('pr-reto-pts'); pv.textContent='Tus puntos: '; const pb=document.createElement('b'); pb.textContent=points+' pts'; pv.appendChild(pb);
