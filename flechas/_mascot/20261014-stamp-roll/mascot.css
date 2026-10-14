@@ -1,0 +1,12 @@
+/* Add only the result portrait below existing facts; preserve original frame. */
+.cg-daily-mascot{--cg-mascot-ready:1;width:232px;height:232px;max-width:100%;margin:24px auto 0;display:grid;place-items:center;flex:none;}
+.cg-daily-mascot[hidden]{display:none;}
+/* Previously approved Cuarteto white labels; keep the existing orange fill. */
+.pr-flow.pr-quordle .pr-btn{color:#ffffff;}
+@media(max-height:560px){.cg-daily-mascot{--cg-mascot-ready:1;width:96px;height:96px;margin-top:16px;}}
+
+.cg-daily-mascot{position:relative;pointer-events:none;}
+/* Approved stamp: 1254x1254 canvas scaled into the existing figure box. */
+.cg-daily-mascot .cg-stamp-canvas{display:block;width:100%;height:100%;pointer-events:none;}
+/* Hidden source image is kept only for naturalWidth observability; never paints or takes layout. */
+.cg-daily-mascot img.cg-stamp-source{display:none!important;}
