@@ -1,0 +1,18 @@
+/* Add only the result portrait below existing facts; preserve original frame. */
+.cg-daily-mascot{--cg-mascot-ready:1;width:232px;height:232px;max-width:100%;margin:24px auto 0;display:grid;place-items:center;flex:none;}
+.cg-daily-mascot[hidden]{display:none;}
+.cg-daily-mascot img{display:block;width:100%;height:100%;object-fit:contain;}
+/* Previously approved Cuarteto white labels; keep the existing orange fill. */
+.pr-flow.pr-quordle .pr-btn{color:#ffffff;}
+@media(max-height:560px){.cg-daily-mascot{--cg-mascot-ready:1;width:96px;height:96px;margin-top:16px;}}
+
+.cg-daily-mascot{position:relative;pointer-events:none;}
+.cg-paint-svg{position:absolute;inset:0;width:100%;height:100%;display:none;overflow:visible;pointer-events:none;}
+.cg-daily-mascot[data-motion="waiting"] .cg-paint-still,.cg-daily-mascot[data-motion="painting"] .cg-paint-still{visibility:hidden;}
+.cg-daily-mascot[data-motion="painting"] .cg-paint-svg{display:block;}
+@media(prefers-reduced-motion:reduce){.cg-daily-mascot .cg-paint-still{visibility:visible!important;}.cg-daily-mascot .cg-paint-svg{display:none!important;}}
+
+/* One transient wink after drawing; static art is the final frame. */
+.cg-wink-svg{position:absolute;inset:0;width:100%;height:100%;display:none;overflow:visible;pointer-events:none;}
+.cg-daily-mascot[data-motion="winking"] .cg-wink-svg{display:block;}
+@media(prefers-reduced-motion:reduce){.cg-daily-mascot .cg-wink-svg{display:none!important;}}
