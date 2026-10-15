@@ -121,8 +121,7 @@
     background:var(--rank-goal-track); z-index:6; opacity:1; pointer-events:none;
     transition:opacity .18s ease, background-color .18s ease; }
   .rank-goal.over-fill { background:var(--rank-goal-fill); }
-  /* SETTLED = achieved OR failed. Both remove the marker; neither recolours it. */
-  .rank-goal.settled { opacity:0; }
+  /* V3: only achieved hides the hairline; pending and failed retain it. */
   /* The chevron cannot be a child of .rank-track - overflow:hidden clips it - so it is a
      sibling of the track inside .rank-bar, placed in px by the same pass. Absolutely
      positioned, so it takes no space and shifts no layout. Width EVEN on purpose: the stem
@@ -135,7 +134,7 @@
     -webkit-clip-path:polygon(0 0,100% 0,50% 100%); clip-path:polygon(0 0,100% 0,50% 100%); }
   .rank-goal-chev::after { content:''; position:absolute; left:50%; top:100%; width:2px; height:2px;
     transform:translateX(-50%); background:var(--rank-goal-track); }
-  .rank-goal-chev.settled { opacity:0; }
+  /* V3: chevron persists; its stem alone follows the hairline. */
   .rank-bar.rank-unplaced .rank-track > *, .rank-bar.rank-unplaced .rank-goal-chev { visibility:hidden; }
   @media (min-width: 1024px) {
     /* PALABREO PRECEDENT. This bar caps at 400px and does NOT widen on desktop, so only the
@@ -482,6 +481,26 @@
   .pr-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--r-dot); transition: width .2s ease; }
   .pr-dot.is-on { width: 22px; border-radius: 4px; background: var(--r-acc); }
   @media (prefers-reduced-motion: reduce) { .pr-dot { transition: none; } }
+
+/* V3: _kit §3.2 one front; native frame and fractional scale stay unchanged.
+   These selectors deliberately exclude the illustrative tutorial rank demo. */
+#rank-track .rank-fill-excess{position:absolute;left:0;top:-1px;bottom:-1px;width:0;
+  border-radius:0;background:var(--success);box-sizing:border-box;overflow:hidden;
+  transition:width .3s ease;box-shadow:none;}
+#rank-track .rank-fill-excess.empty{display:none;}
+#rank-track .rank-goal.is-achieved{opacity:0;}
+#rank-bar .rank-goal-chev.no-stem::after{opacity:0;}
+/* V4: native rank hairline uses measured hard-stop paint, assigned by
+   syncRankPaint; exact geometry and existing static palette are unchanged. */
+/* Existing rankTickFlip rule, evaluated for each native face: black first
+   at 3.2:1; white only where black fails. No new palette color. */
+#rank-bar{--rank-tick-on-accent:#ffffff;--rank-tick-on-excess:#111111;}
+body[data-theme="black"] #rank-bar{--rank-tick-on-accent:#111111;}
+
+/* V3 scoped palette: tutorial retains its original illustrative palette.
+   Static own-accent tints: derivation/contrast and proposed seam resolution in rank-rules.md. */
+#rank-bar{--rank-goal-excess:#051917;}
+body[data-theme="black"] #rank-bar{--rank-goal-fill:#0b1817;--rank-goal-excess:#0b1817;}
 </style>
 <script>
 /* ============ CORTADITO — CANONICAL SHARE (rev 2026-08-02) ============
@@ -675,8 +694,8 @@
     <!-- No .rank-score here on purpose: Clásico is ranked on TIME and shows no number, so the
          bar creates no column at all. Its clock lives in the meta row (_kit §3.2, 2026-07-23). -->
     <div class="rank-bar rank-unplaced" id="rank-bar" role="button" tabindex="0"
-         aria-expanded="false" aria-controls="ranks-ov" aria-label="Ver rangos">
-      <span class="rank-label" id="rank-label">Debutante</span>
+         aria-expanded="false" aria-controls="ranks-ov" aria-label="Sin rango. Ver rangos">
+      <span class="rank-label" id="rank-label">Sin rango</span>
       <div class="rank-track" id="rank-track"><div class="rank-fill empty" id="rank-fill"></div></div>
       <span class="rank-chev">▾</span>
     </div>
@@ -1283,6 +1302,8 @@
     if(_rankBuilt) return;
     var fill=track.querySelector('.rank-fill');
     if(!fill){ fill=document.createElement('div'); fill.className='rank-fill'; fill.id='rank-fill'; track.appendChild(fill); }
+    var excess=document.createElement('div'); excess.className='rank-fill-excess empty';
+    track.insertBefore(excess,fill);
     /* interior milestones only - rank 0 is the empty bar and the top rank is the full bar, and
        inset end ticks would sit on a different scale from the fill */
     _rankTicks=[]; _rankTickIdx=[];
@@ -1313,6 +1334,54 @@
   }
   /* The pixel pass. frac and goalFrac are 0..1 on the mode's OWN interpolation - this function
      never re-derives them, so every ladder and every timePos()/rankNow() stays untouched. */
+  /* The CSS width transition owns the visible front. Read the TOTAL-width success
+     layer, never the clamped accent layer, for tick and hairline contrast decisions.
+     One bounded 420ms observer loop; re-placement cancels/re-aims the previous loop. */
+  var _rankTickRAF=0;
+  function syncRankPaint(track, bar, immediate){
+    if(_rankTickRAF) cancelAnimationFrame(_rankTickRAF);
+    _rankTickRAF=0;
+    var excess=track.querySelector('.rank-fill-excess');
+    if(!excess) return;
+    /* Tick inks resolve through scoped CSS vars, including idle theme changes. */
+    var goalPx=RANK_PAD+_rankGoalFrac*rankUsable(track);
+    var paint=function(){
+      var front=excess.getBoundingClientRect().width;
+      for(var j=0;j<_rankTicks.length;j++){
+        var x=(parseFloat(_rankTicks[j].style.left)||0)-RANK_PAD;
+        var passed=front>=x-0.5;
+        _rankTicks[j].classList.toggle('passed', passed);
+        var ink=passed ? (x<goalPx ? 'var(--rank-tick-on-accent)' : 'var(--rank-tick-on-excess)') : '';
+        if(_rankTicks[j].style.backgroundColor!==ink) _rankTicks[j].style.backgroundColor=ink;
+      }
+      /* V4: paint each portion of the exact centered 2px hairline against the
+         actual field behind it. No half-pixel classification can represent a
+         moving front within this mark; hard stops follow its measured coverage.
+         The static palette stays in CSS vars so native theme changes still work
+         without a new render, observer, timer or state mutation. */
+      var markStart=goalPx-1;
+      var accentEnd=Math.max(0,Math.min(2,Math.min(front,goalPx)-markStart));
+      var totalEnd=Math.max(0,Math.min(2,front-markStart));
+      var gradient='linear-gradient(to right,'
+        +'var(--rank-goal-fill) 0px,var(--rank-goal-fill) '+accentEnd+'px,'
+        +'var(--rank-goal-excess) '+accentEnd+'px,var(--rank-goal-excess) '+totalEnd+'px,'
+        +'var(--rank-goal-track) '+totalEnd+'px,var(--rank-goal-track) 2px)';
+      /* Keep our exact tokenized value: CSSOM may normalize the assigned string.
+         The DOM-local cache prevents rewriting unchanged paint on every sample. */
+      if(_rankGoal._cgRankPaint!==gradient){
+        _rankGoal.style.backgroundImage=gradient;
+        _rankGoal._cgRankPaint=gradient;
+      }
+    };
+    paint();
+    if(immediate) return;
+    var start=performance.now();
+    var step=function(now){ paint();
+      if(now-start<420) _rankTickRAF=requestAnimationFrame(step);
+      else { _rankTickRAF=0; paint(); }
+    };
+    _rankTickRAF=requestAnimationFrame(step);
+  }
   var _rankFrac=0, _rankGoalFrac=0, _rankMarkerOn=true;
   function placeRankPixels(){
     if(!_rankBuilt) return;
@@ -1325,10 +1394,17 @@
     for(var i=0;i<_rankTicks.length;i++){
       _rankTicks[i].style.left=(RANK_PAD+(usable*_rankTickIdx[i])/top)+'px';
     }
-    fill.style.width=(_rankFrac<=0.005 ? 0 : _rankFrac*usable)+'px';
-    fill.classList.toggle('empty', _rankFrac<=0.005);
-    var goalPx = _rankMarkerOn ? (RANK_PAD+_rankGoalFrac*usable) : null;
-    if(_rankMarkerOn){
+    var excess=track.querySelector('.rank-fill-excess');
+    var empty=_rankFrac<=0.005, wasEmpty=fill.classList.contains('empty');
+    fill.classList.toggle('empty', empty); excess.classList.toggle('empty', empty);
+    if(wasEmpty && !empty){ fill.style.width='0px'; excess.style.width='0px'; void fill.offsetWidth; }
+    /* Same target widths; only accent's max-width is pinned at the target.
+       Success stays underneath at every nonempty width, so crossing never pops it in. */
+    fill.style.maxWidth=(_rankGoalFrac*usable)+'px';
+    fill.style.width=(empty ? 0 : _rankFrac*usable)+'px';
+    excess.style.width=(empty ? 0 : _rankFrac*usable)+'px';
+    var goalPx=RANK_PAD+_rankGoalFrac*usable;
+    {
       _rankGoal.style.left=goalPx+'px';
       var chevH=parseFloat(getComputedStyle(_rankChev).height)||7;
       /* goalPx is measured inside the capsule's border (content box); the rects below are
@@ -1342,13 +1418,13 @@
       /* Over the empty track the hairline is --rank-goal-track; the moment the fill reaches or
          passes it, it switches to --rank-goal-fill (4.5:1 against the fill). One test, because
          the marker occupies a single x. */
-      _rankGoal.classList.toggle('over-fill', _rankFrac>=_rankGoalFrac);
+      /* syncRankPaint selects tint from the measured front, not this target width. */
     }
     /* No marker on screen => no tick may be hidden on its account, so anything it was covering
        comes back automatically. */
     for(var j=0;j<_rankTicks.length;j++){
       var c=parseFloat(_rankTicks[j].style.left)||0;
-      _rankTicks[j].classList.toggle('under-goal', goalPx!==null && Math.abs(c-goalPx)<PENDING_TICK_GAP);
+      _rankTicks[j].classList.toggle('under-goal', _rankMarkerOn && Math.abs(c-goalPx)<PENDING_TICK_GAP);
     }
     /* fb1: the perimeter — measured from the same two rects as the chevron and re-run on every pass, so a resize or a
        rotation carries it. Not gated on the marker: the outline is there in every state. Only now, and together: the
@@ -1361,6 +1437,7 @@
       frameEl.hidden=false; track.classList.add('rank-framed');
     }
     bar.classList.remove('rank-unplaced');
+    syncRankPaint(track,bar,_clasicoFinalRank.active);
   }
 
   /* ===================== THE DAY'S RETO STATE (_kit §3.2) =====================
@@ -1393,32 +1470,107 @@
   const RETO_WORD={pending:'pendiente', achieved:'logrado', failed:'no alcanzado'};
   const RETO_MARK={pending:'', achieved:' ✓', failed:' ✕'};
 
+  /* V5 result-only time rank, matching Mini's 1000ms fill + 900ms dwell.
+     This object owns presentation callbacks only; native terminal writes happen
+     immediately in winGame. No result proof, score or progress is stored here. */
+  var CLASICO_RANK_FILL_MS=1000, CLASICO_RANK_SETTLE_MS=900;
+  var _clasicoFinalRank={active:false,epoch:0,raf:0,timer:0,confetti:0};
+  function clasicoRankDisplayResult(){
+    var won=finished && over && boardNum>=RUN_BOARDS;
+    /* Display-only restoration from the existing official done/best pair.
+       No saved unfinished game is inferred, and archives/training start fresh. */
+    var restored=!IS_ARCHIVE && !started && !over && !training &&
+      !!lsGet('clasico-done-'+ISO) && Number.isInteger(bestSecs) && bestSecs>0;
+    var known=won||restored,seconds=won?Math.round(totalMs/1000):restored?bestSecs:0;
+    return {known:known,seconds:seconds,idx:known?rankFromTime(seconds):0,restored:restored};
+  }
+  function cancelClasicoFinalRank(){
+    var s=_clasicoFinalRank;s.epoch++;
+    if(s.raf) cancelAnimationFrame(s.raf);
+    if(s.timer) clearTimeout(s.timer);
+    if(s.confetti) clearTimeout(s.confetti);
+    if(_rankTickRAF) cancelAnimationFrame(_rankTickRAF);
+    s.raf=0;s.timer=0;s.confetti=0;s.active=false;_rankTickRAF=0;
+    var track=$('rank-track');
+    if(track) track.querySelectorAll('.rank-fill,.rank-fill-excess').forEach(function(el){el.style.transition='';});
+    return s.epoch;
+  }
+  function revealClasicoFinalRank(onDone,onConfetti){
+    var epoch=cancelClasicoFinalRank(),s=_clasicoFinalRank;
+    if(!finished||!over||boardNum<RUN_BOARDS) return;
+    var wasTraining=training;
+    var valid=function(){return s.epoch===epoch && finished && over && boardNum>=RUN_BOARDS && training===wasTraining;};
+    var target=Math.max(0,Math.min(1,timePos(Math.round(totalMs/1000))/100));
+    var reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var track=$('rank-track');
+    s.active=true;_rankFrac=0;
+    if(track) track.querySelectorAll('.rank-fill,.rank-fill-excess').forEach(function(el){el.style.transition='none';});
+    renderRank();
+    /* rAF interpolates the shared normalized fraction, so a resize preserves
+       elapsed progress and both V4 layers still have exactly one measured front.
+       During this bounded reveal, placeRankPixels paints synchronously instead
+       of spawning a second sampling loop on every animation frame. */
+    var arrive=function(){
+      if(!valid()) return;
+      _rankFrac=target;renderRank();
+      if(track){var fill=track.querySelector('.rank-fill');if(fill) void fill.offsetWidth;}
+      s.active=false;s.raf=0;
+      if(track) track.querySelectorAll('.rank-fill,.rank-fill-excess').forEach(function(el){el.style.transition='';});
+      renderRank();
+      s.timer=setTimeout(function(){
+        s.timer=0;if(!valid()) return;
+        if(onDone) onDone();
+        /* Keep the rank reveal/dwell unobstructed; native eligibility/counts
+           remain unchanged. Recheck after presentation in case it navigated. */
+        if(valid() && onConfetti) onConfetti();
+      },CLASICO_RANK_SETTLE_MS);
+    };
+    if(reduced){arrive();return;}
+    var start=performance.now();
+    var step=function(now){
+      if(!valid()) return;
+      var progress=Math.max(0,Math.min(1,(now-start)/CLASICO_RANK_FILL_MS));
+      _rankFrac=target*progress;renderRank();
+      if(progress<1) s.raf=requestAnimationFrame(step);else arrive();
+    };
+    s.raf=requestAnimationFrame(step);
+  }
+  /* A pending reveal may never reopen pages after replay or leaving this route.
+     Returning through history/BFCache restores the existing completed gate and
+     replay controls, never the canonical modal or a second reveal/award. */
+  function restoreClasicoFinalGate(){
+    cancelClasicoFinalRank();
+    if(_rankBuilt) renderRank();
+    if(finished && over && boardNum>=RUN_BOARDS){var gate=$('gate');if(gate)gate.classList.remove('hidden');}
+  }
+  addEventListener('pagehide',function(){cancelClasicoFinalRank();});
+  addEventListener('popstate',restoreClasicoFinalGate);
+  addEventListener('pageshow',restoreClasicoFinalGate);
   function renderRank(){ renderBoardProgress();
     const track=$('rank-track'), bar=$('rank-bar');
     if(!track||!bar) return;
     buildRankTrack(track);
-    const idx=curRank(), secs=Math.round(totalMs/1000);
-    /* timePos() is Clásico's OWN interpolation and is untouched — it returns 0..100, so the
-       one scale takes it as a fraction. TIME_MAX, rankFromTime and the seed are unchanged. */
-    _rankFrac     = (started||finished||over) ? Math.max(0,Math.min(1, timePos(secs)/100)) : 0;
-    _rankGoalFrac = Math.max(0,Math.min(1, timePos(retoTarget())/100));
+    const result=clasicoRankDisplayResult(),revealed=result.known;
+    const idx=result.idx, secs=result.seconds;
+    /* Native timePos/TIME_MAX/curRank remain unchanged. Unfinished means no
+       provisional rank, including a spill. A known official completion reload
+       shows the stable earned result without re-running the reveal or awards. */
+    if(!_clasicoFinalRank.active) _rankFrac=revealed ? Math.max(0,Math.min(1,timePos(secs)/100)) : 0;
+    _rankGoalFrac=Math.max(0,Math.min(1,timePos(retoTarget())/100));
     const st8=retoState();
-    _rankMarkerOn = (st8==='pending');
-    bar.style.setProperty('--rank-tick-done', rankTickFlip(
-      getComputedStyle(bar).getPropertyValue('--accent').trim()||'#000000'));
-    for(let i=0;i<_rankTicks.length;i++) _rankTicks[i].classList.toggle('passed', (started||finished) && _rankTickIdx[i]<=idx);
-    _rankGoal.classList.toggle('settled', !_rankMarkerOn);
-    _rankChev.classList.toggle('settled', !_rankMarkerOn);
-    const lbl=$('rank-label'); if(lbl){ lbl.textContent=RANK_NAMES[idx]; lbl.classList.toggle('at-maestro',idx===TOP); }
-    /* Live accessible name. No number: this mode shows none, so announcing one would invent a
-       fact the screen does not have. achieved and failed are both settled but they are NOT the
-       same fact, and with the marker absent for both the name is what tells them apart. */
-    bar.setAttribute('aria-label','Rango '+RANK_NAMES[idx]+'. Reto del día '+RETO_WORD[st8]+'. Ver rangos.');
+    /* As Mini does, visibility is separate from truthful native Reto aria:
+       keep the target through play; resolve achieved only when its final
+       reveal front arrives at the target. The chevron is always persistent. */
+    _rankMarkerOn=!revealed || st8!=='achieved' || (_clasicoFinalRank.active && _rankFrac<_rankGoalFrac);
+    _rankGoal.classList.toggle('is-achieved', !_rankMarkerOn);
+    _rankChev.classList.toggle('no-stem', !_rankMarkerOn);
+    const lbl=$('rank-label'); if(lbl){lbl.textContent=revealed?RANK_NAMES[idx]:'Sin rango';lbl.classList.toggle('at-maestro',revealed&&idx===TOP);}
+    bar.setAttribute('aria-label',(revealed?'Rango '+RANK_NAMES[idx]:'Sin rango')+'. Reto del día '+RETO_WORD[st8]+'. Ver rangos.');
     placeRankPixels();
   }
   function band(i){ if(i===TOP) return '≤ '+fmtSec(TIME_MAX[TOP]); if(i===0) return '> '+fmtSec(TIME_MAX[1]); return fmtSec(TIME_MAX[i+1]+1)+'–'+fmtSec(TIME_MAX[i]); }
-  function renderRanks(){ const list=$('ranks-list'); if(!list) return; const cur=curRank(); let html='';
-    for(let i=TOP;i>=0;i--){ const on=(started||finished)&&i===cur; html+='<div class="rank-row'+(on?' current':'')+(i===TOP?' is-top':'')+'"><span class="name">'+RANK_NAMES[i]+'</span><span class="score">'+band(i)+'</span></div>'; }
+  function renderRanks(){ const list=$('ranks-list'); if(!list) return; const shown=clasicoRankDisplayResult(),cur=shown.idx; let html='';
+    for(let i=TOP;i>=0;i--){ const on=shown.known&&i===cur; html+='<div class="rank-row'+(on?' current':'')+(i===TOP?' is-top':'')+'"><span class="name">'+RANK_NAMES[i]+'</span><span class="score">'+band(i)+'</span></div>'; }
     list.innerHTML=html; const rb=$('ranks-best'); if(rb) rb.textContent=bestSecs>0?fmt(bestSecs*1000):'—'; const rr=$('ranks-reto'); if(rr) rr.textContent='≤ '+fmtSec(retoTarget())+RETO_MARK[retoState()]; }
 
   // ================= loop / timer (count-up) =================
@@ -1459,7 +1611,7 @@
       loadBoard(nx); advancing=false; }, Math.max(360, (lastFireMs||0)+120)); }   // let the cleared arrow finish leaving before the next board lands
 
   // ================= start / end =================
-  function startGame(isTraining){ training=!!isTraining; over=false; finished=false; started=false; running=true; advancing=false;
+  function startGame(isTraining){ cancelClasicoFinalRank(); training=!!isTraining; over=false; finished=false; started=false; running=true; advancing=false;
     totalMs=0; lastTick=0; lives=HEARTS_MAX; choques=0; clearedTotal=0;
     if(training) trainSalt=Date.now()+'-'+((Math.random()*1e9)|0);   // practice runs get five fresh boards; the official run always uses the date
     bestSecs=+(lsGet('clasico-best-'+ISO)||0);
@@ -1536,22 +1688,24 @@
       lsSet('clasico-done-'+ISO,'1'); recordStats(secs,true); }
     if(!training) cgDayClasico();
     else { bestSecs=+(lsGet('clasico-best-'+ISO)||0); }
-    renderRank();
+    /* V5 final rank is revealed after immediate native terminal writes below. */
     boardEl.classList.remove('clearflash'); void boardEl.offsetWidth; boardEl.classList.add('clearflash');
     const isBest=!training && (bestSecs===secs);
     const underReto=secs<=reto;
-    const g=$('gate'); g.classList.remove('hidden');
+    const g=$('gate'); g.classList.add('hidden');
     g.innerHTML='<h2>'+(training?'Entrenamiento':'¡Desenredado!')+'</h2><div class="v">'+fmt(totalMs)+'</div><div class="vlbl">'+(training?'tiempo':RANK_NAMES[idx])+'</div>'
       +'<p>Los <b>'+RUN_BOARDS+'</b> tableros, limpios. '+(choques===0?'Sin un solo choque. ':choques+' choque'+(choques===1?'':'s')+'. ')
       +(underReto?'<b style="color:var(--accent)">¡Buen sorbo!</b> ':'')
       +(training?'':'<br>'+(isBest?'¡Tu mejor tiempo de hoy! 🎉':'Mejor de hoy: <b>'+fmt(bestSecs*1000)+'</b>'))+'</p>'
       +'<div class="go-row"><button class="btn dark" id="again-btn" type="button">'+(training?'Otra vez':'Entrenar')+'</button><button class="btn accent" id="share-btn" type="button">Compartir</button></div>';
-    if(!training){ setTimeout(()=>launchConfetti(idx===TOP?110:(underReto?85:55)), 480); }   // real payoff for untangling the full daily run
     if(!training){   // preserve saved celebration keys, then show proposed pages for a completed official run
       if(idx===TOP && !lsGet('clasico-maestro-shown-'+ISO)){ lsSet('clasico-maestro-shown-'+ISO,'1'); }
       else if(underReto && !lsGet('clasico-goal-shown-'+ISO)){ lsSet('clasico-goal-shown-'+ISO,'1'); }
-      setTimeout(()=>prOpen({idx, underReto, reto, isBest}),700); }
-    $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare); }
+    }
+    $('again-btn').addEventListener('click', ()=>startGame(true)); $('share-btn').addEventListener('click', doShare);
+    revealClasicoFinalRank(function(){g.classList.remove('hidden');if(!training)prOpen({idx,underReto,reto,isBest});},
+      training?null:function(){launchConfetti(idx===TOP?110:(underReto?85:55));});
+  }
   function endGame(reason){ if(over) return; over=true; finished=false; running=false; if(rafId) cancelAnimationFrame(rafId);
     if(!training){ lsSet('clasico-done-'+ISO,'1'); recordStats(0,false); }
     if(!training) cgDayClasico();
@@ -1843,7 +1997,7 @@ if(window.CGMascot && window.DailyMascot) CGMascot.render({host:"#pr-done .pr-co
         <h3>Vac&iacute;a los tableros</h3>
         <p>Despeja <b>todas</b> las flechas de los <b>5</b> tableros. Tu <b>rango es el tiempo total</b> — el reloj arranca justo tras <b>Empezar</b>.</p>
       </section>
-          <section class="tut-slide"><div class="tut-anim"><div class="tut-rank-demo" role="img" aria-label="Ejemplo ilustrativo de la barra de rangos. El relleno representa tu rango según el tiempo. La línea vertical y la flechita señalan el Reto de hoy. No son valores de tu partida."><div class="tut-rank-native" aria-hidden="true"><div class="rank-track"><span class="rank-fill" style="width:82%"></span><span class="rank-tick passed" style="left:10%" aria-hidden="true"></span><span class="rank-tick passed" style="left:20%" aria-hidden="true"></span><span class="rank-tick passed" style="left:30%" aria-hidden="true"></span><span class="rank-tick passed" style="left:50%" aria-hidden="true"></span><span class="rank-tick passed" style="left:60%" aria-hidden="true"></span><span class="rank-tick passed" style="left:80%" aria-hidden="true"></span><span class="rank-tick" style="left:90%" aria-hidden="true"></span><span class="rank-goal over-fill"></span></div><div class="tut-rank-marker-frame"><span class="tut-rank-target-label">Reto de hoy</span><svg class="tut-rank-triangle" width="12" height="9" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path d="M0 0H12L6 9Z"/></svg></div><span class="tut-rank-outline" aria-hidden="true"></span></div><span class="tut-rank-fill-label" aria-hidden="true">↳ Tu rango según el tiempo</span></div></div><h3>El reto del día</h3><p>La <b>línea vertical y la flechita</b> marcan el <b>Reto de hoy</b> en la barra de rangos. El relleno refleja tu rango según el tiempo: <b>menos tiempo, mejor rango</b>. En tu intento diario, despeja los <b>5 tableros en el tiempo objetivo o menos</b>. Si lo pasas o pierdes los corazones, no lo logras. Al resolverse el reto, el marcador desaparece. Entrenar no cuenta.</p></section>
+          <section class="tut-slide"><div class="tut-anim"><div class="tut-rank-demo" role="img" aria-label="Ejemplo ilustrativo de la barra de rangos. Ejemplo de un resultado final. Durante la partida la barra permanece vacía y sin rango. Al limpiar los cinco tableros, el relleno revela el rango según el tiempo. La línea vertical y la flechita señalan el Reto de hoy. No son valores de tu partida."><div class="tut-rank-native" aria-hidden="true"><div class="rank-track"><span class="rank-fill" style="width:82%"></span><span class="rank-tick passed" style="left:10%" aria-hidden="true"></span><span class="rank-tick passed" style="left:20%" aria-hidden="true"></span><span class="rank-tick passed" style="left:30%" aria-hidden="true"></span><span class="rank-tick passed" style="left:50%" aria-hidden="true"></span><span class="rank-tick passed" style="left:60%" aria-hidden="true"></span><span class="rank-tick passed" style="left:80%" aria-hidden="true"></span><span class="rank-tick" style="left:90%" aria-hidden="true"></span><span class="rank-goal over-fill"></span></div><div class="tut-rank-marker-frame"><span class="tut-rank-target-label">Reto de hoy</span><svg class="tut-rank-triangle" width="12" height="9" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path d="M0 0H12L6 9Z"/></svg></div><span class="tut-rank-outline" aria-hidden="true"></span></div><span class="tut-rank-fill-label" aria-hidden="true">↳ Tu rango al terminar</span></div></div><h3>El reto del día</h3><p>La <b>línea vertical y la flechita</b> marcan el <b>Reto de hoy</b> en la barra de rangos. Durante la partida, la barra queda <b>vacía y sin rango</b>. Al limpiar los <b>5 tableros</b>, revela tu rango: <b>menos tiempo, mejor rango</b>. Para lograr el reto diario, termina en el tiempo objetivo o menos. Si lo pasas o pierdes los corazones, no lo logras. La flechita sigue señalando la meta; la línea se retira solo al lograrla. Entrenar no cuenta.</p></section>
     </div>
     <div class="tut-dots" id="tut-dots"></div>
     <button class="tut-next" id="tut-next">Siguiente</button>
@@ -2138,5 +2292,102 @@ function cgSnapshotStreaks(rows) {
   try{ window.matchMedia(MQ).addEventListener('change', apply); }catch(e){}
 })();
 </script>
+
+<!-- CANONICAL RESULT PREVIEW: isolated, not a release -->
+<style>
+/* Preserve the existing fixed-date / scrolling-middle / pinned-footer design. */
+[data-cg-canonical-frame]{position:fixed!important;left:0!important;right:auto!important;top:var(--cg-frame-top)!important;width:var(--cg-frame-width)!important;height:var(--cg-frame-height)!important;bottom:auto!important;overflow:hidden!important;box-sizing:border-box;}
+/* Existing stamp's existing short-screen size, chosen when full size would not fit. */
+.cg-daily-mascot[data-cg-compact]{width:96px;height:96px;margin-top:16px;}
+/* Trenza rank: established readable yellow text tone from the result standard.
+   The game's #D99F3B fill/stamp palette remains unchanged (2.34:1 on white).
+   Dark uses the existing resolved game accent, #e1b466. */
+.pr-flow.pr-waffle #pr-done-rank{--cg-trenza-rank-ink:#8A5A10;color:var(--cg-trenza-rank-ink);}
+body[data-theme="black"] .pr-flow.pr-waffle #pr-done-rank{color:var(--accent);}
+/* Allow enlarged text/long facts to occupy additional middle rows, keeping actions fixed. */
+#pr-flow .pr-lead,.mini-page-card .mini-lead{flex-wrap:wrap;row-gap:12px;}
+#pr-flow .pr-stat,.mini-page-card .mini-stat-cell{min-width:0;max-width:100%;}
+#pr-flow .pr-stat-num,.mini-page-card .mini-stat-num{white-space:normal;overflow-wrap:anywhere;}
+#pr-flow .pr-title,.mini-page-card .mini-title{overflow-wrap:anywhere;}
+#pr-flow .pr-status,#pr-flow .pr-meta,#pr-flow .pr-cheer-line,.mini-page-card .mini-cheer-line,.mini-page-card .mini-out{white-space:normal;overflow-wrap:anywhere;}
+#modal-overlay .mini-page-card .mini-cheer-line,#modal-overlay .mini-page-card .mini-out{white-space:normal;overflow-wrap:anywhere;}
+/* Owner: assistance and actual record share a secondary line, with natural wrapping. */
+#mini-done-list .mini-row-summary{display:block;text-align:center;white-space:normal;}
+#mini-done-list .mini-summary-aids{font-weight:400;}
+#mini-done-list .mini-summary-aids[hidden]{display:none;}
+#mini-done-list .mini-summary-aids .mini-row-v{font-weight:400;}
+#mini-done-list .mini-row-rec{white-space:normal;}
+/* Preserve type/date/title/footer positions; recover unused internal gaps before scrolling. */
+#pr-flow [data-cg-tight] .pr-lead,#modal-overlay .mini-page-card[data-cg-tight] .mini-lead{margin-top:16px;}
+#pr-flow [data-cg-tight] .pr-list,#modal-overlay .mini-page-card[data-cg-tight] .mini-list{margin-top:12px;padding-top:12px;}
+#pr-flow [data-cg-tight] .cg-daily-mascot[data-cg-compact],#modal-overlay .mini-page-card[data-cg-tight] .cg-daily-mascot[data-cg-compact]{margin-top:8px;}
+#pr-flow [data-cg-tight] .pr-body,#modal-overlay .mini-page-card[data-cg-tight] .mini-fbody{padding-bottom:8px;}
+</style>
+<script>
+(function(){'use strict';
+const phone=matchMedia('(max-width: 879.98px), (max-aspect-ratio: 2/3) and (pointer: coarse)');let layer=null,queued=false;
+const observedContent=new WeakSet(),contentResize=new ResizeObserver(schedule);
+function visible(e){return !!e&&e.getClientRects().length&&getComputedStyle(e).display!=='none';}
+function clear(){if(!layer)return;layer.removeAttribute('data-cg-canonical-frame');['--cg-frame-top','--cg-frame-width','--cg-frame-height'].forEach(k=>layer.style.removeProperty(k));layer=null;}
+function fit(){queued=false;const body=document.body;let next=null;
+ if(body.classList.contains('pr-open'))next=document.getElementById('pr-flow');
+ else if(body.classList.contains('mini-fullpage'))next=document.getElementById('modal-overlay');
+ if(next&&phone.matches){if(layer&&layer!==next)clear();layer=next;layer.setAttribute('data-cg-canonical-frame','');const h=document.querySelector('.page-header'),z=parseFloat(getComputedStyle(body).zoom)||1,v=visualViewport,top=Math.max(0,Math.round(h?h.getBoundingClientRect().bottom:0)),bottom=v&&Math.abs(v.scale-1)<.01?v.offsetTop+v.height:innerHeight,w=v&&Math.abs(v.scale-1)<.01?v.width:document.documentElement.clientWidth;
+ for(const [k,n]of [['--cg-frame-top',top/z],['--cg-frame-width',w/z],['--cg-frame-height',Math.max(0,bottom-top)/z]])if(layer.style.getPropertyValue(k)!==n+'px')layer.style.setProperty(k,n+'px');
+ }else clear();
+ const pages=[...document.querySelectorAll('#pr-flow .pr-page.is-on,#modal-overlay.open .mini-page-card')].filter(visible);
+ for(const p of pages){const b=p.querySelector('.pr-body,.mini-fbody'),c=p.querySelector('.pr-content,.mini-fcontent'),f=c?.querySelector('.cg-daily-mascot');if(!b||!c)continue;
+ p.removeAttribute('data-cg-tight');
+ if(!observedContent.has(c)){observedContent.add(c);contentResize.observe(c);}
+ if(f&&!f.hidden){
+ f.removeAttribute('data-cg-compact');
+ const z=parseFloat(getComputedStyle(body).zoom)||1,bs=getComputedStyle(b),available=b.clientHeight-parseFloat(bs.paddingTop)-parseFloat(bs.paddingBottom);
+ p.toggleAttribute('data-cg-tight',c.getBoundingClientRect().height/z>available+.5);
+ }
+ const scroll=b.scrollHeight>b.clientHeight+1;b.classList.toggle('is-scroll',scroll);if(scroll){b.setAttribute('tabindex','0');b.setAttribute('role','region');b.setAttribute('aria-label','Resultado');}else{b.removeAttribute('tabindex');b.removeAttribute('role');b.removeAttribute('aria-label');}
+ }
+}
+function schedule(){if(!queued){queued=true;requestAnimationFrame(fit);}}
+if(document.fonts){document.fonts.ready.then(schedule);document.fonts.addEventListener('loadingdone',schedule);}
+new MutationObserver(schedule).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style','hidden']});window.addEventListener('resize',schedule);window.addEventListener('orientationchange',schedule);phone.addEventListener('change',schedule);if(visualViewport){visualViewport.addEventListener('resize',schedule);visualViewport.addEventListener('scroll',schedule);}window.cgFitResultStamp=schedule;schedule();
+})();
+</script>
+
+<!-- GAMES PRESENTATION AUDIT V2: isolated, unpublished -->
+<style>
+/* Only on-accent text changes. Native tutorial fill/type/geometry are untouched. */
+.tut-ov .tut-next{color:var(--cg-tutorial-ink,#ffffff);}
+/* Reuse the existing statistics frame, scale and palette; allow large text to wrap. */
+#mini-stats-modal .stat-value{overflow-wrap:anywhere;}
+#mini-stats-modal .modal-title{overflow-wrap:anywhere;}
+#mini-stats-modal .stats-note{margin:-2px 0 10px;font-size:12px;color:var(--ink-soft);font-style:italic;}
+#mini-stats-modal .stats-footer{margin:22px 0 0;font-size:12px;color:var(--ink-soft);font-style:italic;line-height:1.55;}
+</style>
+<script>
+(function(){'use strict';
+const ov=document.getElementById('tut-ov'),button=document.getElementById('tut-next');if(!ov||!button)return;
+let queued=false;
+function rgb(value){const a=value.match(/[\d.]+/g);if(!a)return null;return a.slice(0,3).map(Number).map(n=>value.startsWith('color(')?n*255:n);}
+function luminance(a){return a.map(n=>n/255).map(n=>n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4)).reduce((v,n,i)=>v+n*[.2126,.7152,.0722][i],0);}
+function contrast(a,b){const x=luminance(a),y=luminance(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+function sync(){queued=false;if(!ov.classList.contains('open'))return;const bg=rgb(getComputedStyle(button).backgroundColor);if(!bg)return;const choices=[['#ffffff',[255,255,255]],['#1a1614',[26,22,20]],['#0c0f0f',[12,15,15]]];const ink=(choices.find(x=>contrast(x[1],bg)>=4.5)||choices[2])[0];if(button.style.getPropertyValue('--cg-tutorial-ink')!==ink)button.style.setProperty('--cg-tutorial-ink',ink);}
+function schedule(){if(!queued){queued=true;requestAnimationFrame(sync);}}
+const observer=new MutationObserver(schedule);
+observer.observe(document.body,{attributes:true,attributeFilter:['data-theme','class','style']});
+observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','style']});
+observer.observe(ov,{attributes:true,attributeFilter:['class','style']});
+schedule();
+})();
+</script>
+
+<!-- OWNER VISUAL CORRECTIONS V3: isolated, unpublished -->
+<style>
+/* Established release asset size; scrolling never substitutes a smaller stamp. */
+#pr-flow .cg-daily-mascot,#modal-overlay .cg-daily-mascot{width:232px;height:232px;max-width:100%;}
+/* Recover secondary whitespace while preserving type, dates and action geometry. */
+#pr-flow [data-cg-tight] .pr-lead,#modal-overlay .mini-page-card[data-cg-tight] .mini-lead{margin-top:16px;}
+#pr-flow [data-cg-tight] .pr-list,#modal-overlay .mini-page-card[data-cg-tight] .mini-list{margin-top:12px;padding-top:12px;}
+#pr-flow [data-cg-tight] .cg-daily-mascot,#modal-overlay .mini-page-card[data-cg-tight] .cg-daily-mascot{margin-top:12px;}
+</style>
 </body>
 </html>
